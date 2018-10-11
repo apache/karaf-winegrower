@@ -17,9 +17,11 @@ import org.apache.karaf.framework.deployer.OSGiBundleLifecycle;
 import org.apache.karaf.framework.test.WithFramework;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.osgi.framework.ServiceRegistration;
 
 @WithFramework
 class MainTest {
+
   @WithFramework.Service
   private StandaloneLifecycle lifecycle;
 
@@ -28,9 +30,19 @@ class MainTest {
     Assertions.assertEquals(5, lifecycle.registry.getBundles().keySet().size());
 
     OSGiBundleLifecycle bundle =  lifecycle.registry.getBundles().get(1L);
-    System.out.println(bundle.getBundle().getBundleId());
-    System.out.println(bundle.getBundle().getSymbolicName());
-
-    System.out.println(lifecycle.services.getServices());
+    Assertions.assertEquals(1, bundle.getBundle().getBundleId());
+    Assertions.assertEquals("org.opentest4j", bundle.getBundle().getSymbolicName());
+    Assertions.assertTrue(bundle.getBundle().getLocation().contains("opentest4j-1.1.1.jar"));
+    Assertions.assertNotNull(bundle.getBundle().getBundleContext());
   }
+
+  @Test
+  public void testServices() throws Exception {
+    Assertions.assertEquals(8, lifecycle.services.getServices().size());
+
+    ServiceRegistration registration = lifecycle.services.getServices().iterator().next();
+    Assertions.assertNotNull(registration);
+    Assertions.assertNotNull(registration.getReference());
+  }
+
 }
