@@ -23,8 +23,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Proxy;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -50,7 +48,6 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
-import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 
 @Target(METHOD)
 @Retention(RUNTIME)
@@ -74,7 +71,7 @@ public @interface WithFramework {
 
     Entry[] includeResources() default {};
 
-    class Extension implements BeforeEachCallback, AfterEachCallback, TestInstancePostProcessor, ParameterResolver {
+    class Extension implements BeforeEachCallback, AfterEachCallback, ParameterResolver {
 
         private static final String CLASSES_BASE = System.getProperty(Extension.class.getName() + ".classesBase",
                 "target/test-classes/");
@@ -205,37 +202,6 @@ public @interface WithFramework {
         public Object resolveParameter(final ParameterContext parameterContext, final ExtensionContext extensionContext)
                 throws ParameterResolutionException {
             return findInjection(extensionContext, parameterContext.getParameter().getType());
-        }
-
-        @Override
-        public void postProcessTestInstance(final Object testInstance, final ExtensionContext context) {
-            Class<?> testClass = context.getRequiredTestClass();
-            while (testClass != Object.class) {
-                Stream.of(testClass.getDeclaredFields()).filter(c -> c.isAnnotationPresent(Service.class)).forEach(f -> {
-                    if (!supports(f.getType())) {
-                        throw new IllegalArgumentException("@Service not supported on " + f);
-                    }
-                    if (!f.isAccessible()) {
-                        f.setAccessible(true);
-                    }
-                    try {
-                        f.set(testInstance, Proxy.newProxyInstance(Thread.currentThread()
-                                                                         .getContextClassLoader(),
-                                new Class<?>[]{f.getType()},
-                                (proxy, method, args) -> {
-                                    try {
-                                        final Object injection = findInjection(context, f.getType());
-                                        return method.invoke(injection, args);
-                                    } catch (final InvocationTargetException ite) {
-                                        throw ite.getTargetException();
-                                    }
-                                }));
-                    } catch (final IllegalAccessException e) {
-                        throw new IllegalStateException(e);
-                    }
-                });
-                testClass = testClass.getSuperclass();
-            }
         }
 
         private boolean supports(final Class<?> type) {

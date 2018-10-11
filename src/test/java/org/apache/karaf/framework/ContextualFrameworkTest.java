@@ -25,11 +25,9 @@ import org.osgi.framework.BundleActivator;
 
 class ContextualFrameworkTest {
   @Test
-  @WithFramework(includeResources = {
-          @WithFramework.Entry(path = "org.apache.karaf.framework.test.simpleactivator"),
-          @WithFramework.Entry(path = "org.apache.karaf.framework.test.simpleservice") })
+  @WithFramework(includeResources = @WithFramework.Entry(path = "org.apache.karaf.framework.test.simpleactivator"))
   void simpleActivator(@WithFramework.Service final ContextualFramework framework) {
-    assertEquals(2, framework.getRegistry().getBundles().size());
+    assertEquals(1, framework.getRegistry().getBundles().size());
 
     final BundleActivatorHandler activatorHandler =  framework.getRegistry().getBundles().values().iterator().next().getActivator();
     assertNotNull(activatorHandler);
@@ -46,9 +44,7 @@ class ContextualFrameworkTest {
   }
 
   @Test
-  @WithFramework(includeResources = {
-          @WithFramework.Entry(path = "org.apache.karaf.framework.test.simpleactivator"),
-          @WithFramework.Entry(path = "org.apache.karaf.framework.test.simpleservice") })
+  @WithFramework(includeResources = @WithFramework.Entry(path = "org.apache.karaf.framework.test.simpleservice"))
   void simpleService(@WithFramework.Service final ContextualFramework framework) {
     assertEquals(1, framework.getServices().getServices().size());
   }
