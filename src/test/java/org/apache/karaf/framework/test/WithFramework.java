@@ -16,7 +16,6 @@ package org.apache.karaf.framework.test;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
-import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
 
 import java.io.File;
@@ -32,8 +31,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.stream.Stream;
@@ -52,6 +54,7 @@ import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 @Retention(RUNTIME)
 @ExtendWith(WithFramework.Extension.class)
 public @interface WithFramework {
+
     @Target(FIELD)
     @Retention(RUNTIME)
     @interface Service {
@@ -59,17 +62,23 @@ public @interface WithFramework {
 
     @Retention(RUNTIME)
     @interface Entry {
+
         String path();
+
         String prefix() default "";
     }
 
     String[] dependencies() default "target/${test}/*.jar";
+
     Entry[] includeResources() default {};
 
     class Extension implements BeforeAllCallback, AfterAllCallback, TestInstancePostProcessor, ParameterResolver {
 
-        private static final String CLASSES_BASE = System.getProperty(Extension.class.getName() + ".classesBase", "target/test-classes/");
+        private static final String CLASSES_BASE = System.getProperty(Extension.class.getName() + ".classesBase",
+                "target/test-classes/");
+
         private static final String WORK_DIR = System.getProperty(Extension.class.getName() + ".workdir", "target/waf");
+
         private static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create(Extension.class.getName());
 
         @Override
@@ -90,91 +99,87 @@ public @interface WithFramework {
                 return;
             }
             ofNullable(store.get(Context.class, Context.class)).ifPresent(Context::close);
-            ofNullable(store.get(FileToDelete.class, FileToDelete.class)).ifPresent(f -> {
-                if (f.file.exists() && !f.file.delete()) {
-                    f.file.deleteOnExit();
+            ofNullable(store.get(FilesToDelete.class, FilesToDelete.class)).ifPresent(it -> it.files.forEach(f -> {
+                if (f.exists() && !f.delete()) {
+                    f.deleteOnExit();
                 }
-            });
+            }));
             ofNullable(store.get(ContextualFramework.class, ContextualFramework.class)).ifPresent(ContextualFramework::stop);
         }
 
         private URL[] createUrls(final ExtensionContext context) {
-            return context.getElement()
-                          .map(e -> e.getAnnotation(WithFramework.class))
-                          .map(config -> Stream.concat(Stream.of(config.dependencies())
-                                                             .flatMap(it -> Stream.of(
-                                                                     variabilize(it, context.getTestClass().map(Class::getName).orElse("default")),
-                                                                     variabilize(it, "default")))
-                                                             .flatMap(this::listFiles)
-                                                             .filter(File::exists)
-                                                             .map(f -> {
-                                                                 try {
-                                                                     return f.toURI().toURL();
-                                                                 } catch (final MalformedURLException e) {
-                                                                     throw new IllegalArgumentException(e);
-                                                                 }
-                                                             }), of(config.includeResources())
-                                  .filter(it -> it.length > 0)
-                                  .map(resources -> {
-                                      try {
-                                          final File jar = createJar(resources, context.getUniqueId());
-                                          context.getStore(NAMESPACE).put(FileToDelete.class, new FileToDelete(jar));
-                                          return Stream.of(jar.toURI().toURL());
-                                      } catch (final MalformedURLException e) {
-                                          throw new IllegalArgumentException(e);
-                                      }
-                                  })
-                                  .orElseGet(Stream::empty))
-                                               .toArray(URL[]::new))
-                          .orElseGet(() -> new URL[0]);
+            return context
+                    .getElement().map(
+                            e -> e.getAnnotation(WithFramework.class))
+                    .map(config -> Stream
+                            .concat(Stream.of(config.dependencies())
+                                    .flatMap(it -> Stream.of(
+                                            variabilize(it, context.getTestClass().map(Class::getName).orElse("default")),
+                                            variabilize(it, "default")))
+                                    .flatMap(this::listFiles).filter(File::exists).map(f -> {
+                                        try {
+                                            return f.toURI().toURL();
+                                        } catch (final MalformedURLException e) {
+                                            throw new IllegalArgumentException(e);
+                                        }
+                                    }), Stream.of(config.includeResources()).map(resources -> {
+                                        try {
+                                            final File jar = createJar(resources);
+                                            context.getStore(NAMESPACE)
+                                                   .getOrComputeIfAbsent(FilesToDelete.class, ignored -> new FilesToDelete(), FilesToDelete.class)
+                                                   .files.add(jar);
+                                            return jar.toURI().toURL();
+                                        } catch (final MalformedURLException e) {
+                                            throw new IllegalArgumentException(e);
+                                        }
+                                    }))
+                            .toArray(URL[]::new))
+                    .orElseGet(() -> new URL[0]);
         }
 
         private Stream<File> listFiles(final String it) {
-            return it.endsWith("*.jar") ?
-                Stream.of(ofNullable(new File(it.substring(0, it.length() - "*.jar".length())).listFiles(
-                        (dir, name) -> name.endsWith(".jar"))).orElseGet(() -> new File[0])) :
-                Stream.of(new File(it));
+            return it.endsWith("*.jar")
+                    ? Stream.of(ofNullable(new File(it.substring(0, it.length() - "*.jar".length()))
+                            .listFiles((dir, name) -> name.endsWith(".jar"))).orElseGet(() -> new File[0]))
+                    : Stream.of(new File(it));
         }
 
-        private File createJar(final Entry[] resources, final String name) {
-            final File out = new File(WORK_DIR, name.replace(":", "_").replace("[", "").replace("]", "") + ".jar"); // todo: config
+        private File createJar(final Entry entry) {
+            final File out = new File(WORK_DIR, UUID.randomUUID().toString() + ".jar");
             out.getParentFile().mkdirs();
             try (final JarOutputStream jarOutputStream = new JarOutputStream(new FileOutputStream(out))) {
                 final Set<String> createdFolders = new HashSet<>();
-                Stream.of(resources).forEach(it -> {
-                    try {
-                        final File classesRoot = new File(CLASSES_BASE);
-                        final Path classesPath = classesRoot.toPath();
-                        final Path root = new File(classesRoot, it.path().replace(".", "/")).toPath();
-                        Files.walkFileTree(root,
-                                new SimpleFileVisitor<Path>() {
-                                    @Override
-                                    public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs)
-                                            throws IOException {
-                                        String relative = classesPath.relativize(file).toString().substring(it.prefix().length());
-                                        if (relative.endsWith("META-INF/MANIFEST.MF")) { // simpler config
-                                            relative = "META-INF/MANIFEST.MF";
-                                        }
-                                        final String[] segments = relative.split("/");
-                                        final StringBuilder builder = new StringBuilder(relative.length());
-                                        for (int i = 0; i < segments.length - 1; i++) {
-                                            builder.append(segments[i]).append('/');
-                                            final String folder = builder.toString();
-                                            if (createdFolders.add(folder)) {
-                                                jarOutputStream.putNextEntry(new JarEntry(folder));
-                                                jarOutputStream.closeEntry();
-                                            }
-                                        }
-                                        jarOutputStream.putNextEntry(new JarEntry(relative));
-                                        Files.copy(file, jarOutputStream);
-                                        jarOutputStream.closeEntry();
-                                        return super.visitFile(file, attrs);
-                                    }
-                                });
-                    } catch (final IOException e) {
-                        throw new IllegalStateException(e);
-                    }
-                });
+                try {
+                    final File classesRoot = new File(CLASSES_BASE);
+                    final Path classesPath = classesRoot.toPath();
+                    final Path root = new File(classesRoot, entry.path().replace(".", "/")).toPath();
+                    Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
+
+                        @Override
+                        public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException {
+                            String relative = classesPath.relativize(file).toString().substring(entry.prefix().length());
+                            if (relative.endsWith("META-INF/MANIFEST.MF")) { // simpler config
+                                relative = "META-INF/MANIFEST.MF";
+                            }
+                            final String[] segments = relative.split("/");
+                            final StringBuilder builder = new StringBuilder(relative.length());
+                            for (int i = 0; i < segments.length - 1; i++) {
+                                builder.append(segments[i]).append('/');
+                                final String folder = builder.toString();
+                                if (createdFolders.add(folder)) {
+                                    jarOutputStream.putNextEntry(new JarEntry(folder));
+                                    jarOutputStream.closeEntry();
+                                }
+                            }
+                            jarOutputStream.putNextEntry(new JarEntry(relative));
+                            Files.copy(file, jarOutputStream);
+                            jarOutputStream.closeEntry();
+                            return super.visitFile(file, attrs);
+                        }
+                    });
+                } catch (final IOException e) {
+                    throw new IllegalStateException(e);
+                }
             } catch (final IOException e) {
                 throw new IllegalStateException(e);
             }
@@ -186,7 +191,7 @@ public @interface WithFramework {
         }
 
         @Override
-        public  boolean supportsParameter(final ParameterContext parameterContext, final ExtensionContext extensionContext)
+        public boolean supportsParameter(final ParameterContext parameterContext, final ExtensionContext extensionContext)
                 throws ParameterResolutionException {
             return supports(parameterContext.getParameter().getType());
         }
@@ -201,20 +206,19 @@ public @interface WithFramework {
         public void postProcessTestInstance(final Object testInstance, final ExtensionContext context) {
             Class<?> testClass = context.getRequiredTestClass();
             while (testClass != Object.class) {
-                Stream.of(testClass.getDeclaredFields()).filter(c -> c.isAnnotationPresent(Service.class)).forEach(
-                        f -> {
-                            if (!supports(f.getType())) {
-                                throw new IllegalArgumentException("@Service not supported on " + f);
-                            }
-                            if (!f.isAccessible()) {
-                                f.setAccessible(true);
-                            }
-                            try {
-                                f.set(testInstance, findInjection(context, f.getType()));
-                            } catch (final IllegalAccessException e) {
-                                throw new IllegalStateException(e);
-                            }
-                        });
+                Stream.of(testClass.getDeclaredFields()).filter(c -> c.isAnnotationPresent(Service.class)).forEach(f -> {
+                    if (!supports(f.getType())) {
+                        throw new IllegalArgumentException("@Service not supported on " + f);
+                    }
+                    if (!f.isAccessible()) {
+                        f.setAccessible(true);
+                    }
+                    try {
+                        f.set(testInstance, findInjection(context, f.getType()));
+                    } catch (final IllegalAccessException e) {
+                        throw new IllegalStateException(e);
+                    }
+                });
                 testClass = testClass.getSuperclass();
             }
         }
@@ -227,10 +231,12 @@ public @interface WithFramework {
             return extensionContext.getStore(NAMESPACE).get(type, type);
         }
 
-
         private static class Context implements AutoCloseable {
+
             private final Thread thread;
+
             private final ClassLoader previousLoader;
+
             private final URLClassLoader currentLoader;
 
             private Context(final Thread thread, final ClassLoader previousLoader, final URLClassLoader currentLoader) {
@@ -250,12 +256,8 @@ public @interface WithFramework {
             }
         }
 
-        private static class FileToDelete {
-            private final File file;
-
-            private FileToDelete(final File file) {
-                this.file = file;
-            }
+        private static class FilesToDelete {
+            private final Collection<File> files = new ArrayList<>();
         }
     }
 }
