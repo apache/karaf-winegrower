@@ -165,7 +165,10 @@ public class BundleContextImpl implements BundleContext {
 
     @Override
     public ServiceReference<?>[] getServiceReferences(final String clazz, final String filter) {
-        return new ServiceReference[0];
+        return services.getServices().stream()
+                .filter(it -> asList(ServiceRegistrationImpl.class.cast(it).getClasses()).contains(clazz))
+                // todo: filter
+                .toArray(ServiceReference[]::new);
     }
 
     @Override
