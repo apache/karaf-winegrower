@@ -36,6 +36,8 @@ import org.osgi.framework.BundleException;
 import org.osgi.framework.BundleListener;
 import org.osgi.framework.Filter;
 import org.osgi.framework.FrameworkListener;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceFactory;
 import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceObjects;
@@ -211,7 +213,7 @@ public class BundleContextImpl implements BundleContext {
 
     @Override
     public <S> ServiceObjects<S> getServiceObjects(final ServiceReference<S> reference) {
-        return null;
+        return new ServiceObjectsImpl<>(ServiceReferenceImpl.class.cast(reference));
     }
 
     @Override
@@ -221,7 +223,11 @@ public class BundleContextImpl implements BundleContext {
 
     @Override
     public Filter createFilter(final String filter) {
-        return null;
+        try {
+            return FrameworkUtil.createFilter(filter);
+        } catch (final InvalidSyntaxException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 
     @Override
