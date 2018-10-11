@@ -103,7 +103,7 @@ public @interface WithFramework {
                                                              .flatMap(it -> Stream.of(
                                                                      variabilize(it, context.getTestClass().map(Class::getName).orElse("default")),
                                                                      variabilize(it, "default")))
-                                                             .map(File::new)
+                                                             .flatMap(this::listFiles)
                                                              .filter(File::exists)
                                                              .map(f -> {
                                                                  try {
@@ -125,6 +125,13 @@ public @interface WithFramework {
                                   .orElseGet(Stream::empty))
                                                .toArray(URL[]::new))
                           .orElseGet(() -> new URL[0]);
+        }
+
+        private Stream<File> listFiles(final String it) {
+            return it.endsWith("*.jar") ?
+                Stream.of(ofNullable(new File(it.substring(0, it.length() - "*.jar".length())).listFiles(
+                        (dir, name) -> name.endsWith(".jar"))).orElseGet(() -> new File[0])) :
+                Stream.of(new File(it));
         }
 
         private File createJar(final Entry[] resources, final String name) {
