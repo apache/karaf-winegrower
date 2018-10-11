@@ -25,47 +25,63 @@ import org.apache.karaf.framework.service.OSGiServices;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ContextualFramework implements AutoCloseable {
+public interface ContextualFramework extends AutoCloseable {
+    ContextualFramework start();
+    void stop();
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(ContextualFramework.class);
+    OSGiServices getServices();
 
-    private final OSGiServices services = new OSGiServices();
-    private final BundleRegistry registry = new BundleRegistry();
+    BundleRegistry getRegistry();
 
-    public synchronized ContextualFramework start() {
-        LOGGER.info("Starting Apache Karaf Contextual Framework");
-        new StandaloneScanner()
-                .findOSGiBundles()
-                .stream()
-                .sorted(comparing(b -> b.getJar().getName()))
-                .map(it -> new OSGiBundleLifecycle(it.getManifest(), it.getJar(), services, registry))
-                .peek(OSGiBundleLifecycle::start)
-                .peek(it -> registry.getBundles().put(it.getBundle().getBundleId(), it))
-                .forEach(bundle -> LOGGER.debug("Bundle {}", bundle));
-        return this;
+    @Override
+    void close();
+
+
+    class Impl implements ContextualFramework {
+        private final static Logger LOGGER = LoggerFactory.getLogger(ContextualFramework.class);
+
+        private final OSGiServices services = new OSGiServices();
+        private final BundleRegistry registry = new BundleRegistry();
+
+        @Override
+        public synchronized ContextualFramework start() {
+            LOGGER.info("Starting Apache Karaf Contextual Framework");
+            new StandaloneScanner()
+                    .findOSGiBundles()
+                    .stream()
+                    .sorted(comparing(b -> b.getJar().getName()))
+                    .map(it -> new OSGiBundleLifecycle(it.getManifest(), it.getJar(), services, registry))
+                    .peek(OSGiBundleLifecycle::start)
+                    .peek(it -> registry.getBundles().put(it.getBundle().getBundleId(), it))
+                    .forEach(bundle -> LOGGER.debug("Bundle {}", bundle));
+            return this;
+        }
+
+        @Override
+        public synchronized void stop() {
+            LOGGER.info("Stopping Apache Karaf Contextual Framework");
+            final Map<Long, OSGiBundleLifecycle> bundles = registry.getBundles();
+            bundles.forEach((k, v) -> v.stop());
+            bundles.clear();
+        }
+
+        @Override
+        public OSGiServices getServices() {
+            return services;
+        }
+
+        @Override
+        public BundleRegistry getRegistry() {
+            return registry;
+        }
+
+        @Override // for try with resource syntax
+        public void close() {
+            stop();
+        }
     }
 
-    public synchronized void stop() {
-        LOGGER.info("Stopping Apache Karaf Contextual Framework");
-        final Map<Long, OSGiBundleLifecycle> bundles = registry.getBundles();
-        bundles.forEach((k, v) -> v.stop());
-        bundles.clear();
-    }
-
-    public OSGiServices getServices() {
-        return services;
-    }
-
-    public BundleRegistry getRegistry() {
-        return registry;
-    }
-
-    @Override // for try with resource syntax
-    public void close() {
-        stop();
-    }
-
-    public static void main(final String[] args) {
+    static void main(final String[] args) {
         final CountDownLatch latch = new CountDownLatch(1);
         Runtime.getRuntime().addShutdownHook(new Thread() {
 
@@ -78,7 +94,7 @@ public class ContextualFramework implements AutoCloseable {
                 latch.countDown();
             }
         });
-        try (final ContextualFramework framework = new ContextualFramework().start()) {
+        try (final ContextualFramework framework = new ContextualFramework.Impl().start()) {
             try {
                 latch.await();
             } catch (final InterruptedException e) {

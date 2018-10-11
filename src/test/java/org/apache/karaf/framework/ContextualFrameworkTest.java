@@ -23,15 +23,12 @@ import org.apache.karaf.framework.test.simpleactivator.MyActivator;
 import org.junit.jupiter.api.Test;
 import org.osgi.framework.BundleActivator;
 
-@WithFramework(includeResources = {
-    @WithFramework.Entry(path = "org.apache.karaf.framework.test.simpleactivator"),
-    @WithFramework.Entry(path = "org.apache.karaf.framework.test.simpleservice") })
 class ContextualFrameworkTest {
-  @WithFramework.Service
-  private ContextualFramework framework;
-
   @Test
-  void simpleActivator() throws Exception {
+  @WithFramework(includeResources = {
+          @WithFramework.Entry(path = "org.apache.karaf.framework.test.simpleactivator"),
+          @WithFramework.Entry(path = "org.apache.karaf.framework.test.simpleservice") })
+  void simpleActivator(@WithFramework.Service final ContextualFramework framework) {
     assertEquals(2, framework.getRegistry().getBundles().size());
 
     final BundleActivatorHandler activatorHandler =  framework.getRegistry().getBundles().values().iterator().next().getActivator();
@@ -49,8 +46,10 @@ class ContextualFrameworkTest {
   }
 
   @Test
-  void simpleService() throws Exception {
+  @WithFramework(includeResources = {
+          @WithFramework.Entry(path = "org.apache.karaf.framework.test.simpleactivator"),
+          @WithFramework.Entry(path = "org.apache.karaf.framework.test.simpleservice") })
+  void simpleService(@WithFramework.Service final ContextualFramework framework) {
     assertEquals(1, framework.getServices().getServices().size());
   }
-
 }

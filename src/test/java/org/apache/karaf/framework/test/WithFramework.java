@@ -13,8 +13,8 @@
  */
 package org.apache.karaf.framework.test;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static java.util.Optional.ofNullable;
 
@@ -23,6 +23,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -41,8 +43,8 @@ import java.util.jar.JarOutputStream;
 import java.util.stream.Stream;
 
 import org.apache.karaf.framework.ContextualFramework;
-import org.junit.jupiter.api.extension.AfterAllCallback;
-import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
@@ -50,12 +52,12 @@ import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 
-@Target(TYPE)
+@Target(METHOD)
 @Retention(RUNTIME)
 @ExtendWith(WithFramework.Extension.class)
 public @interface WithFramework {
 
-    @Target(FIELD)
+    @Target(PARAMETER)
     @Retention(RUNTIME)
     @interface Service {
     }
@@ -72,7 +74,7 @@ public @interface WithFramework {
 
     Entry[] includeResources() default {};
 
-    class Extension implements BeforeAllCallback, AfterAllCallback, TestInstancePostProcessor, ParameterResolver {
+    class Extension implements BeforeEachCallback, AfterEachCallback, TestInstancePostProcessor, ParameterResolver {
 
         private static final String CLASSES_BASE = System.getProperty(Extension.class.getName() + ".classesBase",
                 "target/test-classes/");
@@ -82,18 +84,18 @@ public @interface WithFramework {
         private static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create(Extension.class.getName());
 
         @Override
-        public void beforeAll(final ExtensionContext extensionContext) {
+        public void beforeEach(final ExtensionContext extensionContext) {
             final Thread thread = Thread.currentThread();
             final URL[] urls = createUrls(extensionContext);
             final URLClassLoader loader = new URLClassLoader(urls, thread.getContextClassLoader());
             final ExtensionContext.Store store = extensionContext.getStore(NAMESPACE);
             store.put(Context.class, new Context(thread, thread.getContextClassLoader(), loader));
             thread.setContextClassLoader(loader);
-            store.put(ContextualFramework.class, new ContextualFramework().start());
+            store.put(ContextualFramework.class, new ContextualFramework.Impl().start());
         }
 
         @Override
-        public void afterAll(final ExtensionContext extensionContext) {
+        public void afterEach(final ExtensionContext extensionContext) {
             final ExtensionContext.Store store = extensionContext.getStore(NAMESPACE);
             if (store == null) {
                 return;
@@ -109,8 +111,11 @@ public @interface WithFramework {
 
         private URL[] createUrls(final ExtensionContext context) {
             return context
-                    .getElement().map(
-                            e -> e.getAnnotation(WithFramework.class))
+                    .getElement().map(e -> ofNullable(e.getAnnotation(WithFramework.class))
+                            .orElseGet(()-> context.getParent()
+                                                   .flatMap(ExtensionContext::getElement)
+                                                   .map(it -> it.getAnnotation(WithFramework.class))
+                                                   .orElse(null)))
                     .map(config -> Stream
                             .concat(Stream.of(config.dependencies())
                                     .flatMap(it -> Stream.of(
@@ -214,7 +219,17 @@ public @interface WithFramework {
                         f.setAccessible(true);
                     }
                     try {
-                        f.set(testInstance, findInjection(context, f.getType()));
+                        f.set(testInstance, Proxy.newProxyInstance(Thread.currentThread()
+                                                                         .getContextClassLoader(),
+                                new Class<?>[]{f.getType()},
+                                (proxy, method, args) -> {
+                                    try {
+                                        final Object injection = findInjection(context, f.getType());
+                                        return method.invoke(injection, args);
+                                    } catch (final InvocationTargetException ite) {
+                                        throw ite.getTargetException();
+                                    }
+                                }));
                     } catch (final IllegalAccessException e) {
                         throw new IllegalStateException(e);
                     }
