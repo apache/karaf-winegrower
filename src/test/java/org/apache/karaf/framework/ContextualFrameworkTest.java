@@ -46,8 +46,18 @@ class ContextualFrameworkTest {
   }
 
   @Test
-  @WithFramework(includeResources = @Entry(path = "org.apache.karaf.framework.test.simpleservice"))
-  void simpleService(@Service final ContextualFramework framework) {
+  @WithFramework(includeResources = @WithFramework.Entry(path = "org.apache.karaf.framework.test.simpleservice"))
+  void simpleServiceRegistration(@WithFramework.Service final ContextualFramework framework) {
     assertEquals(1, framework.getServices().getServices().size());
   }
+
+  @Test
+  @WithFramework(includeResources = {
+      @WithFramework.Entry(path = "org.apache.karaf.framework.test.simpleservice"),
+      @WithFramework.Entry(path = "org.apache.karaf.framework.test.simpleconsumer")
+  })
+  void simpleService(@WithFramework.Service final ContextualFramework framework) {
+    assertEquals(1, framework.getServices().getServices().size());
+  }
+
 }
