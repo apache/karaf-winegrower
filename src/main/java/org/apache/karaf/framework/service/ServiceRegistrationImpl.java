@@ -13,6 +13,7 @@
  */
 package org.apache.karaf.framework.service;
 
+import java.util.Arrays;
 import java.util.Dictionary;
 import java.util.function.Consumer;
 
@@ -52,5 +53,10 @@ public class ServiceRegistrationImpl<T> implements ServiceRegistration<T> {
     @Override
     public void unregister() {
         onUnregister.accept(this);
+    }
+
+    @Override
+    public String toString() {
+        return "ServiceRegistrationImpl{classes=" + Arrays.toString(classes) + ", impl=" + reference + "}";
     }
 }

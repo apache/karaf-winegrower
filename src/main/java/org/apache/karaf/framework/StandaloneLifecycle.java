@@ -13,6 +13,8 @@
  */
 package org.apache.karaf.framework;
 
+import static java.util.Comparator.comparing;
+
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
@@ -35,6 +37,7 @@ public class StandaloneLifecycle implements AutoCloseable {
         new StandaloneScanner()
                 .findOSGiBundles()
                 .stream()
+                .sorted(comparing(b -> b.getJar().getName()))
                 .map(it -> new OSGiBundleLifecycle(it.getManifest(), it.getJar(), services, registry))
                 .peek(OSGiBundleLifecycle::start)
                 .peek(it -> registry.getBundles().put(it.getBundle().getBundleId(), it))

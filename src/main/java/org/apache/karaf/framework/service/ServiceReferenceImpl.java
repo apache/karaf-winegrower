@@ -99,4 +99,9 @@ public class ServiceReferenceImpl<T> implements ServiceReference<T> {
         }
         return false;
     }
+
+    @Override
+    public String toString() {
+        return "ServiceReferenceImpl{reference=" + reference + ", referenceInstance=" + referenceInstance + '}';
+    }
 }

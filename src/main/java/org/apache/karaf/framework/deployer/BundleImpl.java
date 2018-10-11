@@ -35,11 +35,13 @@ import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import java.util.regex.Pattern;
 import java.util.stream.Collector;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
+import org.osgi.framework.BundleListener;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.Version;
@@ -79,12 +81,20 @@ public class BundleImpl implements Bundle {
         return loader;
     }
 
+    private Stream<BundleListener> allBundleListeners() {
+        return context.getRegistry().getBundles().values().stream()
+                      .flatMap(it -> BundleContextImpl.class.cast(it.getBundle().getBundleContext()).getBundleListeners().stream());
+    }
+
     void onStart() {
-        context.getBundleListeners().forEach(listener -> listener.bundleChanged(new BundleEvent(BundleEvent.STARTED, this)));
+        final BundleEvent event = new BundleEvent(BundleEvent.STARTED, this);
+        allBundleListeners()
+               .forEach(listener -> listener.bundleChanged(event));
     }
 
     void onStop() {
-        context.getBundleListeners().forEach(listener -> listener.bundleChanged(new BundleEvent(BundleEvent.STOPPED, this)));
+        final BundleEvent event = new BundleEvent(BundleEvent.STOPPED, this);
+        allBundleListeners().forEach(listener -> listener.bundleChanged(event));
     }
 
     @Override

@@ -58,6 +58,10 @@ public class BundleContextImpl implements BundleContext {
         this.registry = registry;
     }
 
+    public BundleRegistry getRegistry() {
+        return registry;
+    }
+
     public Collection<BundleListener> getBundleListeners() {
         return bundleListeners;
     }
