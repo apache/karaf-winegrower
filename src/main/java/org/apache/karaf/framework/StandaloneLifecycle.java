@@ -13,9 +13,6 @@
  */
 package org.apache.karaf.framework;
 
-import static java.util.function.Function.identity;
-import static java.util.stream.Collectors.toMap;
-
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
@@ -23,13 +20,18 @@ import org.apache.karaf.framework.deployer.OSGiBundleLifecycle;
 import org.apache.karaf.framework.scanner.StandaloneScanner;
 import org.apache.karaf.framework.service.BundleRegistry;
 import org.apache.karaf.framework.service.OSGiServices;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class StandaloneLifecycle implements AutoCloseable {
 
-    private final OSGiServices services = new OSGiServices();
-    private final BundleRegistry registry = new BundleRegistry();
+    private final static Logger LOGGER = LoggerFactory.getLogger(StandaloneLifecycle.class);
+
+    public final OSGiServices services = new OSGiServices();
+    public final BundleRegistry registry = new BundleRegistry();
 
     public synchronized StandaloneLifecycle start() {
+        LOGGER.info("Starting Apache Karaf Single Framework");
         new StandaloneScanner()
                 .findOSGiBundles()
                 .stream()
@@ -43,6 +45,7 @@ public class StandaloneLifecycle implements AutoCloseable {
     }
 
     public synchronized void stop() {
+        LOGGER.info("Stopping Apache Karaf Single Framework");
         final Map<Long, OSGiBundleLifecycle> bundles = registry.getBundles();
         bundles.forEach((k, v) -> v.stop());
         bundles.clear();
