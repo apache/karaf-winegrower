@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class MyActivator implements BundleActivator {
 
     private ServiceTracker tracker;
-    private boolean registered = false;
+    public boolean registered = false;
 
     @Override
     public void start(BundleContext context) {

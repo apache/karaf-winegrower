@@ -58,6 +58,14 @@ class ContextualFrameworkTest {
   })
   void simpleService(@WithFramework.Service final ContextualFramework framework) {
     assertEquals(1, framework.getServices().getServices().size());
+
+    final BundleActivatorHandler activatorHandler = framework.getRegistry().getBundles().values().iterator().next().getActivator();
+    assertNotNull(activatorHandler);
+    final BundleActivator activator = activatorHandler.getActivator();
+    assertNotNull(activator);
+    assertTrue(org.apache.karaf.framework.test.simpleconsumer.MyActivator.class.isInstance(activator));
+    final org.apache.karaf.framework.test.simpleconsumer.MyActivator myActivator = org.apache.karaf.framework.test.simpleconsumer.MyActivator.class.cast(activator);
+    assertTrue(myActivator.registered);
   }
 
 }
