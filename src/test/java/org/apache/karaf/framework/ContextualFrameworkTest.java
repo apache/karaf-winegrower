@@ -19,14 +19,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.apache.karaf.framework.service.BundleActivatorHandler;
 import org.apache.karaf.framework.test.WithFramework;
+import org.apache.karaf.framework.test.WithFramework.Entry;
+import org.apache.karaf.framework.test.WithFramework.Service;
 import org.apache.karaf.framework.test.simpleactivator.MyActivator;
 import org.junit.jupiter.api.Test;
 import org.osgi.framework.BundleActivator;
 
 class ContextualFrameworkTest {
   @Test
-  @WithFramework(includeResources = @WithFramework.Entry(path = "org.apache.karaf.framework.test.simpleactivator"))
-  void simpleActivator(@WithFramework.Service final ContextualFramework framework) {
+  @WithFramework(includeResources = @Entry(path = "org.apache.karaf.framework.test.simpleactivator"))
+  void simpleActivator(@Service final ContextualFramework framework) {
     assertEquals(1, framework.getRegistry().getBundles().size());
 
     final BundleActivatorHandler activatorHandler =  framework.getRegistry().getBundles().values().iterator().next().getActivator();
@@ -44,8 +46,8 @@ class ContextualFrameworkTest {
   }
 
   @Test
-  @WithFramework(includeResources = @WithFramework.Entry(path = "org.apache.karaf.framework.test.simpleservice"))
-  void simpleService(@WithFramework.Service final ContextualFramework framework) {
+  @WithFramework(includeResources = @Entry(path = "org.apache.karaf.framework.test.simpleservice"))
+  void simpleService(@Service final ContextualFramework framework) {
     assertEquals(1, framework.getServices().getServices().size());
   }
 }
