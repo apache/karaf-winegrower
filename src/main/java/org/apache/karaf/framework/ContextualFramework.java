@@ -29,11 +29,11 @@ public class ContextualFramework implements AutoCloseable {
 
     private final static Logger LOGGER = LoggerFactory.getLogger(ContextualFramework.class);
 
-    public final OSGiServices services = new OSGiServices();
-    public final BundleRegistry registry = new BundleRegistry();
+    private final OSGiServices services = new OSGiServices();
+    private final BundleRegistry registry = new BundleRegistry();
 
     public synchronized ContextualFramework start() {
-        LOGGER.info("Starting Apache Karaf Single Framework");
+        LOGGER.info("Starting Apache Karaf Contextual Framework");
         new StandaloneScanner()
                 .findOSGiBundles()
                 .stream()
@@ -41,17 +41,23 @@ public class ContextualFramework implements AutoCloseable {
                 .map(it -> new OSGiBundleLifecycle(it.getManifest(), it.getJar(), services, registry))
                 .peek(OSGiBundleLifecycle::start)
                 .peek(it -> registry.getBundles().put(it.getBundle().getBundleId(), it))
-                .forEach(bundle -> {
-                    // todo: log
-                });
+                .forEach(bundle -> LOGGER.debug("Bundle {}", bundle));
         return this;
     }
 
     public synchronized void stop() {
-        LOGGER.info("Stopping Apache Karaf Single Framework");
+        LOGGER.info("Stopping Apache Karaf Contextual Framework");
         final Map<Long, OSGiBundleLifecycle> bundles = registry.getBundles();
         bundles.forEach((k, v) -> v.stop());
         bundles.clear();
+    }
+
+    public OSGiServices getServices() {
+        return services;
+    }
+
+    public BundleRegistry getRegistry() {
+        return registry;
     }
 
     @Override // for try with resource syntax

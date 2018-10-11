@@ -27,6 +27,14 @@ import java.lang.annotation.Target;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.stream.Stream;
 
@@ -49,8 +57,14 @@ public @interface WithFramework {
     @interface Service {
     }
 
+    @Retention(RUNTIME)
+    @interface Entry {
+        String path();
+        String prefix() default "";
+    }
+
     String[] dependencies() default "target/${test}/*.jar";
-    String[] includeResources() default "";
+    Entry[] includeResources() default {};
 
     class Extension implements BeforeAllCallback, AfterAllCallback, TestInstancePostProcessor, ParameterResolver {
 
@@ -59,9 +73,11 @@ public @interface WithFramework {
         @Override
         public void beforeAll(final ExtensionContext extensionContext) {
             final Thread thread = Thread.currentThread();
-            final URLClassLoader loader = new URLClassLoader(createUrls(extensionContext), thread.getContextClassLoader());
+            final URL[] urls = createUrls(extensionContext);
+            final URLClassLoader loader = new URLClassLoader(urls, thread.getContextClassLoader());
             final ExtensionContext.Store store = extensionContext.getStore(NAMESPACE);
-            store.put(Context.class, new Context(thread, loader.getParent(), loader));
+            store.put(Context.class, new Context(thread, thread.getContextClassLoader(), loader));
+            thread.setContextClassLoader(loader);
             store.put(ContextualFramework.class, new ContextualFramework().start());
         }
 
@@ -72,42 +88,84 @@ public @interface WithFramework {
                 return;
             }
             ofNullable(store.get(Context.class, Context.class)).ifPresent(Context::close);
+            ofNullable(store.get(FileToDelete.class, FileToDelete.class)).ifPresent(f -> {
+                if (f.file.exists() && !f.file.delete()) {
+                    f.file.deleteOnExit();
+                }
+            });
             ofNullable(store.get(ContextualFramework.class, ContextualFramework.class)).ifPresent(ContextualFramework::stop);
         }
 
         private URL[] createUrls(final ExtensionContext context) {
             return context.getElement()
-                   .map(e -> e.getAnnotation(WithFramework.class))
-                   .map(config -> Stream.concat(Stream.of(config.dependencies())
-                          .flatMap(it -> Stream.of(
-                                  variabilize(it, context.getTestClass().map(Class::getName).orElse("default")),
-                                  variabilize(it, "default")))
-                          .map(File::new)
-                          .filter(File::exists)
-                          .map(f -> {
-                              try {
-                                  return f.toURI().toURL();
-                              } catch (final MalformedURLException e) {
-                                  throw new IllegalArgumentException(e);
-                              }
-                          }), of(config.includeResources())
-                               .filter(it -> it.length > 0)
-                               .map(resources -> {
-                                   try {
-                                       return Stream.of(createJar(resources).toURI().toURL());
-                                   } catch (final MalformedURLException e) {
-                                       throw new IllegalArgumentException(e);
-                                   }
-                               })
-                               .orElseGet(Stream::empty))
-                          .toArray(URL[]::new))
-                   .orElseGet(() -> new URL[0]);
+                          .map(e -> e.getAnnotation(WithFramework.class))
+                          .map(config -> Stream.concat(Stream.of(config.dependencies())
+                                                             .flatMap(it -> Stream.of(
+                                                                     variabilize(it, context.getTestClass().map(Class::getName).orElse("default")),
+                                                                     variabilize(it, "default")))
+                                                             .map(File::new)
+                                                             .filter(File::exists)
+                                                             .map(f -> {
+                                                                 try {
+                                                                     return f.toURI().toURL();
+                                                                 } catch (final MalformedURLException e) {
+                                                                     throw new IllegalArgumentException(e);
+                                                                 }
+                                                             }), of(config.includeResources())
+                                  .filter(it -> it.length > 0)
+                                  .map(resources -> {
+                                      try {
+                                          final File jar = createJar(resources, context.getUniqueId());
+                                          context.getStore(NAMESPACE).put(FileToDelete.class, new FileToDelete(jar));
+                                          return Stream.of(jar.toURI().toURL());
+                                      } catch (final MalformedURLException e) {
+                                          throw new IllegalArgumentException(e);
+                                      }
+                                  })
+                                  .orElseGet(Stream::empty))
+                                               .toArray(URL[]::new))
+                          .orElseGet(() -> new URL[0]);
         }
 
-        private File createJar(final String[] resources) {
-            final File out = new File("target/test");
+        private File createJar(final Entry[] resources, final String name) {
+            final File out = new File("target/waf/" + name.replace(":", "_").replace("[", "").replace("]", "") + ".jar"); // todo: config
+            out.getParentFile().mkdirs();
             try (final JarOutputStream jarOutputStream = new JarOutputStream(new FileOutputStream(out))) {
-                
+                final Set<String> createdFolders = new HashSet<>();
+                Stream.of(resources).forEach(it -> {
+                    try {
+                        final File classesRoot = new File("target/test-classes/");
+                        final Path classesPath = classesRoot.toPath();
+                        final Path root = new File(classesRoot, it.path().replace(".", "/")).toPath();
+                        Files.walkFileTree(root,
+                                new SimpleFileVisitor<Path>() {
+                                    @Override
+                                    public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs)
+                                            throws IOException {
+                                        String relative = classesPath.relativize(file).toString().substring(it.prefix().length());
+                                        if (relative.endsWith("META-INF/MANIFEST.MF")) { // simpler config
+                                            relative = "META-INF/MANIFEST.MF";
+                                        }
+                                        final String[] segments = relative.split("/");
+                                        final StringBuilder builder = new StringBuilder(relative.length());
+                                        for (int i = 0; i < segments.length - 1; i++) {
+                                            builder.append(segments[i]).append('/');
+                                            final String folder = builder.toString();
+                                            if (createdFolders.add(folder)) {
+                                                jarOutputStream.putNextEntry(new JarEntry(folder));
+                                                jarOutputStream.closeEntry();
+                                            }
+                                        }
+                                        jarOutputStream.putNextEntry(new JarEntry(relative));
+                                        Files.copy(file, jarOutputStream);
+                                        jarOutputStream.closeEntry();
+                                        return super.visitFile(file, attrs);
+                                    }
+                                });
+                    } catch (final IOException e) {
+                        throw new IllegalStateException(e);
+                    }
+                });
             } catch (final IOException e) {
                 throw new IllegalStateException(e);
             }
@@ -180,6 +238,14 @@ public @interface WithFramework {
                 } catch (final IOException e) {
                     throw new IllegalStateException(e);
                 }
+            }
+        }
+
+        private static class FileToDelete {
+            private final File file;
+
+            private FileToDelete(final File file) {
+                this.file = file;
             }
         }
     }

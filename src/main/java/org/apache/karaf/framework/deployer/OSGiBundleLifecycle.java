@@ -37,6 +37,10 @@ public class OSGiBundleLifecycle {
         this.bundle = new BundleImpl(manifest, file, context);
     }
 
+    public BundleActivatorHandler getActivator() {
+        return activator;
+    }
+
     public BundleImpl getBundle() {
         return bundle;
     }

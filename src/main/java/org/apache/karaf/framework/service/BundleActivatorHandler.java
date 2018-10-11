@@ -29,6 +29,10 @@ public class BundleActivatorHandler implements ServiceLifecycle {
         this.context = context;
     }
 
+    public BundleActivator getActivator() {
+        return activator;
+    }
+
     @Override
     public void start() {
         if (LOGGER.isDebugEnabled()) {

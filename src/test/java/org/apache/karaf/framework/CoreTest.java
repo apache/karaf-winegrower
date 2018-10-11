@@ -13,9 +13,12 @@
  */
 package org.apache.karaf.framework;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.apache.karaf.framework.deployer.OSGiBundleLifecycle;
 import org.apache.karaf.framework.test.WithFramework;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.osgi.framework.ServiceRegistration;
 
@@ -26,23 +29,23 @@ class CoreTest {
   private ContextualFramework framework;
 
   @Test
-  void testBundles() throws Exception {
-    Assertions.assertEquals(5, framework.registry.getBundles().keySet().size());
+  void testBundles() {
+    assertEquals(5, framework.getRegistry().getBundles().keySet().size());
 
-    OSGiBundleLifecycle bundle =  framework.registry.getBundles().get(1L);
-    Assertions.assertEquals(1, bundle.getBundle().getBundleId());
-    Assertions.assertEquals("org.opentest4j", bundle.getBundle().getSymbolicName());
-    Assertions.assertTrue(bundle.getBundle().getLocation().contains("opentest4j-1.1.1.jar"));
-    Assertions.assertNotNull(bundle.getBundle().getBundleContext());
+    final OSGiBundleLifecycle bundle =  framework.getRegistry().getBundles().get(1L);
+    assertEquals(1, bundle.getBundle().getBundleId());
+    assertEquals("org.opentest4j", bundle.getBundle().getSymbolicName());
+    assertTrue(bundle.getBundle().getLocation().contains("opentest4j-1.1.1.jar"));
+    assertNotNull(bundle.getBundle().getBundleContext());
   }
 
   @Test
-  public void testServices() throws Exception {
-    Assertions.assertEquals(8, framework.services.getServices().size());
+  void testServices() {
+    assertEquals(8, framework.getServices().getServices().size());
 
-    ServiceRegistration registration = framework.services.getServices().iterator().next();
-    Assertions.assertNotNull(registration);
-    Assertions.assertNotNull(registration.getReference());
+    ServiceRegistration registration = framework.getServices().getServices().iterator().next();
+    assertNotNull(registration);
+    assertNotNull(registration.getReference());
   }
 
 }

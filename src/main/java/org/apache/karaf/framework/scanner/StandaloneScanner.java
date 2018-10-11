@@ -34,7 +34,8 @@ public class StandaloneScanner {
     private static final Collection<String> KNOWN_EXCLUSIONS = asList( // todo: make it configurable
             "slf4j-",
             "xbean-",
-            "org.osgi."
+            "org.osgi.",
+            "opentest4j-"
     );
 
     public Collection<BundleDefinition> findOSGiBundles() {

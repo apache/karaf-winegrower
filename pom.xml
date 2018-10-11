@@ -43,34 +43,10 @@
     </dependency>
 
     <!-- for tests, dont keep it here -->
-    <dependency> <!-- -Dorg.slf4j.simpleLogger.defaultLogLevel=DEBUG -Dorg.slf4j.simpleLogger.logFile=System.out -->
+    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-simple</artifactId>
       <version>${slf4j.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.karaf.decanter</groupId>
-      <artifactId>org.apache.karaf.decanter.api</artifactId>
-      <version>2.1.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.karaf.decanter.appender</groupId>
-      <artifactId>org.apache.karaf.decanter.appender.log</artifactId>
-      <version>2.1.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.felix</groupId>
-      <artifactId>org.apache.felix.eventadmin</artifactId>
-      <version>1.5.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.felix</groupId>
-      <artifactId>org.apache.felix.scr</artifactId>
-      <version>2.1.8</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -106,6 +82,12 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <version>2.22.0</version>
+        <configuration>
+          <systemPropertyVariables>
+            <org.slf4j.simpleLogger.defaultLogLevel>DEBUG</org.slf4j.simpleLogger.defaultLogLevel>
+            <org.slf4j.simpleLogger.logFile>System.out</org.slf4j.simpleLogger.logFile>
+          </systemPropertyVariables>
+        </configuration>
       </plugin>
     </plugins>
   </build>
