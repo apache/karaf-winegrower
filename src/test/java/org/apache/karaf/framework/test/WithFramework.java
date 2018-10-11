@@ -68,6 +68,8 @@ public @interface WithFramework {
 
     class Extension implements BeforeAllCallback, AfterAllCallback, TestInstancePostProcessor, ParameterResolver {
 
+        private static final String CLASSES_BASE = System.getProperty(Extension.class.getName() + ".classesBase", "target/test-classes/");
+        private static final String WORK_DIR = System.getProperty(Extension.class.getName() + ".workdir", "target/waf");
         private static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create(Extension.class.getName());
 
         @Override
@@ -135,13 +137,13 @@ public @interface WithFramework {
         }
 
         private File createJar(final Entry[] resources, final String name) {
-            final File out = new File("target/waf/" + name.replace(":", "_").replace("[", "").replace("]", "") + ".jar"); // todo: config
+            final File out = new File(WORK_DIR, name.replace(":", "_").replace("[", "").replace("]", "") + ".jar"); // todo: config
             out.getParentFile().mkdirs();
             try (final JarOutputStream jarOutputStream = new JarOutputStream(new FileOutputStream(out))) {
                 final Set<String> createdFolders = new HashSet<>();
                 Stream.of(resources).forEach(it -> {
                     try {
-                        final File classesRoot = new File("target/test-classes/");
+                        final File classesRoot = new File(CLASSES_BASE);
                         final Path classesPath = classesRoot.toPath();
                         final Path root = new File(classesRoot, it.path().replace(".", "/")).toPath();
                         Files.walkFileTree(root,
