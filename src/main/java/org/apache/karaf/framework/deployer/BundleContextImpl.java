@@ -112,7 +112,7 @@ public class BundleContextImpl implements BundleContext {
 
     @Override
     public void addServiceListener(final ServiceListener listener, final String filter) {
-        services.addListener(listener, filter);
+        services.addListener(listener, filter == null ? null : createFilter(filter));
     }
 
     @Override

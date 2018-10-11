@@ -18,6 +18,7 @@ import java.util.Collection;
 import java.util.Dictionary;
 
 import org.osgi.framework.Bundle;
+import org.osgi.framework.Filter;
 import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceRegistration;
 
@@ -26,7 +27,7 @@ public class OSGiServices {
     private final Collection<ServiceListenerDefinition> serviceListeners = new ArrayList<>();
     private final Collection<ServiceRegistration<?>> services = new ArrayList<>();
 
-    public synchronized void addListener(final ServiceListener listener, final String filter) {
+    public synchronized void addListener(final ServiceListener listener, final Filter filter) {
         serviceListeners.add(new ServiceListenerDefinition(listener, filter));
     }
 
@@ -53,9 +54,9 @@ public class OSGiServices {
 
     private static class ServiceListenerDefinition {
         private final ServiceListener listener;
-        private final String filter;
+        private final Filter filter;
 
-        private ServiceListenerDefinition(final ServiceListener listener, final String filter) {
+        private ServiceListenerDefinition(final ServiceListener listener, final Filter filter) {
             this.listener = listener;
             this.filter = filter;
         }
