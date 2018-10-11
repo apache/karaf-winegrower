@@ -39,9 +39,11 @@ import java.util.zip.ZipEntry;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleEvent;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.Version;
+import org.osgi.framework.wiring.BundleWiring;
 
 public class BundleImpl implements Bundle {
     private static final AtomicLong ID_GENERATOR = new AtomicLong(1);
@@ -49,12 +51,12 @@ public class BundleImpl implements Bundle {
     private final File file;
     private final ClassLoader loader;
     private final long id;
-    private final BundleContext context;
+    private final BundleContextImpl context;
     private final Version version;
     private final String symbolicName;
     private final Dictionary<String, String> headers;
 
-    BundleImpl(final Manifest manifest, final File file, final BundleContext context) {
+    BundleImpl(final Manifest manifest, final File file, final BundleContextImpl context) {
         this.file = file;
         this.context = context;
         this.id = ID_GENERATOR.getAndIncrement();
@@ -71,6 +73,18 @@ public class BundleImpl implements Bundle {
                         t1.putAll(t2);
                         return t1;
                     }));
+    }
+
+    ClassLoader getLoader() {
+        return loader;
+    }
+
+    void onStart() {
+        context.getBundleListeners().forEach(listener -> listener.bundleChanged(new BundleEvent(BundleEvent.STARTED, this)));
+    }
+
+    void onStop() {
+        context.getBundleListeners().forEach(listener -> listener.bundleChanged(new BundleEvent(BundleEvent.STOPPED, this)));
     }
 
     @Override
@@ -130,7 +144,9 @@ public class BundleImpl implements Bundle {
 
     @Override
     public ServiceReference<?>[] getRegisteredServices() {
-        return new ServiceReference[0];
+        return context.getServices().getServices().stream()
+                .filter(it -> it.getReference().getBundle() == this)
+                .toArray(ServiceReference[]::new);
     }
 
     @Override
@@ -241,6 +257,9 @@ public class BundleImpl implements Bundle {
 
     @Override
     public <A> A adapt(final Class<A> type) {
+        if (BundleWiring.class == type) {
+            return type.cast(new BundleWiringImpl(this));
+        }
         return null;
     }
 

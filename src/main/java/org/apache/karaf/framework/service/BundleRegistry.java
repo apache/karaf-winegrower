@@ -17,7 +17,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.karaf.framework.deployer.OSGiBundleLifecycle;
-import org.osgi.framework.Bundle;
 
 public class BundleRegistry {
     private final Map<Long, OSGiBundleLifecycle> bundles = new HashMap<>();

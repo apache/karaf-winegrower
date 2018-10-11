@@ -19,7 +19,6 @@ import java.util.Dictionary;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.ServiceListener;
-import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 
 // holder of all services
@@ -36,58 +35,17 @@ public class OSGiServices {
     }
 
     public synchronized ServiceRegistration<?> registerService(final String[] classes, final Object service,
-                                                               final Dictionary<String, ?> properties) {
-        // TODO: add to services
-        return new ServiceRegistration<Object>() { // todo
-            private volatile Dictionary<String, ?> props = properties;
-
-            @Override
-            public ServiceReference<Object> getReference() {
-                return new ServiceReference<Object>() {
-                    @Override
-                    public Object getProperty(String key) {
-                        return null;
-                    }
-
-                    @Override
-                    public String[] getPropertyKeys() {
-                        return new String[0];
-                    }
-
-                    @Override
-                    public Bundle getBundle() {
-                        return null;
-                    }
-
-                    @Override
-                    public Bundle[] getUsingBundles() {
-                        return new Bundle[0];
-                    }
-
-                    @Override
-                    public boolean isAssignableTo(Bundle bundle, String className) {
-                        return false;
-                    }
-
-                    @Override
-                    public int compareTo(Object reference) {
-                        return 0;
-                    }
-                };
+                                                               final Dictionary<String, ?> properties,
+                                                               final Bundle from) {
+        return new ServiceRegistrationImpl<>(classes, properties, new ServiceReferenceImpl<>(properties, from, service), reg -> {
+            synchronized (OSGiServices.this) {
+                services.remove(reg);
             }
+        });
+    }
 
-            @Override
-            public void setProperties(final Dictionary<String, ?> properties) {
-                this.props = properties;
-            }
-
-            @Override
-            public void unregister() {
-                synchronized (OSGiServices.this) {
-                    services.remove(this);
-                }
-            }
-        };
+    public synchronized Collection<ServiceRegistration<?>> getServices() {
+        return new ArrayList<>(services);
     }
 
     private static class ServiceListenerDefinition {

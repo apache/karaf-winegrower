@@ -20,7 +20,6 @@ import java.util.jar.Manifest;
 import org.apache.karaf.framework.service.BundleActivatorHandler;
 import org.apache.karaf.framework.service.BundleRegistry;
 import org.apache.karaf.framework.service.OSGiServices;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +37,7 @@ public class OSGiBundleLifecycle {
         this.bundle = new BundleImpl(manifest, file, context);
     }
 
-    public Bundle getBundle() {
+    public BundleImpl getBundle() {
         return bundle;
     }
 
@@ -63,6 +62,8 @@ public class OSGiBundleLifecycle {
             }
         }
 
+        bundle.onStart();
+
         return this;
     }
 
@@ -73,5 +74,6 @@ public class OSGiBundleLifecycle {
         if (activator != null) {
             activator.stop();
         }
+        bundle.onStop();
     }
 }

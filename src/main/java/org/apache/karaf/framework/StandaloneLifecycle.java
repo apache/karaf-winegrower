@@ -30,12 +30,15 @@ public class StandaloneLifecycle implements AutoCloseable {
     private final BundleRegistry registry = new BundleRegistry();
 
     public synchronized StandaloneLifecycle start() {
-        registry.getBundles().putAll(new StandaloneScanner()
+        new StandaloneScanner()
                 .findOSGiBundles()
                 .stream()
                 .map(it -> new OSGiBundleLifecycle(it.getManifest(), it.getJar(), services, registry))
                 .peek(OSGiBundleLifecycle::start)
-                .collect(toMap(b -> b.getBundle().getBundleId(), identity())));
+                .peek(it -> registry.getBundles().put(it.getBundle().getBundleId(), it))
+                .forEach(bundle -> {
+                    // todo: log
+                });
         return this;
     }
 

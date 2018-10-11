@@ -13,11 +13,14 @@
  */
 package org.apache.karaf.framework.deployer;
 
+import static java.util.Arrays.asList;
 import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.toList;
 
 import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Dictionary;
 import java.util.function.Supplier;
@@ -25,6 +28,8 @@ import java.util.jar.Manifest;
 
 import org.apache.karaf.framework.service.BundleRegistry;
 import org.apache.karaf.framework.service.OSGiServices;
+import org.apache.karaf.framework.service.ServiceReferenceImpl;
+import org.apache.karaf.framework.service.ServiceRegistrationImpl;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
@@ -51,6 +56,18 @@ public class BundleContextImpl implements BundleContext {
         this.services = services;
         this.bundleSupplier = bundleSupplier;
         this.registry = registry;
+    }
+
+    public Collection<BundleListener> getBundleListeners() {
+        return bundleListeners;
+    }
+
+    public Collection<FrameworkListener> getFrameworkListeners() {
+        return frameworkListeners;
+    }
+
+    OSGiServices getServices() {
+        return services;
     }
 
     Manifest getManifest() {
@@ -124,7 +141,7 @@ public class BundleContextImpl implements BundleContext {
 
     @Override
     public ServiceRegistration<?> registerService(final String[] classes, final Object service, final Dictionary<String, ?> properties) {
-        return services.registerService(classes, service, properties);
+        return services.registerService(classes, service, properties, bundleSupplier.get());
     }
 
     @Override
@@ -139,7 +156,7 @@ public class BundleContextImpl implements BundleContext {
 
     @Override
     public <S> ServiceRegistration<S> registerService(final Class<S> clazz, final ServiceFactory<S> factory, final Dictionary<String, ?> properties) {
-        return registerService(clazz, factory, properties);
+        return (ServiceRegistration<S>) registerService(clazz.getName(), factory, properties);
     }
 
     @Override
@@ -149,32 +166,40 @@ public class BundleContextImpl implements BundleContext {
 
     @Override
     public ServiceReference<?>[] getAllServiceReferences(final String clazz, final String filter) {
-        return new ServiceReference[0];
+        return services.getServices().stream()
+                .map(ServiceRegistrationImpl.class::cast)
+                .filter(it -> it.getClasses() != null && asList(it.getClasses()).contains(clazz))
+                 // todo: filter
+                .map(ServiceRegistration::getReference)
+                .toArray(ServiceReference[]::new);
     }
 
     @Override
     public ServiceReference<?> getServiceReference(final String clazz) {
-        return null;
+        return Arrays.stream(getAllServiceReferences(clazz, null))
+                     .findFirst().orElse(null);
     }
 
     @Override
     public <S> ServiceReference<S> getServiceReference(final Class<S> clazz) {
-        return null;
+        return (ServiceReference<S>) getServiceReference(clazz.getName());
     }
 
     @Override
     public <S> Collection<ServiceReference<S>> getServiceReferences(final Class<S> clazz, final String filter) {
-        return null;
+        return Arrays.stream(getAllServiceReferences(clazz.getName(), filter))
+                .map(it ->(ServiceReference<S>) it)
+                .collect(toList());
     }
 
     @Override
     public <S> S getService(final ServiceReference<S> reference) {
-        return null;
+        return (S) ServiceReferenceImpl.class.cast(reference).getReference();
     }
 
     @Override
     public boolean ungetService(final ServiceReference<?> reference) {
-        return false;
+        return ServiceReferenceImpl.class.cast(reference).unget();
     }
 
     @Override
