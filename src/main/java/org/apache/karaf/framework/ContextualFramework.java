@@ -72,7 +72,7 @@ public class ContextualFramework implements AutoCloseable {
                 latch.countDown();
             }
         });
-        try (final ContextualFramework lifecycle = new ContextualFramework().start()) {
+        try (final ContextualFramework framework = new ContextualFramework().start()) {
             try {
                 latch.await();
             } catch (final InterruptedException e) {
