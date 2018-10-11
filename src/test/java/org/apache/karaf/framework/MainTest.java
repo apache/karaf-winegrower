@@ -14,28 +14,17 @@
 package org.apache.karaf.framework;
 
 import org.apache.karaf.framework.deployer.OSGiBundleLifecycle;
-import org.junit.jupiter.api.AfterAll;
+import org.apache.karaf.framework.test.WithFramework;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-public class MainTest {
-
-  private static StandaloneLifecycle lifecycle;
-
-  @BeforeAll
-  public static void start() throws Exception {
-    lifecycle = new StandaloneLifecycle();
-    lifecycle.start();
-  }
-
-  @AfterAll
-  public static void stop() throws Exception {
-    lifecycle.stop();
-  }
+@WithFramework
+class MainTest {
+  @WithFramework.Service
+  private StandaloneLifecycle lifecycle;
 
   @Test
-  public void testWithDecanter() throws Exception {
+  void testWithDecanter() throws Exception {
     Assertions.assertEquals(5, lifecycle.registry.getBundles().keySet().size());
 
     OSGiBundleLifecycle bundle =  lifecycle.registry.getBundles().get(1L);
@@ -44,5 +33,4 @@ public class MainTest {
 
     System.out.println(lifecycle.services.getServices());
   }
-
 }
