@@ -20,29 +20,27 @@ import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;
 import org.osgi.util.tracker.ServiceTrackerCustomizer;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 public class MyActivator implements BundleActivator {
 
-    private ServiceTracker tracker;
-    public boolean registered = false;
+    private ServiceTracker<MyService, MyService> tracker;
+    public volatile boolean registered = false;
 
     @Override
     public void start(BundleContext context) {
-        tracker = new ServiceTracker(context, MyService.class.getName(), new ServiceTrackerCustomizer() {
+        tracker = new ServiceTracker<>(context, MyService.class.getName(), new ServiceTrackerCustomizer<MyService, MyService>() {
             @Override
-            public Object addingService(ServiceReference serviceReference) {
+            public MyService addingService(ServiceReference serviceReference) {
                 registered = true;
                 return null;
             }
 
             @Override
-            public void modifiedService(ServiceReference serviceReference, Object o) {
+            public void modifiedService(ServiceReference serviceReference, MyService o) {
                 // nothing to do
             }
 
             @Override
-            public void removedService(ServiceReference serviceReference, Object o) {
+            public void removedService(ServiceReference serviceReference, MyService o) {
                 registered = false;
             }
         });

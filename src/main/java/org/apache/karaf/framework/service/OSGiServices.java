@@ -16,9 +16,14 @@ package org.apache.karaf.framework.service;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Dictionary;
+import java.util.Hashtable;
+import java.util.Map;
+import java.util.stream.Stream;
 
 import org.osgi.framework.Bundle;
+import org.osgi.framework.Constants;
 import org.osgi.framework.Filter;
+import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceRegistration;
 
@@ -38,14 +43,29 @@ public class OSGiServices {
     public synchronized ServiceRegistration<?> registerService(final String[] classes, final Object service,
                                                                final Dictionary<String, ?> properties,
                                                                final Bundle from) {
+        final Hashtable<String, Object> serviceProperties = new Hashtable<>();
+        if (properties != null) {
+            serviceProperties.putAll(Map.class.cast(properties));
+        }
+        serviceProperties.put(Constants.OBJECTCLASS, classes);
+
         final ServiceRegistrationImpl<Object> registration = new ServiceRegistrationImpl<>(classes,
-                properties, new ServiceReferenceImpl<>(properties, from, service), reg -> {
+                properties, new ServiceReferenceImpl<>(serviceProperties, from, service), reg -> {
+            final ServiceEvent event = new ServiceEvent(ServiceEvent.UNREGISTERING, reg.getReference());
+            getListeners(reg).forEach(listener -> listener.listener.serviceChanged(event));
             synchronized (OSGiServices.this) {
                 services.remove(reg);
             }
         });
         services.add(registration);
+        final ServiceEvent event = new ServiceEvent(ServiceEvent.REGISTERED, registration.getReference());
+        getListeners(registration).forEach(listener -> listener.listener.serviceChanged(event));
         return registration;
+    }
+
+    private Stream<ServiceListenerDefinition> getListeners(final ServiceRegistration<?> reg) {
+        return serviceListeners.stream()
+                .filter(it -> it.filter == null || it.filter.match(reg.getReference()));
     }
 
     public synchronized Collection<ServiceRegistration<?>> getServices() {

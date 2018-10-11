@@ -170,7 +170,8 @@ public class BundleContextImpl implements BundleContext {
         final Filter predicate = filter == null ? null : createFilter(filter);
         return services.getServices().stream()
                 .filter(it -> asList(ServiceRegistrationImpl.class.cast(it).getClasses()).contains(clazz))
-                .filter(it -> predicate != null && predicate.match(it.getReference()))
+                .filter(it -> predicate == null || predicate.match(it.getReference()))
+                .map(it -> ServiceRegistrationImpl.class.cast(it).getReference())
                 .toArray(ServiceReference[]::new);
     }
 

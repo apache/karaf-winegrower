@@ -17,6 +17,7 @@ import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static java.util.Arrays.asList;
+import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
 
 import java.io.File;
@@ -63,6 +64,8 @@ public @interface WithFramework {
 
     @Retention(RUNTIME)
     @interface Entry {
+
+        String jarName() default "";
 
         String path();
 
@@ -161,7 +164,9 @@ public @interface WithFramework {
         }
 
         private File createJar(final Entry entry) {
-            final File out = new File(WORK_DIR, UUID.randomUUID().toString() + ".jar");
+            final File out = new File(
+                    WORK_DIR,
+                    of(entry.jarName()).filter(it -> !it.isEmpty()).orElseGet(() -> UUID.randomUUID().toString()) + ".jar");
             out.getParentFile().mkdirs();
             try (final JarOutputStream jarOutputStream = new JarOutputStream(new FileOutputStream(out))) {
                 final Set<String> createdFolders = new HashSet<>();
