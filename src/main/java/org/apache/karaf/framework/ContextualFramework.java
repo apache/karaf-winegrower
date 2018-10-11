@@ -13,10 +13,13 @@
  */
 package org.apache.karaf.framework;
 
+import static java.util.Arrays.asList;
 import static java.util.Comparator.comparing;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.Predicate;
 
 import org.apache.karaf.framework.deployer.OSGiBundleLifecycle;
 import org.apache.karaf.framework.scanner.StandaloneScanner;
@@ -27,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 public interface ContextualFramework extends AutoCloseable {
     ContextualFramework start();
+
     void stop();
 
     OSGiServices getServices();
@@ -36,6 +40,25 @@ public interface ContextualFramework extends AutoCloseable {
     @Override
     void close();
 
+    class Configuration {
+        private static final Collection<String> DEFAULT_EXCLUSIONS = asList( // todo: make it configurable
+                "slf4j-",
+                "xbean-",
+                "org.osgi.",
+                "opentest4j-"
+        );
+
+        private Predicate<String> jarFilter = it -> DEFAULT_EXCLUSIONS.stream().anyMatch(it::startsWith);
+
+        public void setJarFilter(final Predicate<String> jarFilter) {
+            this.jarFilter = jarFilter;
+        }
+
+        public Predicate<String> getJarFilter() {
+            return jarFilter;
+        }
+    }
+
 
     class Impl implements ContextualFramework {
         private final static Logger LOGGER = LoggerFactory.getLogger(ContextualFramework.class);
@@ -43,10 +66,16 @@ public interface ContextualFramework extends AutoCloseable {
         private final OSGiServices services = new OSGiServices();
         private final BundleRegistry registry = new BundleRegistry();
 
+        private final Configuration configuration;
+
+        public Impl(final Configuration configuration) {
+            this.configuration = configuration;
+        }
+
         @Override
         public synchronized ContextualFramework start() {
             LOGGER.info("Starting Apache Karaf Contextual Framework");
-            new StandaloneScanner()
+            new StandaloneScanner(configuration.getJarFilter())
                     .findOSGiBundles()
                     .stream()
                     .sorted(comparing(b -> b.getJar().getName()))
@@ -94,7 +123,7 @@ public interface ContextualFramework extends AutoCloseable {
                 latch.countDown();
             }
         });
-        try (final ContextualFramework framework = new ContextualFramework.Impl().start()) {
+        try (final ContextualFramework framework = new ContextualFramework.Impl(new Configuration()).start()) {
             try {
                 latch.await();
             } catch (final InterruptedException e) {

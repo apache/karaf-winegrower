@@ -16,6 +16,7 @@ package org.apache.karaf.framework.test;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static java.util.Arrays.asList;
 import static java.util.Optional.ofNullable;
 
 import java.io.File;
@@ -34,6 +35,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.jar.JarEntry;
@@ -67,6 +69,8 @@ public @interface WithFramework {
         String prefix() default "";
     }
 
+    String[] includes() default {};
+
     String[] dependencies() default "target/${test}/*.jar";
 
     Entry[] includeResources() default {};
@@ -82,13 +86,18 @@ public @interface WithFramework {
 
         @Override
         public void beforeEach(final ExtensionContext extensionContext) {
+            final WithFramework config = getConfig(extensionContext).orElseThrow(IllegalArgumentException::new);
+
             final Thread thread = Thread.currentThread();
-            final URL[] urls = createUrls(extensionContext);
+            final URL[] urls = createUrls(config, extensionContext);
             final URLClassLoader loader = new URLClassLoader(urls, thread.getContextClassLoader());
             final ExtensionContext.Store store = extensionContext.getStore(NAMESPACE);
             store.put(Context.class, new Context(thread, thread.getContextClassLoader(), loader));
             thread.setContextClassLoader(loader);
-            store.put(ContextualFramework.class, new ContextualFramework.Impl().start());
+
+            final ContextualFramework.Configuration configuration = new ContextualFramework.Configuration();
+            setConfiguration(configuration, config);
+            store.put(ContextualFramework.class, new ContextualFramework.Impl(configuration).start());
         }
 
         @Override
@@ -106,37 +115,42 @@ public @interface WithFramework {
             ofNullable(store.get(ContextualFramework.class, ContextualFramework.class)).ifPresent(ContextualFramework::stop);
         }
 
-        private URL[] createUrls(final ExtensionContext context) {
+        private void setConfiguration(final ContextualFramework.Configuration configuration, final WithFramework config) {
+            final Collection<String> includes = asList(config.includes());
+            if (!includes.isEmpty()) {
+                configuration.setJarFilter(it -> includes.stream().anyMatch(e -> e.startsWith(it)));
+            }
+        }
+
+        private URL[] createUrls(final WithFramework config, final ExtensionContext context) {
+            return Stream.concat(Stream.of(config.dependencies())
+                    .flatMap(it -> Stream.of(variabilize(it, context.getTestClass().map(Class::getName).orElse("default")),
+                            variabilize(it, "default")))
+                    .flatMap(this::listFiles).filter(File::exists).map(f -> {
+                        try {
+                            return f.toURI().toURL();
+                        } catch (final MalformedURLException e) {
+                            throw new IllegalArgumentException(e);
+                        }
+                    }), Stream.of(config.includeResources()).map(resources -> {
+                        try {
+                            final File jar = createJar(resources);
+                            context.getStore(NAMESPACE).getOrComputeIfAbsent(FilesToDelete.class, ignored -> new FilesToDelete(),
+                                    FilesToDelete.class).files.add(jar);
+                            return jar.toURI().toURL();
+                        } catch (final MalformedURLException e) {
+                            throw new IllegalArgumentException(e);
+                        }
+                    })).toArray(URL[]::new);
+        }
+
+        private Optional<WithFramework> getConfig(ExtensionContext context) {
             return context
                     .getElement().map(e -> ofNullable(e.getAnnotation(WithFramework.class))
                             .orElseGet(()-> context.getParent()
                                                    .flatMap(ExtensionContext::getElement)
                                                    .map(it -> it.getAnnotation(WithFramework.class))
-                                                   .orElse(null)))
-                    .map(config -> Stream
-                            .concat(Stream.of(config.dependencies())
-                                    .flatMap(it -> Stream.of(
-                                            variabilize(it, context.getTestClass().map(Class::getName).orElse("default")),
-                                            variabilize(it, "default")))
-                                    .flatMap(this::listFiles).filter(File::exists).map(f -> {
-                                        try {
-                                            return f.toURI().toURL();
-                                        } catch (final MalformedURLException e) {
-                                            throw new IllegalArgumentException(e);
-                                        }
-                                    }), Stream.of(config.includeResources()).map(resources -> {
-                                        try {
-                                            final File jar = createJar(resources);
-                                            context.getStore(NAMESPACE)
-                                                   .getOrComputeIfAbsent(FilesToDelete.class, ignored -> new FilesToDelete(), FilesToDelete.class)
-                                                   .files.add(jar);
-                                            return jar.toURI().toURL();
-                                        } catch (final MalformedURLException e) {
-                                            throw new IllegalArgumentException(e);
-                                        }
-                                    }))
-                            .toArray(URL[]::new))
-                    .orElseGet(() -> new URL[0]);
+                                                   .orElse(null)));
         }
 
         private Stream<File> listFiles(final String it) {

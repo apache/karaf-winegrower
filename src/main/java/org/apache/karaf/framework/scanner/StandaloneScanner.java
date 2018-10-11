@@ -13,13 +13,13 @@
  */
 package org.apache.karaf.framework.scanner;
 
-import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toList;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.function.Predicate;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
@@ -31,12 +31,12 @@ import org.apache.xbean.finder.util.Files;
 public class StandaloneScanner {
 
     private static final Attributes.Name OSGI_MANIFEST_MARKER = new Attributes.Name("Bundle-Version");
-    private static final Collection<String> KNOWN_EXCLUSIONS = asList( // todo: make it configurable
-            "slf4j-",
-            "xbean-",
-            "org.osgi.",
-            "opentest4j-"
-    );
+
+    private final Predicate<String> filter;
+
+    public StandaloneScanner(final Predicate<String> jarFilter) {
+        this.filter = jarFilter;
+    }
 
     public Collection<BundleDefinition> findOSGiBundles() {
         try {
@@ -45,7 +45,7 @@ public class StandaloneScanner {
                     .getUrls()
                     .stream()
                     .map(Files::toFile)
-                    .filter(this::isNotExcluded)
+                    .filter(this::isIncluded)
                     .map(this::toDefinition)
                     .filter(Objects::nonNull)
                     .collect(toList());
@@ -54,9 +54,8 @@ public class StandaloneScanner {
         }
     }
 
-    private boolean isNotExcluded(final File file) {
-        final String name = file.getName();
-        return KNOWN_EXCLUSIONS.stream().noneMatch(name::startsWith);
+    private boolean isIncluded(final File file) {
+        return !filter.test(file.getName());
     }
 
     private BundleDefinition toDefinition(final File file) {
