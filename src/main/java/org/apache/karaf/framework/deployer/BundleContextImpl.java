@@ -167,18 +167,20 @@ public class BundleContextImpl implements BundleContext {
 
     @Override
     public ServiceReference<?>[] getServiceReferences(final String clazz, final String filter) {
+        final Filter predicate = createFilter(filter);
         return services.getServices().stream()
                 .filter(it -> asList(ServiceRegistrationImpl.class.cast(it).getClasses()).contains(clazz))
-                // todo: filter
+                .filter(it -> predicate.match(it.getReference()))
                 .toArray(ServiceReference[]::new);
     }
 
     @Override
     public ServiceReference<?>[] getAllServiceReferences(final String clazz, final String filter) {
+        final Filter predicate = createFilter(filter);
         return services.getServices().stream()
                 .map(ServiceRegistrationImpl.class::cast)
                 .filter(it -> it.getClasses() != null && asList(it.getClasses()).contains(clazz))
-                 // todo: filter
+                .filter(it -> predicate.match(it.getReference()))
                 .map(ServiceRegistration::getReference)
                 .toArray(ServiceReference[]::new);
     }
@@ -196,8 +198,10 @@ public class BundleContextImpl implements BundleContext {
 
     @Override
     public <S> Collection<ServiceReference<S>> getServiceReferences(final Class<S> clazz, final String filter) {
+        final Filter predicate = createFilter(filter);
         return Arrays.stream(getAllServiceReferences(clazz.getName(), filter))
                 .map(it ->(ServiceReference<S>) it)
+                .filter(predicate::match)
                 .collect(toList());
     }
 
