@@ -17,6 +17,7 @@ import static java.util.Optional.ofNullable;
 
 import java.io.File;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Dictionary;
 import java.util.function.Supplier;
@@ -30,7 +31,6 @@ import org.osgi.framework.BundleException;
 import org.osgi.framework.BundleListener;
 import org.osgi.framework.Filter;
 import org.osgi.framework.FrameworkListener;
-import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceFactory;
 import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceObjects;
@@ -42,6 +42,8 @@ public class BundleContextImpl implements BundleContext {
     private final OSGiServices services;
     private final Supplier<Bundle> bundleSupplier;
     private final BundleRegistry registry;
+    private final Collection<BundleListener> bundleListeners = new ArrayList<>();
+    private final Collection<FrameworkListener> frameworkListeners = new ArrayList<>();
 
     BundleContextImpl(final Manifest manifest, final OSGiServices services, final Supplier<Bundle> bundleSupplier,
                       final BundleRegistry registry) {
@@ -51,7 +53,7 @@ public class BundleContextImpl implements BundleContext {
         this.registry = registry;
     }
 
-    public Manifest getManifest() {
+    Manifest getManifest() {
         return manifest;
     }
 
@@ -102,51 +104,51 @@ public class BundleContextImpl implements BundleContext {
 
     @Override
     public void addBundleListener(final BundleListener listener) {
-
+        bundleListeners.add(listener);
     }
 
     @Override
     public void removeBundleListener(final BundleListener listener) {
-
+        bundleListeners.remove(listener);
     }
 
     @Override
     public void addFrameworkListener(final FrameworkListener listener) {
-
+        frameworkListeners.add(listener);
     }
 
     @Override
     public void removeFrameworkListener(final FrameworkListener listener) {
-
+        frameworkListeners.remove(listener);
     }
 
     @Override
-    public ServiceRegistration<?> registerService(final String[] clazzes, final Object service, final Dictionary<String, ?> properties) {
-        return null;
+    public ServiceRegistration<?> registerService(final String[] classes, final Object service, final Dictionary<String, ?> properties) {
+        return services.registerService(classes, service, properties);
     }
 
     @Override
     public ServiceRegistration<?> registerService(final String clazz, final Object service, final Dictionary<String, ?> properties) {
-        return null;
+        return registerService(new String[]{clazz}, service, properties);
     }
 
     @Override
     public <S> ServiceRegistration<S> registerService(final Class<S> clazz, final S service, final Dictionary<String, ?> properties) {
-        return null;
+        return (ServiceRegistration<S>) registerService(clazz.getName(), service, properties);
     }
 
     @Override
     public <S> ServiceRegistration<S> registerService(final Class<S> clazz, final ServiceFactory<S> factory, final Dictionary<String, ?> properties) {
-        return null;
+        return registerService(clazz, factory, properties);
     }
 
     @Override
-    public ServiceReference<?>[] getServiceReferences(final String clazz, final String filter) throws InvalidSyntaxException {
+    public ServiceReference<?>[] getServiceReferences(final String clazz, final String filter) {
         return new ServiceReference[0];
     }
 
     @Override
-    public ServiceReference<?>[] getAllServiceReferences(final String clazz, final String filter) throws InvalidSyntaxException {
+    public ServiceReference<?>[] getAllServiceReferences(final String clazz, final String filter) {
         return new ServiceReference[0];
     }
 
@@ -161,8 +163,7 @@ public class BundleContextImpl implements BundleContext {
     }
 
     @Override
-    public <S> Collection<ServiceReference<S>> getServiceReferences(final Class<S> clazz, final String filter)
-            throws InvalidSyntaxException {
+    public <S> Collection<ServiceReference<S>> getServiceReferences(final Class<S> clazz, final String filter) {
         return null;
     }
 
@@ -187,7 +188,7 @@ public class BundleContextImpl implements BundleContext {
     }
 
     @Override
-    public Filter createFilter(final String filter) throws InvalidSyntaxException {
+    public Filter createFilter(final String filter) {
         return null;
     }
 

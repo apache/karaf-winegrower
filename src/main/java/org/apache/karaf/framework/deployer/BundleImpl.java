@@ -230,7 +230,7 @@ public class BundleImpl implements Bundle {
     }
 
     @Override
-    public Map<X509Certificate, List<X509Certificate>> getSignerCertificates(int signersType) {
+    public Map<X509Certificate, List<X509Certificate>> getSignerCertificates(final int signersType) {
         return null;
     }
 

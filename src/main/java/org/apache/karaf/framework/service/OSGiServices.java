@@ -15,12 +15,17 @@ package org.apache.karaf.framework.service;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Dictionary;
 
+import org.osgi.framework.Bundle;
 import org.osgi.framework.ServiceListener;
+import org.osgi.framework.ServiceReference;
+import org.osgi.framework.ServiceRegistration;
 
 // holder of all services
 public class OSGiServices {
     private final Collection<ServiceListenerDefinition> serviceListeners = new ArrayList<>();
+    private final Collection<ServiceRegistration<?>> services = new ArrayList<>();
 
     public synchronized void addListener(final ServiceListener listener, final String filter) {
         serviceListeners.add(new ServiceListenerDefinition(listener, filter));
@@ -28,6 +33,61 @@ public class OSGiServices {
 
     public synchronized void removeListener(final ServiceListener listener) {
         serviceListeners.removeIf(d -> d.listener == listener);
+    }
+
+    public synchronized ServiceRegistration<?> registerService(final String[] classes, final Object service,
+                                                               final Dictionary<String, ?> properties) {
+        // TODO: add to services
+        return new ServiceRegistration<Object>() { // todo
+            private volatile Dictionary<String, ?> props = properties;
+
+            @Override
+            public ServiceReference<Object> getReference() {
+                return new ServiceReference<Object>() {
+                    @Override
+                    public Object getProperty(String key) {
+                        return null;
+                    }
+
+                    @Override
+                    public String[] getPropertyKeys() {
+                        return new String[0];
+                    }
+
+                    @Override
+                    public Bundle getBundle() {
+                        return null;
+                    }
+
+                    @Override
+                    public Bundle[] getUsingBundles() {
+                        return new Bundle[0];
+                    }
+
+                    @Override
+                    public boolean isAssignableTo(Bundle bundle, String className) {
+                        return false;
+                    }
+
+                    @Override
+                    public int compareTo(Object reference) {
+                        return 0;
+                    }
+                };
+            }
+
+            @Override
+            public void setProperties(final Dictionary<String, ?> properties) {
+                this.props = properties;
+            }
+
+            @Override
+            public void unregister() {
+                synchronized (OSGiServices.this) {
+                    services.remove(this);
+                }
+            }
+        };
     }
 
     private static class ServiceListenerDefinition {
