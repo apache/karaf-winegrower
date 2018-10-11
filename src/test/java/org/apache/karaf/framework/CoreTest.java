@@ -20,16 +20,16 @@ import org.junit.jupiter.api.Test;
 import org.osgi.framework.ServiceRegistration;
 
 @WithFramework
-class MainTest {
+class CoreTest {
 
   @WithFramework.Service
-  private StandaloneLifecycle lifecycle;
+  private ContextualFramework framework;
 
   @Test
-  void testWithDecanter() throws Exception {
-    Assertions.assertEquals(5, lifecycle.registry.getBundles().keySet().size());
+  void testBundles() throws Exception {
+    Assertions.assertEquals(5, framework.registry.getBundles().keySet().size());
 
-    OSGiBundleLifecycle bundle =  lifecycle.registry.getBundles().get(1L);
+    OSGiBundleLifecycle bundle =  framework.registry.getBundles().get(1L);
     Assertions.assertEquals(1, bundle.getBundle().getBundleId());
     Assertions.assertEquals("org.opentest4j", bundle.getBundle().getSymbolicName());
     Assertions.assertTrue(bundle.getBundle().getLocation().contains("opentest4j-1.1.1.jar"));
@@ -38,9 +38,9 @@ class MainTest {
 
   @Test
   public void testServices() throws Exception {
-    Assertions.assertEquals(8, lifecycle.services.getServices().size());
+    Assertions.assertEquals(8, framework.services.getServices().size());
 
-    ServiceRegistration registration = lifecycle.services.getServices().iterator().next();
+    ServiceRegistration registration = framework.services.getServices().iterator().next();
     Assertions.assertNotNull(registration);
     Assertions.assertNotNull(registration.getReference());
   }

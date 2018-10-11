@@ -30,7 +30,7 @@ import java.net.URLClassLoader;
 import java.util.jar.JarOutputStream;
 import java.util.stream.Stream;
 
-import org.apache.karaf.framework.StandaloneLifecycle;
+import org.apache.karaf.framework.ContextualFramework;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -62,7 +62,7 @@ public @interface WithFramework {
             final URLClassLoader loader = new URLClassLoader(createUrls(extensionContext), thread.getContextClassLoader());
             final ExtensionContext.Store store = extensionContext.getStore(NAMESPACE);
             store.put(Context.class, new Context(thread, loader.getParent(), loader));
-            store.put(StandaloneLifecycle.class, new StandaloneLifecycle().start());
+            store.put(ContextualFramework.class, new ContextualFramework().start());
         }
 
         @Override
@@ -72,7 +72,7 @@ public @interface WithFramework {
                 return;
             }
             ofNullable(store.get(Context.class, Context.class)).ifPresent(Context::close);
-            ofNullable(store.get(StandaloneLifecycle.class, StandaloneLifecycle.class)).ifPresent(StandaloneLifecycle::stop);
+            ofNullable(store.get(ContextualFramework.class, ContextualFramework.class)).ifPresent(ContextualFramework::stop);
         }
 
         private URL[] createUrls(final ExtensionContext context) {
@@ -153,7 +153,7 @@ public @interface WithFramework {
         }
 
         private boolean supports(final Class<?> type) {
-            return type == StandaloneLifecycle.class;
+            return type == ContextualFramework.class;
         }
 
         private <T> T findInjection(final ExtensionContext extensionContext, final Class<T> type) {

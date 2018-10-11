@@ -25,14 +25,14 @@ import org.apache.karaf.framework.service.OSGiServices;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class StandaloneLifecycle implements AutoCloseable {
+public class ContextualFramework implements AutoCloseable {
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(StandaloneLifecycle.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(ContextualFramework.class);
 
     public final OSGiServices services = new OSGiServices();
     public final BundleRegistry registry = new BundleRegistry();
 
-    public synchronized StandaloneLifecycle start() {
+    public synchronized ContextualFramework start() {
         LOGGER.info("Starting Apache Karaf Single Framework");
         new StandaloneScanner()
                 .findOSGiBundles()
@@ -72,7 +72,7 @@ public class StandaloneLifecycle implements AutoCloseable {
                 latch.countDown();
             }
         });
-        try (final StandaloneLifecycle lifecycle = new StandaloneLifecycle().start()) {
+        try (final ContextualFramework lifecycle = new ContextualFramework().start()) {
             try {
                 latch.await();
             } catch (final InterruptedException e) {
