@@ -37,11 +37,14 @@ public class OSGiServices {
     public synchronized ServiceRegistration<?> registerService(final String[] classes, final Object service,
                                                                final Dictionary<String, ?> properties,
                                                                final Bundle from) {
-        return new ServiceRegistrationImpl<>(classes, properties, new ServiceReferenceImpl<>(properties, from, service), reg -> {
+        final ServiceRegistrationImpl<Object> registration = new ServiceRegistrationImpl<>(classes,
+                properties, new ServiceReferenceImpl<>(properties, from, service), reg -> {
             synchronized (OSGiServices.this) {
                 services.remove(reg);
             }
         });
+        services.add(registration);
+        return registration;
     }
 
     public synchronized Collection<ServiceRegistration<?>> getServices() {
