@@ -81,3 +81,20 @@ of OSGi (packaging and library support lack in particular).
   </build>
 </project>
 ----
+
+How to add a command? Create a jar with this class:
+
+[source,java]
+----
+@Service
+@Command(name = "hello", scope = "test")
+public class MyCommand implements Action {
+    public Object execute() throws Exception {
+        System.out.println("Hello world");
+        return "hello world";
+    }
+}
+----
+
+Then package it as a normal jar - not even a bundle - and add it
+in the previous classpath. You can now run "test:hello".

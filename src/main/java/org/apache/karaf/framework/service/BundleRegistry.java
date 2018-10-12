@@ -25,19 +25,22 @@ import org.apache.karaf.framework.deployer.OSGiBundleLifecycle;
 
 public class BundleRegistry {
     private final Map<Long, OSGiBundleLifecycle> bundles = new HashMap<>();
+    private final File framework;
 
     public BundleRegistry(final OSGiServices services, final ContextualFramework.Configuration configuration) {
+        this.framework = toFile(Thread.currentThread().getContextClassLoader().getResource(getClass().getName().replace('.', '/') + ".class"))
+            .getAbsoluteFile();
+
         // ensure we have the framework bundle simulated
         final Manifest frameworkManifest = new Manifest();
         frameworkManifest.getMainAttributes().putValue("Manifest-Version", "1.0");
         frameworkManifest.getMainAttributes().putValue("Bundle-Version", "1.0");
         frameworkManifest.getMainAttributes().putValue("Bundle-SymbolicName", "Contextual Framework");
-        bundles.put(0L, new OSGiBundleLifecycle(frameworkManifest, getThisJar(), services, this, configuration));
+        bundles.put(0L, new OSGiBundleLifecycle(frameworkManifest, framework, services, this, configuration));
     }
 
-    private File getThisJar() {
-        final String resource = getClass().getName().replace('.', '/') + ".class";
-        return toFile(Thread.currentThread().getContextClassLoader().getResource(resource));
+    public File getFramework() {
+        return framework;
     }
 
     public Map<Long, OSGiBundleLifecycle> getBundles() {

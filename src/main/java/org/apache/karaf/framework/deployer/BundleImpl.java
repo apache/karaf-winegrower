@@ -23,7 +23,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.Hashtable;
@@ -203,6 +210,22 @@ public class BundleImpl implements Bundle {
 
     @Override
     public Enumeration<String> getEntryPaths(final String path) {
+        if (file.isDirectory()) {
+            final Path base = file.toPath();
+            final Collection<String> paths = new ArrayList<>();
+            try {
+                Files.walkFileTree(base, new SimpleFileVisitor<Path>() {
+                    @Override
+                    public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException {
+                        paths.add(base.relativize(file).toString());
+                        return super.visitFile(file, attrs);
+                    }
+                });
+            } catch (final IOException e) {
+                throw new IllegalStateException(e);
+            }
+            return enumeration(paths);
+        }
         try (final JarFile jar = new JarFile(file)) {
             return enumeration(list(jar.entries()).stream()
                     .filter(it -> it.getName().startsWith(path))
@@ -228,33 +251,63 @@ public class BundleImpl implements Bundle {
         final Filter filter = filePattern == null ?
                 null : context.createFilter("(filename=" + filePattern + ")");
         final String prefix = path == null ? "" : (path.startsWith("/") ? path.substring(1) : path);
-        try (final JarFile jar = new JarFile(file)) { // todo: suport exploded folders
-            return enumeration(list(jar.entries()).stream()
-                      .filter(it -> it.getName().startsWith(prefix))
-                      .map(ZipEntry::getName)
-                      .filter(name -> !name.endsWith("/")) // folders
-                      .filter(name -> { // todo: enrich
-                          if (filter == null) {
-                              return true;
-                          }
-                          if (name.equals(prefix + '/' + filePattern)) {
-                              return true;
-                          }
-                          final Hashtable<String, Object> props = new Hashtable<>();
-                          props.put("filename", name);
-                          return filter.matches(props);
-                      })
-                      .map(name -> {
-                          try {
-                              return new URL("jar", null, file.toURI().toURL().toExternalForm() + "!/" + name);
-                          } catch (final MalformedURLException e) {
-                              throw new IllegalArgumentException(e);
-                          }
-                      })
-                      .collect(toList()));
-        } catch (final IOException e) {
-            throw new IllegalArgumentException(e);
+        final File baseFile = new File(file, prefix);
+        final Path base = baseFile.toPath();
+        if (baseFile.isDirectory()) {
+            if (!recurse) {
+                return enumeration(ofNullable(baseFile.listFiles())
+                        .map(Stream::of)
+                        .orElseGet(Stream::empty)
+                        .filter(file -> doFilterEntry(filter, base.relativize(file.toPath()).toString()))
+                        .map(f -> {
+                            try {
+                                return f.getAbsoluteFile().toURI().toURL();
+                            } catch (final MalformedURLException e) {
+                                throw new IllegalStateException(e);
+                            }
+                        })
+                        .collect(toList()));
+            } else {
+                final Collection<URL> files = new ArrayList<>();
+                try {
+                    Files.walkFileTree(base, new SimpleFileVisitor<Path>() {
+                        @Override
+                        public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException {
+                            if (doFilterEntry(filter, base.relativize(file).toString())) {
+                                files.add(file.toAbsolutePath().toUri().toURL());
+                            }
+                            return super.visitFile(file, attrs);
+                        }
+                    });
+                } catch (final IOException e) {
+                    throw new IllegalStateException(e);
+                }
+                return enumeration(files);
+            }
+        } else {
+            try (final JarFile jar = new JarFile(file)) {
+                return enumeration(list(jar.entries()).stream().filter(it -> it.getName().startsWith(prefix))
+                                                      .map(ZipEntry::getName).filter(name -> !name.endsWith("/")) // folders
+                                                      .filter(name -> doFilterEntry(filter, name)).map(name -> {
+                            try {
+                                return new URL("jar", null, file.toURI().toURL().toExternalForm() + "!/" + name);
+                            } catch (final MalformedURLException e) {
+                                throw new IllegalArgumentException(e);
+                            }
+                        }).collect(toList()));
+            } catch (final IOException e) {
+                throw new IllegalArgumentException(e);
+            }
         }
+    }
+
+    private boolean doFilterEntry(final Filter filter, final String name) {
+        if (filter == null) {
+            return true;
+        }
+        final Hashtable<String, Object> props = new Hashtable<>();
+        props.put("filename", name);
+        return filter.matches(props);
     }
 
     @Override
