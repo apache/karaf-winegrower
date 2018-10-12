@@ -38,6 +38,7 @@ import java.util.stream.Collector;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 
+import org.apache.karaf.framework.ContextualFramework;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
@@ -57,9 +58,13 @@ public class BundleImpl implements Bundle {
     private final Version version;
     private final String symbolicName;
     private final Dictionary<String, String> headers;
+    private final File dataFileBase;
+    private int state = Bundle.UNINSTALLED;
 
-    BundleImpl(final Manifest manifest, final File file, final BundleContextImpl context) {
+    BundleImpl(final Manifest manifest, final File file, final BundleContextImpl context,
+               final ContextualFramework.Configuration configuration) {
         this.file = file;
+        this.dataFileBase = new File(configuration.getWorkDir(), file.getName());
         this.context = context;
         this.id = ID_GENERATOR.getAndIncrement();
         this.loader = Thread.currentThread().getContextClassLoader();
@@ -87,24 +92,26 @@ public class BundleImpl implements Bundle {
     }
 
     void onStart() {
+        start();
         final BundleEvent event = new BundleEvent(BundleEvent.STARTED, this);
         allBundleListeners()
                .forEach(listener -> listener.bundleChanged(event));
     }
 
     void onStop() {
+        stop();
         final BundleEvent event = new BundleEvent(BundleEvent.STOPPED, this);
         allBundleListeners().forEach(listener -> listener.bundleChanged(event));
     }
 
     @Override
     public int getState() {
-        return ACTIVE;
+        return state;
     }
 
     @Override
     public void start(final int options) {
-        throw new UnsupportedOperationException();
+        state = options;
     }
 
     @Override
@@ -114,7 +121,7 @@ public class BundleImpl implements Bundle {
 
     @Override
     public void stop(final int options) {
-        throw new UnsupportedOperationException();
+        state = options;
     }
 
     @Override
@@ -185,7 +192,7 @@ public class BundleImpl implements Bundle {
     }
 
     @Override
-    public Class<?> loadClass(String name) throws ClassNotFoundException {
+    public Class<?> loadClass(final String name) throws ClassNotFoundException {
         return loader.loadClass(name);
     }
 
@@ -275,7 +282,9 @@ public class BundleImpl implements Bundle {
 
     @Override
     public File getDataFile(final String filename) {
-        return null;
+        final File file = new File(dataFileBase, filename);
+        file.getParentFile().mkdirs();
+        return file;
     }
 
     @Override

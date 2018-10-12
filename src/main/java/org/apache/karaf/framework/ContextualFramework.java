@@ -16,11 +16,19 @@ package org.apache.karaf.framework;
 import static java.util.Arrays.asList;
 import static java.util.Comparator.comparing;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collection;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Predicate;
 
@@ -53,7 +61,16 @@ public interface ContextualFramework extends AutoCloseable {
                 "opentest4j-"
         );
 
+        private File workDir = new File(System.getProperty("java.io.tmpdir"), "karaf-boot_" + UUID.randomUUID().toString());
         private Predicate<String> jarFilter = it -> DEFAULT_EXCLUSIONS.stream().anyMatch(it::startsWith);
+
+        public File getWorkDir() {
+            return workDir;
+        }
+
+        public void setWorkDir(final File workDir) {
+            this.workDir = workDir;
+        }
 
         public void setJarFilter(final Predicate<String> jarFilter) {
             this.jarFilter = jarFilter;
@@ -93,7 +110,7 @@ public interface ContextualFramework extends AutoCloseable {
                     .findOSGiBundles()
                     .stream()
                     .sorted(comparing(b -> b.getJar().getName()))
-                    .map(it -> new OSGiBundleLifecycle(it.getManifest(), it.getJar(), services, registry))
+                    .map(it -> new OSGiBundleLifecycle(it.getManifest(), it.getJar(), services, registry, configuration))
                     .peek(OSGiBundleLifecycle::start)
                     .peek(it -> registry.getBundles().put(it.getBundle().getBundleId(), it))
                     .forEach(bundle -> LOGGER.debug("Bundle {}", bundle));
@@ -106,6 +123,25 @@ public interface ContextualFramework extends AutoCloseable {
             final Map<Long, OSGiBundleLifecycle> bundles = registry.getBundles();
             bundles.forEach((k, v) -> v.stop());
             bundles.clear();
+            if (configuration.getWorkDir().exists()) {
+                try {
+                    Files.walkFileTree(configuration.getWorkDir().toPath(), new SimpleFileVisitor<Path>() {
+                        @Override
+                        public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException {
+                            Files.delete(file);
+                            return super.visitFile(file, attrs);
+                        }
+
+                        @Override
+                        public FileVisitResult postVisitDirectory(final Path dir, final IOException exc) throws IOException {
+                            Files.delete(dir);
+                            return super.postVisitDirectory(dir, exc);
+                        }
+                    });
+                } catch (final IOException e) {
+                    LOGGER.warn("Can't delete work directory", e);
+                }
+            }
         }
 
         @Override

@@ -17,6 +17,7 @@ import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.util.jar.Manifest;
 
+import org.apache.karaf.framework.ContextualFramework;
 import org.apache.karaf.framework.service.BundleActivatorHandler;
 import org.apache.karaf.framework.service.BundleRegistry;
 import org.apache.karaf.framework.service.OSGiServices;
@@ -32,9 +33,9 @@ public class OSGiBundleLifecycle {
     private BundleActivatorHandler activator;
 
     public OSGiBundleLifecycle(final Manifest manifest, final File file, final OSGiServices services,
-                               final BundleRegistry registry) {
+                               final BundleRegistry registry, final ContextualFramework.Configuration configuration) {
         this.context = new BundleContextImpl(manifest, services, this::getBundle, registry);
-        this.bundle = new BundleImpl(manifest, file, context);
+        this.bundle = new BundleImpl(manifest, file, context, configuration);
     }
 
     public BundleActivatorHandler getActivator() {
