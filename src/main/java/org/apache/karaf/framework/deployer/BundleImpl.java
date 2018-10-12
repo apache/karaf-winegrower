@@ -249,7 +249,7 @@ public class BundleImpl implements Bundle {
     @Override
     public Enumeration<URL> findEntries(final String path, final String filePattern, final boolean recurse) {
         final Filter filter = filePattern == null ?
-                null : context.createFilter("(filename=" + filePattern + ")");
+                null : context.createFilter("(filename=" + path + '/' + filePattern + ")");
         final String prefix = path == null ? "" : (path.startsWith("/") ? path.substring(1) : path);
         final File baseFile = new File(file, prefix);
         final Path base = baseFile.toPath();

@@ -125,5 +125,10 @@ public class OSGiServices {
             this.listener = listener;
             this.filter = filter;
         }
+
+        @Override
+        public String toString() {
+            return "ServiceListenerDefinition{listener=" + listener + ", filter=" + filter + '}';
+        }
     }
 }

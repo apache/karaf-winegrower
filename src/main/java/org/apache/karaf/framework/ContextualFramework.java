@@ -38,6 +38,7 @@ import java.util.stream.StreamSupport;
 
 import org.apache.karaf.framework.deployer.OSGiBundleLifecycle;
 import org.apache.karaf.framework.scanner.StandaloneScanner;
+import org.apache.karaf.framework.scanner.manifest.ActivatorManifestContributor;
 import org.apache.karaf.framework.scanner.manifest.KarafCommandManifestContributor;
 import org.apache.karaf.framework.scanner.manifest.ManifestContributor;
 import org.apache.karaf.framework.service.BundleRegistry;
@@ -72,7 +73,7 @@ public interface ContextualFramework extends AutoCloseable {
         private Collection<String> scanningIncludes;
         private Collection<String> scanningExcludes;
         private Collection<ManifestContributor> manifestContributors = Stream.concat(
-                Stream.of(new KarafCommandManifestContributor()), // built-in
+                Stream.of(new KarafCommandManifestContributor(), new ActivatorManifestContributor()), // built-in
                 StreamSupport.stream(ServiceLoader.load(ManifestContributor.class).spliterator(), false) // extensions
         ).collect(toList());
 
