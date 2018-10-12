@@ -14,8 +14,11 @@
 package org.apache.karaf.framework.deployer;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.list;
+import static java.util.stream.Collectors.toList;
 
 import java.net.URL;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
 
@@ -80,12 +83,24 @@ public class BundleWiringImpl implements BundleWiring {
 
     @Override
     public List<URL> findEntries(final String path, final String filePattern, final int options) {
-        return emptyList();
+        return list(bundle.findEntries(path, filePattern, (BundleWiring.LISTRESOURCES_RECURSE & options) == 1));
     }
 
     @Override
     public Collection<String> listResources(final String path, final String filePattern, final int options) {
-        return emptyList();
+        return list(bundle.findEntries(path, filePattern, (BundleWiring.LISTRESOURCES_RECURSE & options) == 1))
+                .stream()
+                .map(it -> {
+                    switch (it.getProtocol()) {
+                        case "file":
+                            return Paths.get(bundle.getLocation()).relativize(Paths.get(it.getFile())).toString();
+                        case "jar":
+                        default:
+                            final String externalForm = it.toExternalForm();
+                            return externalForm.substring(externalForm.lastIndexOf("!/") + "!/".length());
+                    }
+                })
+                .collect(toList());
     }
 
     @Override

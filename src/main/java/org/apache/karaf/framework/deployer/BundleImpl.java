@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
-import java.util.regex.Pattern;
 import java.util.stream.Collector;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
@@ -44,6 +43,7 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleListener;
 import org.osgi.framework.Constants;
+import org.osgi.framework.Filter;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.Version;
 import org.osgi.framework.wiring.BundleWiring;
@@ -225,24 +225,24 @@ public class BundleImpl implements Bundle {
 
     @Override
     public Enumeration<URL> findEntries(final String path, final String filePattern, final boolean recurse) {
-        final Pattern pattern = filePattern == null ?
-                null : Pattern.compile(Pattern.quote(filePattern).replace("*", ".*"));
-        try (final JarFile jar = new JarFile(file)) {
+        final Filter filter = filePattern == null ?
+                null : context.createFilter("(filename=" + filePattern + ")");
+        final String prefix = path == null ? "" : (path.startsWith("/") ? path.substring(1) : path);
+        try (final JarFile jar = new JarFile(file)) { // todo: suport exploded folders
             return enumeration(list(jar.entries()).stream()
-                      .filter(it -> it.getName().startsWith(path))
+                      .filter(it -> it.getName().startsWith(prefix))
                       .map(ZipEntry::getName)
                       .filter(name -> !name.endsWith("/")) // folders
                       .filter(name -> { // todo: enrich
-                          if (pattern == null) {
+                          if (filter == null) {
                               return true;
                           }
-                          if (name.equals(path + '/' + filePattern)) {
+                          if (name.equals(prefix + '/' + filePattern)) {
                               return true;
                           }
-                          if (recurse && "*".equals(filePattern)) {
-                              return true;
-                          }
-                          return pattern.matcher(name.substring(path.length())).matches();
+                          final Hashtable<String, Object> props = new Hashtable<>();
+                          props.put("filename", name);
+                          return filter.matches(props);
                       })
                       .map(name -> {
                           try {
