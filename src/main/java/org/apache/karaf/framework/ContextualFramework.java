@@ -16,6 +16,9 @@ package org.apache.karaf.framework;
 import static java.util.Arrays.asList;
 import static java.util.Comparator.comparing;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -29,6 +32,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public interface ContextualFramework extends AutoCloseable {
+    long getStartTime();
+
     ContextualFramework start();
 
     void stop();
@@ -68,13 +73,22 @@ public interface ContextualFramework extends AutoCloseable {
 
         private final Configuration configuration;
 
+        private long startTime = -1;
+
         public Impl(final Configuration configuration) {
             this.configuration = configuration;
         }
 
         @Override
+        public long getStartTime() {
+            return startTime;
+        }
+
+        @Override
         public synchronized ContextualFramework start() {
-            LOGGER.info("Starting Apache Karaf Contextual Framework");
+            startTime = System.currentTimeMillis();
+            LOGGER.info("Starting Apache Karaf Contextual Framework on {}",
+                    LocalDateTime.ofInstant(Instant.ofEpochMilli(startTime), ZoneId.systemDefault()));
             new StandaloneScanner(configuration.getJarFilter())
                     .findOSGiBundles()
                     .stream()
@@ -88,7 +102,7 @@ public interface ContextualFramework extends AutoCloseable {
 
         @Override
         public synchronized void stop() {
-            LOGGER.info("Stopping Apache Karaf Contextual Framework");
+            LOGGER.info("Stopping Apache Karaf Contextual Framework on {}", LocalDateTime.now());
             final Map<Long, OSGiBundleLifecycle> bundles = registry.getBundles();
             bundles.forEach((k, v) -> v.stop());
             bundles.clear();

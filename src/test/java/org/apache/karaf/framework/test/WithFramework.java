@@ -100,7 +100,11 @@ public @interface WithFramework {
 
             final ContextualFramework.Configuration configuration = new ContextualFramework.Configuration();
             setConfiguration(configuration, config);
-            store.put(ContextualFramework.class, new ContextualFramework.Impl(configuration).start());
+
+            final ContextualFramework framework = new ContextualFramework.Impl(configuration).start();
+            store.put(ContextualFramework.class, framework);
+
+            framework.getServices().inject(extensionContext.getRequiredTestInstance());
         }
 
         @Override

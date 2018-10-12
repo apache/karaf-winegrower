@@ -13,6 +13,8 @@
  */
 package org.apache.karaf.framework.service;
 
+import static java.util.Arrays.asList;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Dictionary;
@@ -21,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
+import org.apache.karaf.framework.api.InjectedService;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
 import org.osgi.framework.Filter;
@@ -35,7 +38,36 @@ public class OSGiServices {
     private final AtomicLong idGenerator = new AtomicLong(1);
 
     private final Collection<ServiceListenerDefinition> serviceListeners = new ArrayList<>();
-    private final Collection<ServiceRegistration<?>> services = new ArrayList<>();
+    private final Collection<ServiceRegistrationImpl<?>> services = new ArrayList<>();
+
+    public <T> T inject(final T instance) {
+        doInject(instance.getClass(), instance);
+        return instance;
+    }
+
+    private <T> void doInject(final Class<?> typeScope, final T instance) {
+        if (typeScope == null || typeScope == Object.class) {
+            return;
+        }
+        Stream.of(typeScope.getDeclaredFields())
+              .filter(field -> field.isAnnotationPresent(InjectedService.class))
+              .peek(field -> {
+                  if (!field.isAccessible()) {
+                      field.setAccessible(true);
+                  }
+              })
+              .forEach(field -> services.stream()
+                    .filter(it -> asList(it.getClasses()).contains(field.getType().getName()))
+                    .findFirst()
+                    .ifPresent(reg -> {
+                        try {
+                            field.set(instance, ServiceReferenceImpl.class.cast(reg.getReference()).getReference());
+                        } catch (final IllegalAccessException e) {
+                            throw new IllegalStateException(e);
+                        }
+                    }));
+        doInject(typeScope.getSuperclass(), instance);
+    }
 
     public synchronized void addListener(final ServiceListener listener, final Filter filter) {
         serviceListeners.add(new ServiceListenerDefinition(listener, filter));

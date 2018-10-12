@@ -65,6 +65,7 @@
 
   <properties>
     <slf4j.version>1.7.25</slf4j.version>
+    <surefire.log.level>INFO</surefire.log.level>
   </properties>
 
   <build>
@@ -84,7 +85,7 @@
         <version>2.22.0</version>
         <configuration>
           <systemPropertyVariables>
-            <org.slf4j.simpleLogger.defaultLogLevel>DEBUG</org.slf4j.simpleLogger.defaultLogLevel>
+            <org.slf4j.simpleLogger.defaultLogLevel>${surefire.log.level}</org.slf4j.simpleLogger.defaultLogLevel>
             <org.slf4j.simpleLogger.logFile>System.out</org.slf4j.simpleLogger.logFile>
           </systemPropertyVariables>
         </configuration>
