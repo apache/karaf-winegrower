@@ -1,0 +1,83 @@
+= Contextual Framework for Karaf
+
+Goal is to provide a light alternative to a full OSGi runtime
+allowing to use OSGi programming model without the classloader hell
+of OSGi (packaging and library support lack in particular).
+
+== Sample
+
+[code,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="
+            http://maven.apache.org/POM/4.0.0
+            http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.github.rmannibucau</groupId>
+  <artifactId>karaf-boot-with-shell</artifactId>
+  <version>1.0-SNAPSHOT</version>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.core</artifactId>
+      <version>6.0.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.compendium</artifactId>
+      <version>5.0.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.karaf</groupId>
+      <artifactId>karaf-framework</artifactId>
+      <version>1.0.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.karaf.shell</groupId>
+      <artifactId>org.apache.karaf.shell.core</artifactId>
+      <version>4.2.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.karaf.shell</groupId>
+      <artifactId>org.apache.karaf.shell.console</artifactId>
+      <version>4.2.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>1.7.25</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>1.6.0</version>
+        <configuration>
+          <mainClass>org.apache.karaf.framework.ContextualFramework</mainClass>
+          <systemProperties>
+            <systemProperty>
+              <key>org.slf4j.simpleLogger.defaultLogLevel</key>
+              <value>DEBUG</value>
+            </systemProperty>
+            <systemProperty>
+              <key>org.slf4j.simpleLogger.logFile</key>
+              <value>System.out</value>
+            </systemProperty>
+            <systemProperty>
+              <key>karaf.startLocalConsole</key>
+              <value>true</value>
+            </systemProperty>
+          </systemProperties>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
+----

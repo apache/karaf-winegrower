@@ -82,7 +82,7 @@ public class BundleContextImpl implements BundleContext {
 
     @Override
     public String getProperty(final String key) {
-        return null;
+        return System.getProperty(key);
     }
 
     @Override
