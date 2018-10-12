@@ -82,7 +82,14 @@ of OSGi (packaging and library support lack in particular).
 </project>
 ----
 
-How to add a command? Create a jar with this class:
+You can now start Karaf with:
+
+[source,sh]
+----
+mvn exec:java
+----
+
+How to add a command? Create a class with this class:
 
 [source,java]
 ----
@@ -96,5 +103,5 @@ public class MyCommand implements Action {
 }
 ----
 
-Then package it as a normal jar - not even a bundle - and add it
+Then package it as a normal jar/exploded folder - not even a bundle - and add it
 in the previous classpath. You can now run "test:hello".
