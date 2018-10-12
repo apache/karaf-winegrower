@@ -18,17 +18,22 @@ import java.util.Collection;
 import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
 import org.osgi.framework.Filter;
+import org.osgi.framework.PrototypeServiceFactory;
 import org.osgi.framework.ServiceEvent;
+import org.osgi.framework.ServiceFactory;
 import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceRegistration;
 
 // holder of all services
 public class OSGiServices {
+    private final AtomicLong idGenerator = new AtomicLong(1);
+
     private final Collection<ServiceListenerDefinition> serviceListeners = new ArrayList<>();
     private final Collection<ServiceRegistration<?>> services = new ArrayList<>();
 
@@ -48,6 +53,14 @@ public class OSGiServices {
             serviceProperties.putAll(Map.class.cast(properties));
         }
         serviceProperties.put(Constants.OBJECTCLASS, classes);
+        serviceProperties.put(Constants.SERVICE_ID, idGenerator.getAndIncrement());
+        serviceProperties.put(Constants.SERVICE_BUNDLEID, from.getBundleId());
+        if (ServiceFactory.class.isInstance(service)) {
+            serviceProperties.put(Constants.SERVICE_SCOPE, PrototypeServiceFactory.class.isInstance(service) ?
+                    Constants.SCOPE_PROTOTYPE : Constants.SCOPE_BUNDLE);
+        } else {
+            serviceProperties.put(Constants.SERVICE_SCOPE, Constants.SCOPE_SINGLETON);
+        }
 
         final ServiceRegistrationImpl<Object> registration = new ServiceRegistrationImpl<>(classes,
                 properties, new ServiceReferenceImpl<>(serviceProperties, from, service), reg -> {
