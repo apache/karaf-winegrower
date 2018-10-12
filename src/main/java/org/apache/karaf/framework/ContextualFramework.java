@@ -86,7 +86,7 @@ public interface ContextualFramework extends AutoCloseable {
         private final static Logger LOGGER = LoggerFactory.getLogger(ContextualFramework.class);
 
         private final OSGiServices services = new OSGiServices();
-        private final BundleRegistry registry = new BundleRegistry();
+        private final BundleRegistry registry;
 
         private final Configuration configuration;
 
@@ -94,6 +94,7 @@ public interface ContextualFramework extends AutoCloseable {
 
         public Impl(final Configuration configuration) {
             this.configuration = configuration;
+            this.registry = new BundleRegistry(services, configuration);
         }
 
         @Override

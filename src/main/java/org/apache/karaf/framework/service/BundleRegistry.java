@@ -13,13 +13,32 @@
  */
 package org.apache.karaf.framework.service;
 
+import static org.apache.xbean.finder.util.Files.toFile;
+
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.jar.Manifest;
 
+import org.apache.karaf.framework.ContextualFramework;
 import org.apache.karaf.framework.deployer.OSGiBundleLifecycle;
 
 public class BundleRegistry {
     private final Map<Long, OSGiBundleLifecycle> bundles = new HashMap<>();
+
+    public BundleRegistry(final OSGiServices services, final ContextualFramework.Configuration configuration) {
+        // ensure we have the framework bundle simulated
+        final Manifest frameworkManifest = new Manifest();
+        frameworkManifest.getMainAttributes().putValue("Manifest-Version", "1.0");
+        frameworkManifest.getMainAttributes().putValue("Bundle-Version", "1.0");
+        frameworkManifest.getMainAttributes().putValue("Bundle-SymbolicName", "Contextual Framework");
+        bundles.put(0L, new OSGiBundleLifecycle(frameworkManifest, getThisJar(), services, this, configuration));
+    }
+
+    private File getThisJar() {
+        final String resource = getClass().getName().replace('.', '/') + ".class";
+        return toFile(Thread.currentThread().getContextClassLoader().getResource(resource));
+    }
 
     public Map<Long, OSGiBundleLifecycle> getBundles() {
         return bundles;

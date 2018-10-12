@@ -37,12 +37,12 @@ class BundleImplTest {
 
     @BeforeAll
     static void initBundle() throws IOException {
-        final BundleRegistry registry = new BundleRegistry();
         final Manifest manifest = new Manifest(new ByteArrayInputStream(("Manifest-Version: 1.0\nBundle-Version: 1.0\nBundle-SymbolicName: test\n").getBytes(StandardCharsets.UTF_8)));
         final OSGiServices services = new OSGiServices();
+        final ContextualFramework.Configuration configuration = new ContextualFramework.Configuration();
+        final BundleRegistry registry = new BundleRegistry(services, configuration);
         final BundleContextImpl context = new BundleContextImpl(manifest, services, () -> bundle, registry);
         final File file = new File("target/missin");
-        final ContextualFramework.Configuration configuration = new ContextualFramework.Configuration();
         bundle = new BundleImpl(manifest, file, context, configuration);
         registry.getBundles().put(bundle.getBundleId(), new OSGiBundleLifecycle(manifest, file, services, registry, configuration));
     }

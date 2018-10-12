@@ -32,11 +32,20 @@ import org.osgi.framework.BundleActivator;
 class ContextualFrameworkTest {
 
     @Test
+    @WithFramework
+    void ensureFrameworkBundle(@Service final ContextualFramework framework) {
+        assertEquals(1, framework.getRegistry().getBundles().size());
+    }
+
+    @Test
     @WithFramework(includeResources = @Entry(path = "org.apache.karaf.framework.test.simpleactivator"))
     void simpleActivator(@Service final ContextualFramework framework) {
-        assertEquals(1, framework.getRegistry().getBundles().size());
+        assertEquals(2, framework.getRegistry().getBundles().size());
 
-        final BundleActivatorHandler activatorHandler = framework.getRegistry().getBundles().values().iterator().next()
+        final BundleActivatorHandler activatorHandler = framework.getRegistry().getBundles().values().stream()
+                .filter(it -> it.getActivator() != null)
+                .findFirst()
+                .orElseThrow(IllegalStateException::new)
                 .getActivator();
         assertNotNull(activatorHandler);
         final BundleActivator activator = activatorHandler.getActivator();
@@ -75,6 +84,7 @@ class ContextualFrameworkTest {
         assertEquals(1, framework.getServices().getServices().size());
 
         final Map<String, BundleActivatorHandler> activatorHandler = framework.getRegistry().getBundles().values().stream()
+                .filter(it -> it.getActivator() != null)
                 .collect(toMap(it -> it.getBundle().getSymbolicName(), OSGiBundleLifecycle::getActivator));
         assertNotNull(activatorHandler);
         final BundleActivator activator = activatorHandler.get("consumer").getActivator();
