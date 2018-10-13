@@ -54,6 +54,7 @@
     <module>winegrower-extension</module>
     <module>winegrower-cepages</module>
     <module>winegrower-examples</module>
+    <module>winegrower-documentation</module>
     <!-- <module>winegrower-testing</module> -->
   </modules>
 
