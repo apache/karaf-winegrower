@@ -56,6 +56,14 @@ class BundleImplTest {
     }
 
     @Test
+    void getEntryPaths() {
+        final Enumeration<String> entries = bundle.getEntryPaths("org/apache/winegrower/test/simpleservice/META-INF");
+        assertTrue(entries.hasMoreElements());
+        assertEquals("org/apache/winegrower/test/simpleservice/META-INF/MANIFEST.MF", entries.nextElement());
+        assertFalse(entries.hasMoreElements());
+    }
+
+    @Test
     void findEntriesDirectNameNotRecursive() {
         final Enumeration<URL> entries = bundle.findEntries("org/apache/winegrower/test/simpleservice",
                 "MyServiceImpl.class", false);

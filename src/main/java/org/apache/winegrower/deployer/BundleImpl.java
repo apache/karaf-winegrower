@@ -208,13 +208,16 @@ public class BundleImpl implements Bundle {
     @Override
     public Enumeration<String> getEntryPaths(final String path) {
         if (file.isDirectory()) {
-            final Path base = file.toPath();
+            final Path base = file.toPath().toAbsolutePath();
+            final Path subPath = new File(file, path == null ? "" : (path.startsWith("/") ? path.substring(1) : path)).toPath();
             final Collection<String> paths = new ArrayList<>();
             try {
-                Files.walkFileTree(base, new SimpleFileVisitor<Path>() {
+                Files.walkFileTree(subPath, new SimpleFileVisitor<Path>() {
                     @Override
                     public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException {
-                        paths.add(base.relativize(file).toString());
+                        if (file.toAbsolutePath().toString().startsWith(base.toString())) {
+                            paths.add(base.relativize(file).toString());
+                        }
                         return super.visitFile(file, attrs);
                     }
                 });
