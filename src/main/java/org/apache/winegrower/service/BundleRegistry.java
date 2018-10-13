@@ -28,8 +28,11 @@ public class BundleRegistry {
     private final File framework;
 
     public BundleRegistry(final OSGiServices services, final ContextualFramework.Configuration configuration) {
-        this.framework = toFile(Thread.currentThread().getContextClassLoader().getResource(getClass().getName().replace('.', '/') + ".class"))
-            .getAbsoluteFile();
+        final String resource = getClass().getName().replace('.', '/') + ".class";
+        final File file = toFile(Thread.currentThread().getContextClassLoader().getResource(resource));
+        this.framework = file.getName().endsWith(".class") ?
+                new File(file.getAbsolutePath().replace(File.separatorChar, '/').substring(0, file.getAbsolutePath().length() - resource.length())):
+                file.getAbsoluteFile();
 
         // ensure we have the framework bundle simulated
         final Manifest frameworkManifest = new Manifest();

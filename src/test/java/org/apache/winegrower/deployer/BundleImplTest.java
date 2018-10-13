@@ -16,13 +16,16 @@
 package org.apache.winegrower.deployer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Enumeration;
 import java.util.jar.Manifest;
 
 import org.apache.winegrower.ContextualFramework;
@@ -42,14 +45,32 @@ class BundleImplTest {
         final ContextualFramework.Configuration configuration = new ContextualFramework.Configuration();
         final BundleRegistry registry = new BundleRegistry(services, configuration);
         final BundleContextImpl context = new BundleContextImpl(manifest, services, () -> bundle, registry);
-        final File file = new File("target/missin");
+        final File file = new File(registry.getFramework().getParentFile(), "test-classes");
         bundle = new BundleImpl(manifest, file, context, configuration, 1);
         registry.getBundles().put(bundle.getBundleId(), new OSGiBundleLifecycle(manifest, file, services, registry, configuration, 1));
     }
 
     @Test
     void hasId() {
-        assertTrue(bundle.getBundleId() > 0);
+        assertEquals(1L, bundle.getBundleId());
+    }
+
+    @Test
+    void findEntriesDirectNameNotRecursive() {
+        final Enumeration<URL> entries = bundle.findEntries("org/apache/winegrower/test/simpleservice",
+                "MyServiceImpl.class", false);
+        assertTrue(entries.hasMoreElements());
+        assertNotNull(entries.nextElement());
+        assertFalse(entries.hasMoreElements());
+    }
+
+    @Test
+    void findEntriesPatternRecursive() {
+        final Enumeration<URL> entries = bundle.findEntries("org/apache/winegrower/test/simpleservice",
+                "MyActivator.class", true);
+        assertTrue(entries.hasMoreElements());
+        assertNotNull(entries.nextElement());
+        assertFalse(entries.hasMoreElements());
     }
 
     @Test

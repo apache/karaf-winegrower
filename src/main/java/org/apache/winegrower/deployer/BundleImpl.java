@@ -246,16 +246,17 @@ public class BundleImpl implements Bundle {
     @Override
     public Enumeration<URL> findEntries(final String path, final String filePattern, final boolean recurse) {
         final Filter filter = filePattern == null ?
-                null : context.createFilter("(filename=" + path + '/' + filePattern + ")");
+                null : context.createFilter("(filename=" + filePattern + ")");
         final String prefix = path == null ? "" : (path.startsWith("/") ? path.substring(1) : path);
         final File baseFile = new File(file, prefix);
         final Path base = baseFile.toPath();
-        if (baseFile.isDirectory()) {
+        final Path filePath = this.file.toPath();
+        if (file.isDirectory()) {
             if (!recurse) {
                 return enumeration(ofNullable(baseFile.listFiles())
                         .map(Stream::of)
                         .orElseGet(Stream::empty)
-                        .filter(file -> doFilterEntry(filter, base.relativize(file.toPath()).toString()))
+                        .filter(file -> doFilterEntry(filter, prefix, filePath.relativize(file.toPath()).toString()))
                         .map(f -> {
                             try {
                                 return f.getAbsoluteFile().toURI().toURL();
@@ -270,7 +271,7 @@ public class BundleImpl implements Bundle {
                     Files.walkFileTree(base, new SimpleFileVisitor<Path>() {
                         @Override
                         public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException {
-                            if (doFilterEntry(filter, base.relativize(file).toString())) {
+                            if (doFilterEntry(filter, prefix, filePath.relativize(file).toString())) {
                                 files.add(file.toAbsolutePath().toUri().toURL());
                             }
                             return super.visitFile(file, attrs);
@@ -285,7 +286,7 @@ public class BundleImpl implements Bundle {
             try (final JarFile jar = new JarFile(file)) {
                 return enumeration(list(jar.entries()).stream().filter(it -> it.getName().startsWith(prefix))
                                                       .map(ZipEntry::getName).filter(name -> !name.endsWith("/")) // folders
-                                                      .filter(name -> doFilterEntry(filter, name)).map(name -> {
+                                                      .filter(name -> doFilterEntry(filter, prefix, name)).map(name -> {
                             try {
                                 return new URL("jar", null, file.toURI().toURL().toExternalForm() + "!/" + name);
                             } catch (final MalformedURLException e) {
@@ -298,12 +299,16 @@ public class BundleImpl implements Bundle {
         }
     }
 
-    private boolean doFilterEntry(final Filter filter, final String name) {
+    private boolean doFilterEntry(final Filter filter, final String prefix, final String name) {
+        final String path = name.replace(File.separatorChar, '/');
+        if (prefix != null && !path.startsWith(prefix)) {
+            return false;
+        }
         if (filter == null) {
             return true;
         }
         final Hashtable<String, Object> props = new Hashtable<>();
-        props.put("filename", name);
+        props.put("filename", path.substring(path.lastIndexOf('/') + 1));
         return filter.matches(props);
     }
 
