@@ -23,7 +23,9 @@ import java.util.function.Predicate;
 import org.apache.winegrower.Ripener;
 
 public class KnownJarsFilter implements Predicate<String> {
-    private final Collection<String> forceIncludes = new HashSet<>(); // none for now
+    private final Collection<String> forceIncludes = new HashSet<String>() {{
+        add("winegrower-cdi");
+    }};
     private final Collection<String> excludes = new HashSet<String>() {{
         add("activation-");
         add("activeio-");

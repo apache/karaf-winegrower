@@ -123,7 +123,7 @@ public interface Ripener extends AutoCloseable {
 
 
     class Impl implements Ripener {
-        private final static Logger LOGGER = LoggerFactory.getLogger(Ripener.class);
+        private static final Logger LOGGER = LoggerFactory.getLogger(Ripener.class);
 
         private final OSGiServices services = new OSGiServices(this);
         private final BundleRegistry registry;
