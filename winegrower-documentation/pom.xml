@@ -76,7 +76,7 @@
             </goals>
             <configuration>
               <sourceDirectory>${project.basedir}/../winegrower-extension/winegrower-build/winegrower-maven-plugin/src/main/asciidoc</sourceDirectory>
-              <outputDirectory>${project.build.directory}/documentation/maven</outputDirectory>
+              <outputDirectory>${project.build.directory}/documentation/extensions/maven</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -87,7 +87,7 @@
             </goals>
             <configuration>
               <sourceDirectory>${project.basedir}/../winegrower-extension/winegrower-testing/winegrower-testing-junit5/src/main/asciidoc</sourceDirectory>
-              <outputDirectory>${project.build.directory}/documentation/junit5</outputDirectory>
+              <outputDirectory>${project.build.directory}/documentation/extensions/junit5</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -98,7 +98,7 @@
             </goals>
             <configuration>
               <sourceDirectory>${project.basedir}/../winegrower-extension/winegrower-cdi/src/main/asciidoc</sourceDirectory>
-              <outputDirectory>${project.build.directory}/documentation/cdi</outputDirectory>
+              <outputDirectory>${project.build.directory}/documentation/extensions/cdi</outputDirectory>
             </configuration>
           </execution>
         </executions>

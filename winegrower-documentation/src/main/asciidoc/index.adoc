@@ -1,4 +1,4 @@
 = Apache Winegrower
 
-
-TBD
+* xref:core/index.adoc[Core] documentation
+* xref:extensions/index.adoc[Extension] documentation

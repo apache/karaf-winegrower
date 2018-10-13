@@ -1,3 +1,60 @@
 = Apache Winegrower JUnit5
 
-TBD
+Apache Winegrower JUnit5 allows to rely on the modern JUnit 5 framework
+to test your application.
+
+== Dependency
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.apache.winegrower</groupId>
+  <artifactId>winegrower-testing-junit5</artifactId>
+  <version>${winegrower.version}</version>
+</dependency>
+----
+
+== @Winegrower
+
+`@Winegrower` allows to start a `Ripener` per class. Each test class
+will use its own configuration based on the setup done thanks to
+`@Winegrower`.
+
+Example:
+
+[source,java]
+----
+@Winegrower
+class WinegrowerExtensionTest {
+    @Test
+    void doYourTest() {
+        // ...
+    }
+}
+
+----
+
+
+== @MonoWinegrower
+
+`@MonoWinegrower` is close to the previous flavor but it starts the `Ripener`
+a single time for the whole JVM lifecycle. It takes its configuration from a
+SPI on `Ripener.Configuration` class (registered thanks to `META-INF/services/org.apache.winegrower.Ripener$Configuration`).
+If you don't register a custom configuration, default one is used.
+
+IMPORTANT: this flavor boots your performances but all your test classes will
+share the same state so ensure to not leak anything which can impact another test.
+
+Example:
+
+[source,java]
+----
+@MonoWinegrower
+class WinegrowerExtensionTest {
+    @Test
+    void doYourTest() {
+        // ...
+    }
+}
+
+----
