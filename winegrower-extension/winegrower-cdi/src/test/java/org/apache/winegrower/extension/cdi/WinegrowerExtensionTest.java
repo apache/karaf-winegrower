@@ -26,13 +26,12 @@ class WinegrowerExtensionTest {
 
     @Test
     void ensureBeansAreAdded() {
-        try (final Ripener ripener = new Ripener.Impl(new Ripener.Configuration())) {
-            try (final SeContainer container = WinegrowerExtension.RipenerLocator.aroundCdiBoot(ripener,
-                    () -> SeContainerInitializer.newInstance().initialize())) {
-                assertNotNull(container.select(Ripener.class).get());
-                assertNotNull(container.select(Ripener.Configuration.class).get());
-                assertNotNull(container.select(OSGiServices.class).get());
-            }
+        try (final Ripener ripener = new Ripener.Impl(new Ripener.Configuration());
+                final SeContainer container = WinegrowerExtension.RipenerLocator.aroundCdiBoot(ripener,
+                        () -> SeContainerInitializer.newInstance().initialize())) {
+            assertNotNull(container.select(Ripener.class).get());
+            assertNotNull(container.select(Ripener.Configuration.class).get());
+            assertNotNull(container.select(OSGiServices.class).get());
         }
     }
 }
