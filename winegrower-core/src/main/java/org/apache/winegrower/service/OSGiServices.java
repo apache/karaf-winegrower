@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
@@ -76,12 +77,10 @@ public class OSGiServices {
                           throw new IllegalStateException(e);
                       }
                   } else {
-                      services.stream()
-                              .filter(it -> asList(it.getClasses()).contains(field.getType().getName()))
-                              .findFirst()
-                              .ifPresent(reg -> {
+                      findService(field.getType())
+                              .ifPresent(value -> {
                                   try {
-                                      field.set(instance, ServiceReferenceImpl.class.cast(reg.getReference()).getReference());
+                                      field.set(instance, value);
                                   } catch (final IllegalAccessException e) {
                                       throw new IllegalStateException(e);
                                   }
@@ -89,6 +88,13 @@ public class OSGiServices {
                   }
               });
         doInject(typeScope.getSuperclass(), instance);
+    }
+
+    public <T> Optional<T> findService(final Class<T> type) {
+        return services.stream()
+                .filter(it -> asList(it.getClasses()).contains(type.getName()))
+                .findFirst()
+                .map(reg -> (T) ServiceReferenceImpl.class.cast(reg.getReference()).getReference());
     }
 
     public synchronized void addListener(final ServiceListener listener, final Filter filter) {

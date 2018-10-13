@@ -1,5 +1,8 @@
 = Apache Winegrower Extensions
 
+Apache Winegrower provides a set of extensions to make your development
+more efficient.
+
 * xref:maven/index.adoc[Maven] documentation
 * xref:junit5/index.adoc[JUnit 5] documentation
 * xref:cdi/index.adoc[CDI] documentation

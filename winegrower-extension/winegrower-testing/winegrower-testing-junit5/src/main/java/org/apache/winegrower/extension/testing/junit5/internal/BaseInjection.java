@@ -34,7 +34,7 @@ public abstract class BaseInjection implements TestInstancePostProcessor, Parame
     public boolean supportsParameter(final ParameterContext parameterContext, final ExtensionContext context)
             throws ParameterResolutionException {
         final Class<?> type = parameterContext.getParameter().getType();
-        return type == Ripener.class || type == OSGiServices.class;
+        return type == Ripener.class || type == OSGiServices.class || store(context).get(Ripener.class, Ripener.class).getServices().findService(type).isPresent();
     }
 
     @Override
@@ -49,7 +49,7 @@ public abstract class BaseInjection implements TestInstancePostProcessor, Parame
                     .map(Ripener::getServices)
                     .orElse(null);
         }
-        return null;
+        return store(context).get(Ripener.class, Ripener.class).getServices().findService(type).orElse(null);
     }
 
     protected abstract ExtensionContext.Store store(final ExtensionContext context);

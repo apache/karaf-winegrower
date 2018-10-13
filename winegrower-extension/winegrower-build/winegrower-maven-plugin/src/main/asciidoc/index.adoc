@@ -1,3 +1,40 @@
 = Apache Winegrower Maven Plugin
 
-TBD
+Apache Winegrower Maven plugin allows to start an instance very easily thanks to `pour` command:
+
+[source,sh]
+----
+mvn winegrower:pour
+----
+
+== Configuration
+
+[cols="e,m,m,m,a",headers]
+|===
+|Name|Type|Property|Default|Description
+|dependencyScopes|Collection<String>|winegrower.dependencyScopes|provided,compile,system,runtime|which scopes to includes to build the deployment classloader.
+|jarFilter|String|winegrower.jarFilter|-|custom `Predicate<String>` implementation to use as jar filter in the `Ripener.Configuration`.
+|manifestContributors|Collection<String>|winegrower.manifestContributors|-|All manifets contributors to use for the `Ripener.Configuration`.
+|scanningExcludes|Collection<String>|winegrower.scanningExcludes|-|All exclusions to use for the `Ripener.Configuration`.
+|scanningIncludes|Collection<String>|winegrower.scanningIncludes|-|All inclusions to use for the `Ripener.Configuration`.
+|workDir|File|winegrower.workDir|${project.build.directory}/winegrower/workdir|the `Ripener.Configuration` work directory.
+|systemVariables|Map<String, String>|winegrower.systemVariables|${project.build.directory}/winegrower/workdir|System properties set before the instance start and resetted after the shutdown.
+|waitOnSystemIn|boolean|winegrower.waitOnSystemIn|${project.build.directory}/winegrower/workdir|should the mojo wait you enter any character to exist, it is useful to disable it if you use the Karaf shell which reads `System.in` as well.
+|===
+
+== Example
+
+[source,xml]
+----
+<plugin>
+  <groupId>org.apache.winegrower</groupId>
+  <artifactId>winegrower-maven-plugin</artifactId>
+  <version>${winegrower.version}</version>
+  <configuration>
+    <systemVariables>
+      <karaf.startLocalConsole>true</karaf.startLocalConsole>
+    </systemVariables>
+    <waitOnSystemIn>false</waitOnSystemIn> <!-- cause of the shell -->
+  </configuration>
+</plugin>
+----

@@ -1,3 +1,21 @@
 = Apache Winegrower CDI
 
-TBD
+Apache Winegrower CDI extension allows to register in CDI context
+a `Ripener`, its configuration, `OSGiServices` registry and all services
+not using a `java.*` class.
+
+== Bootstrap CDI
+
+To let the extension know which `Ripener` instance to use you must wrap the CDI
+bootstrap. You can do it with `wrapCdiBoot` method:
+
+[source,java]
+----
+try (final Ripener ripener = new Ripener.Impl(new Ripener.Configuration());
+        final SeContainer container = WinegrowerExtension.RipenerLocator
+            .wrapCdiBoot(ripener, () -> SeContainerInitializer.newInstance().initialize())) {
+    final Ripener cdiRipener = container.select(Ripener.class).get();
+    // cdiRipener == ripener
+}
+----
+
