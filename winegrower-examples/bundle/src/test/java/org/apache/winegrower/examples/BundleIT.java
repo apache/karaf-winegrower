@@ -13,7 +13,6 @@
  */
 package org.apache.winegrower.examples;
 
-import org.apache.winegrower.api.InjectedService;
 import org.apache.winegrower.extension.testing.junit5.Winegrower;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -21,11 +20,8 @@ import org.junit.jupiter.api.Test;
 @Winegrower
 class BundleIT {
 
-  @InjectedService
-  private EchoService echoService;
-
   @Test
-  void test() {
+  void test(final EchoService echoService) {
     Assertions.assertEquals("echotest", echoService.echo("test"));
   }
 
