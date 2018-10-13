@@ -60,7 +60,7 @@ of OSGi (packaging and library support lack in particular).
         <artifactId>exec-maven-plugin</artifactId>
         <version>1.6.0</version>
         <configuration>
-          <mainClass>org.apache.karaf.framework.ContextualFramework</mainClass>
+          <mainClass>org.apache.pinard.ContextualFramework</mainClass>
           <systemProperties>
             <systemProperty>
               <key>org.slf4j.simpleLogger.defaultLogLevel</key>

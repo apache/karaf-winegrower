@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Bundle-Version: 1.0
+Bundle-Activator: org.apache.winegrower.test.simpleservice.MyActivator
+Bundle-SymbolicName: service
