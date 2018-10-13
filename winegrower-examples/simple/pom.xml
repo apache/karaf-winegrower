@@ -32,6 +32,7 @@
 
   <groupId>org.apache.winegrower.examples</groupId>
   <artifactId>simple</artifactId>
+  <name>Apache Winegrower :: Examples :: Simple</name>
 
   <dependencies>
     <dependency>
