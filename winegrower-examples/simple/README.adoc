@@ -1,0 +1,13 @@
+= Apache Winegrower - Simple example
+
+This is example is the minimum application you can create with Winegrower.
+
+Your application is a regular jar with a Winegrower activator entry point (a class annotation with `@ImplicitActivator`).
+
+NB: this simple example is not OSGi compatible, it only runs with Winegrower.
+
+== Dependencies
+
+The only dependency you need is `winegrower-core`.
+
+== Start

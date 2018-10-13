@@ -1,13 +1,14 @@
 = Apache Winegrower
 
-Apache Winegrower is an application framework supporting several programming models.
-It allows you to easily create applications, with different packaging options, from standalone jar to cloud application and docker.
+Apache Winegrower is a ligthweight and powerful application framework.
 
-Apache Winegrower supports the following development frameworks:
+It brings the powerful OSGi model without all the issue and help of bundle classloaders.
+Winegrower fully supports the activator and service model but use an unique classloader.
 
-* CDI
-* Spring
-* Simplified OSGi (single classloader but all the service lifecycle and activator support)
+It supports both OSGi and regular application.
+
+Apache Winegrower provides several packaging options, like standalone jar, exploded jar, docker images.
+It's also cloud ready and provides tooling to provision your applications on cloud providers.
 
 == Sample
 

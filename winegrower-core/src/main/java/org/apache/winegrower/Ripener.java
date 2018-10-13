@@ -219,7 +219,7 @@ public interface Ripener extends AutoCloseable {
                 latch.countDown();
             }
         });
-        try (final Ripener framework = new Ripener.Impl(new Configuration()).start()) {
+        try (final Ripener ripener = new Ripener.Impl(new Configuration()).start()) {
             try {
                 latch.await();
             } catch (final InterruptedException e) {
