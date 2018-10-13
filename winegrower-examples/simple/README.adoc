@@ -1,6 +1,6 @@
 = Apache Winegrower - Simple example
 
-This is example is the minimum application you can create with Winegrower.
+This example is the minimum application you can create with Winegrower.
 
 Your application is a regular jar with a Winegrower activator entry point (a class annotation with `@ImplicitActivator`).
 

@@ -1,0 +1,15 @@
+= Apache Winegrower - Bundle example
+
+This example is a little more complete.
+
+It creates a OSGi bundle with a bundle activator which register a service.
+
+The example includes a test based on the Winegrower JUnit 5 extension.
+
+The created OSGi bundle can be used in Winegrower or on a "concrete" OSGi framework like Apache Karaf with Felix or Equinox.
+
+== Dependencies
+
+The only dependency you need is `winegrower-core` and `winegrower-extension-testing-junit5` for the test.
+
+== Start
