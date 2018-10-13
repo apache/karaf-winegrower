@@ -93,6 +93,7 @@ public class ServiceReferenceImpl<T> implements ServiceReference<T> {
             synchronized (this) {
                 if (referenceInstance != null) {
                     ServiceFactory.class.cast(reference).ungetService(bundle, registration, referenceInstance);
+                    referenceInstance = null;
                     return true;
                 }
             }
