@@ -150,7 +150,7 @@ public interface ContextualFramework extends AutoCloseable {
         @Override
         public synchronized ContextualFramework start() {
             startTime = System.currentTimeMillis();
-            LOGGER.info("Starting Apache Karaf Contextual Framework on {}",
+            LOGGER.info("Starting Apache Winegrower on {}",
                     LocalDateTime.ofInstant(Instant.ofEpochMilli(startTime), ZoneId.systemDefault()));
             final StandaloneScanner scanner = new StandaloneScanner(configuration, registry.getFramework());
             final AtomicLong bundleIdGenerator = new AtomicLong(1);
@@ -165,7 +165,7 @@ public interface ContextualFramework extends AutoCloseable {
 
         @Override
         public synchronized void stop() {
-            LOGGER.info("Stopping Apache Karaf Contextual Framework on {}", LocalDateTime.now());
+            LOGGER.info("Stopping Apache Winegrower on {}", LocalDateTime.now());
             final Map<Long, OSGiBundleLifecycle> bundles = registry.getBundles();
             bundles.forEach((k, v) -> v.stop());
             bundles.clear();
