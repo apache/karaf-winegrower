@@ -19,13 +19,13 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 @Winegrower
-public class BundleTest {
+class BundleIT {
 
   @InjectedService
   private EchoService echoService;
 
   @Test
-  public void test() throws Exception {
+  void test() {
     Assertions.assertEquals("echotest", echoService.echo("test"));
   }
 
