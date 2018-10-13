@@ -35,6 +35,7 @@
 
   <modules>
     <module>winegrower-testing</module>
+    <module>winegrower-build</module>
   </modules>
 
 </project>

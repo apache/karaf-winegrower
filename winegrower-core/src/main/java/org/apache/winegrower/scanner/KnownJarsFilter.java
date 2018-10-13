@@ -1,6 +1,4 @@
 /**
- * Copyright (C) 2006-2018 Talend Inc. - www.talend.com
- * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -36,6 +34,7 @@ public class KnownJarsFilter implements Predicate<String> {
         add("antlr-");
         add("aopalliance-");
         add("ApacheJMeter");
+        add("animal-sniffer");
         add("apiguardian-");
         add("args4j-");
         add("arquillian-");
@@ -53,6 +52,7 @@ public class KnownJarsFilter implements Predicate<String> {
         add("c3p0-");
         add("cassandra-driver-core");
         add("catalina");
+        add("cdi-api");
         add("cglib-");
         add("charsets.jar");
         add("commons");
@@ -199,6 +199,7 @@ public class KnownJarsFilter implements Predicate<String> {
         add("wagon-");
         add("webbeans");
         add("websocket");
+        add("winegrower");
         add("woodstox-core-");
         add("ws-commons-util-");
         add("wsdl4j-");

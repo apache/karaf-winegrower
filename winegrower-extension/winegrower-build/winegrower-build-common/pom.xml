@@ -27,11 +27,19 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>winegrower-testing</artifactId>
-  <name>Apache Winegrower :: Extension :: Testing</name>
-  <packaging>pom</packaging>
+  <artifactId>winegrower-build-common</artifactId>
+  <name>Apache Winegrower :: Extension :: Build :: Common</name>
 
-  <modules>
-    <module>winegrower-testing-junit5</module>
-  </modules>
+  <properties>
+    <winegrower.build.name>${winegrower.build.name.base}.extension.build.common</winegrower.build.name>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.winegrower</groupId>
+      <artifactId>winegrower-core</artifactId>
+      <version>${project.version}</version>
+      <scope>compile</scope>
+    </dependency>
+  </dependencies>
 </project>
