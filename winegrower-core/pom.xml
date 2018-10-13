@@ -33,6 +33,10 @@
   <artifactId>winegrower-core</artifactId>
   <name>Apache Winegrower :: Core</name>
 
+  <properties>
+    <winegrower.build.name>${winegrower.build.name.base}.core</winegrower.build.name>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.osgi</groupId>

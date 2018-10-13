@@ -125,7 +125,7 @@ public interface ContextualFramework extends AutoCloseable {
     class Impl implements ContextualFramework {
         private final static Logger LOGGER = LoggerFactory.getLogger(ContextualFramework.class);
 
-        private final OSGiServices services = new OSGiServices();
+        private final OSGiServices services = new OSGiServices(this);
         private final BundleRegistry registry;
 
         private final Configuration configuration;

@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
+import org.apache.winegrower.ContextualFramework;
 import org.apache.winegrower.api.InjectedService;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
@@ -39,6 +40,11 @@ public class OSGiServices {
 
     private final Collection<ServiceListenerDefinition> serviceListeners = new ArrayList<>();
     private final Collection<ServiceRegistrationImpl<?>> services = new ArrayList<>();
+    private final ContextualFramework framework;
+
+    public OSGiServices(final ContextualFramework framework) {
+        this.framework = framework;
+    }
 
     public <T> T inject(final T instance) {
         doInject(instance.getClass(), instance);
@@ -56,16 +62,32 @@ public class OSGiServices {
                       field.setAccessible(true);
                   }
               })
-              .forEach(field -> services.stream()
-                    .filter(it -> asList(it.getClasses()).contains(field.getType().getName()))
-                    .findFirst()
-                    .ifPresent(reg -> {
-                        try {
-                            field.set(instance, ServiceReferenceImpl.class.cast(reg.getReference()).getReference());
-                        } catch (final IllegalAccessException e) {
-                            throw new IllegalStateException(e);
-                        }
-                    }));
+              .forEach(field -> {
+                  if (ContextualFramework.class == field.getType()) {
+                      try {
+                          field.set(instance, framework);
+                      } catch (final IllegalAccessException e) {
+                          throw new IllegalStateException(e);
+                      }
+                  } else if (OSGiServices.class == field.getType()) {
+                      try {
+                          field.set(instance, framework.getServices());
+                      } catch (final IllegalAccessException e) {
+                          throw new IllegalStateException(e);
+                      }
+                  } else {
+                      services.stream()
+                              .filter(it -> asList(it.getClasses()).contains(field.getType().getName()))
+                              .findFirst()
+                              .ifPresent(reg -> {
+                                  try {
+                                      field.set(instance, ServiceReferenceImpl.class.cast(reg.getReference()).getReference());
+                                  } catch (final IllegalAccessException e) {
+                                      throw new IllegalStateException(e);
+                                  }
+                              });
+                  }
+              });
         doInject(typeScope.getSuperclass(), instance);
     }
 

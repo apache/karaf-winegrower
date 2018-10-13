@@ -43,6 +43,10 @@
     <xbean.version>4.11</xbean.version>
 
     <surefire.log.level>INFO</surefire.log.level>
+
+    <winegrower.build.name.base>${project.groupId}</winegrower.build.name.base>
+    <!-- let's use a default but must be overriden in each delivery module -->
+    <winegrower.build.name>${winegrower.build.name.base}.${project.artifactId}</winegrower.build.name>
   </properties>
 
   <modules>
@@ -102,6 +106,19 @@
         <configuration>
           <source>1.8</source>
           <target>1.8</target>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.0.2</version>
+        <configuration>
+          <archive combine.children="append">
+            <manifestEntries>
+              <Automatic-Module-Name>${winegrower.build.name}</Automatic-Module-Name>
+            </manifestEntries>
+          </archive>
         </configuration>
       </plugin>
 

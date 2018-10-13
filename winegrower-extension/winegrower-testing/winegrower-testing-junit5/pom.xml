@@ -30,11 +30,21 @@
   <artifactId>winegrower-testing-junit5</artifactId>
   <name>Apache Winegrower :: Extension :: Testing :: JUnit5</name>
 
+  <properties>
+    <winegrower.build.name>${winegrower.build.name.base}.extension.testing.junit5</winegrower.build.name>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>
       <version>${junit.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.winegrower</groupId>
+      <artifactId>winegrower-core</artifactId>
+      <version>${project.version}</version>
     </dependency>
   </dependencies>
 </project>

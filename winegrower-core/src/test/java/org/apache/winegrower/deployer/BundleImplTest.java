@@ -41,8 +41,8 @@ class BundleImplTest {
     @BeforeAll
     static void initBundle() throws IOException {
         final Manifest manifest = new Manifest(new ByteArrayInputStream(("Manifest-Version: 1.0\nBundle-Version: 1.0\nBundle-SymbolicName: test\n").getBytes(StandardCharsets.UTF_8)));
-        final OSGiServices services = new OSGiServices();
         final ContextualFramework.Configuration configuration = new ContextualFramework.Configuration();
+        final OSGiServices services = new OSGiServices(new ContextualFramework.Impl(configuration));
         final BundleRegistry registry = new BundleRegistry(services, configuration);
         final BundleContextImpl context = new BundleContextImpl(manifest, services, () -> bundle, registry);
         final File file = new File(registry.getFramework().getParentFile(), "test-classes");
