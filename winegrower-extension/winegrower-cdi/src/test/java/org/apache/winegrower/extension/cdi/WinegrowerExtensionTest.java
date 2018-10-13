@@ -27,7 +27,7 @@ class WinegrowerExtensionTest {
     @Test
     void ensureBeansAreAdded() {
         try (final Ripener ripener = new Ripener.Impl(new Ripener.Configuration());
-                final SeContainer container = WinegrowerExtension.RipenerLocator.aroundCdiBoot(ripener,
+                final SeContainer container = WinegrowerExtension.RipenerLocator.wrapCdiBoot(ripener,
                         () -> SeContainerInitializer.newInstance().initialize())) {
             assertNotNull(container.select(Ripener.class).get());
             assertNotNull(container.select(Ripener.Configuration.class).get());

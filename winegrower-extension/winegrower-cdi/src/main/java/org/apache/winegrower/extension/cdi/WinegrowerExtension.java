@@ -35,7 +35,7 @@ public class WinegrowerExtension implements Extension {
     private static final ThreadLocal<Ripener> RIPENER_LOCATOR = new ThreadLocal<>();
 
     public interface RipenerLocator {
-        static <T> T aroundCdiBoot(final Ripener ripener, final Supplier<T> initializer) {
+        static <T> T wrapCdiBoot(final Ripener ripener, final Supplier<T> initializer) {
             cdiWillStart(ripener);
             try {
                 return initializer.get();
@@ -56,7 +56,7 @@ public class WinegrowerExtension implements Extension {
     void registerServices(@Observes final AfterBeanDiscovery discovery) {
         final Ripener ripener = RIPENER_LOCATOR.get();
         if (ripener == null) {
-            throw new IllegalStateException("No Ripener provided, did you use aroundCdiBoot?");
+            throw new IllegalStateException("No Ripener provided, did you use wrapCdiBoot?");
         }
         ripener.getServices().getServices().stream()
                     .filter(it -> Constants.SCOPE_SINGLETON.equals(it.getReference().getProperty(Constants.SERVICE_SCOPE)))
