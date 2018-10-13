@@ -46,6 +46,7 @@
 
   <modules>
     <module>winegrower-core</module>
+    <module>winegrower-extension</module>
     <!-- <module>winegrower-cepages</module> -->
     <!-- <module>winegrower-examples</module> -->
     <!-- <module>winegrower-testing</module> -->
@@ -55,7 +56,7 @@
     <dependencies>
       <dependency>
         <groupId>org.osgi</groupId>
-        <artifactId>osgi.core</artifactId>
+        <artifactId>org.osgi.core</artifactId>
         <version>${osgi.version}</version>
       </dependency>
       <dependency>
