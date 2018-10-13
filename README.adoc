@@ -1,8 +1,13 @@
-= Contextual Framework for Karaf
+= Apache Winegrower
 
-Goal is to provide a light alternative to a full OSGi runtime
-allowing to use OSGi programming model without the classloader hell
-of OSGi (packaging and library support lack in particular).
+Apache Winegrower is an application framework supporting several programming models.
+It allows you to easily create applications, with different packaging options, from standalone jar to cloud application and docker.
+
+Apache Winegrower supports the following development frameworks:
+
+* CDI
+* Spring
+* Simplified OSGi (single classloader but all the service lifecycle and activator support)
 
 == Sample
 
@@ -32,9 +37,9 @@ of OSGi (packaging and library support lack in particular).
       <version>5.0.0</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.karaf</groupId>
-      <artifactId>karaf-framework</artifactId>
-      <version>1.0.0-SNAPSHOT</version>
+      <groupId>org.apache.winegrower</groupId>
+      <artifactId>winegrower-core</artifactId>
+      <version>1.0-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.apache.karaf.shell</groupId>
@@ -60,7 +65,7 @@ of OSGi (packaging and library support lack in particular).
         <artifactId>exec-maven-plugin</artifactId>
         <version>1.6.0</version>
         <configuration>
-          <mainClass>org.apache.pinard.ContextualFramework</mainClass>
+          <mainClass>org.apache.winegrower.Ripener</mainClass>
           <systemProperties>
             <systemProperty>
               <key>org.slf4j.simpleLogger.defaultLogLevel</key>

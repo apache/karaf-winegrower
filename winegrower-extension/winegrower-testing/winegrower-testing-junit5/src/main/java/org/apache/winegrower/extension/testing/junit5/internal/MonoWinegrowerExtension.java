@@ -19,7 +19,7 @@ import java.util.Iterator;
 import java.util.ServiceLoader;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.apache.winegrower.ContextualFramework;
+import org.apache.winegrower.Ripener;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
@@ -37,11 +37,11 @@ public class MonoWinegrowerExtension extends BaseInjection implements BeforeAllC
             synchronized (INSTANCE) {
                 instance = INSTANCE.get();
                 if (instance == null) {
-                    final Iterator<ContextualFramework.Configuration> configurations = ServiceLoader
-                            .load(ContextualFramework.Configuration.class).iterator();
-                    final ContextualFramework.Configuration configuration = configurations.hasNext() ? configurations.next()
-                            : new ContextualFramework.Configuration();
-                    instance = new Instance(new ContextualFramework.Impl(configuration));
+                    final Iterator<Ripener.Configuration> configurations = ServiceLoader
+                            .load(Ripener.Configuration.class).iterator();
+                    final Ripener.Configuration configuration = configurations.hasNext() ? configurations.next()
+                            : new Ripener.Configuration();
+                    instance = new Instance(new Ripener.Impl(configuration));
                     Runtime.getRuntime().addShutdownHook(new Thread() {
 
                         {
@@ -53,11 +53,11 @@ public class MonoWinegrowerExtension extends BaseInjection implements BeforeAllC
                             ofNullable(INSTANCE.get()).ifPresent(Instance::close);
                         }
                     });
-                    instance.framework.start();
+                    instance.ripener.start();
                 }
             }
         }
-        store(extensionContext).put(ContextualFramework.class, instance.framework);
+        store(extensionContext).put(Ripener.class, instance.ripener);
     }
 
     @Override
@@ -67,15 +67,15 @@ public class MonoWinegrowerExtension extends BaseInjection implements BeforeAllC
 
     private static class Instance implements AutoCloseable {
 
-        private final ContextualFramework framework;
+        private final Ripener ripener;
 
-        private Instance(final ContextualFramework framework) {
-            this.framework = framework;
+        private Instance(final Ripener ripener) {
+            this.ripener = ripener;
         }
 
         @Override
         public void close() {
-            framework.stop();
+            ripener.stop();
         }
     }
 }

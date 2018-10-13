@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
-import org.apache.winegrower.ContextualFramework;
+import org.apache.winegrower.Ripener;
 import org.apache.winegrower.api.InjectedService;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
@@ -40,9 +40,9 @@ public class OSGiServices {
 
     private final Collection<ServiceListenerDefinition> serviceListeners = new ArrayList<>();
     private final Collection<ServiceRegistrationImpl<?>> services = new ArrayList<>();
-    private final ContextualFramework framework;
+    private final Ripener framework;
 
-    public OSGiServices(final ContextualFramework framework) {
+    public OSGiServices(final Ripener framework) {
         this.framework = framework;
     }
 
@@ -63,7 +63,7 @@ public class OSGiServices {
                   }
               })
               .forEach(field -> {
-                  if (ContextualFramework.class == field.getType()) {
+                  if (Ripener.class == field.getType()) {
                       try {
                           field.set(instance, framework);
                       } catch (final IllegalAccessException e) {

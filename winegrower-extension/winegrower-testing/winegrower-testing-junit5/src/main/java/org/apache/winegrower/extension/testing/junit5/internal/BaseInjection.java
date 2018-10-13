@@ -15,7 +15,7 @@ package org.apache.winegrower.extension.testing.junit5.internal;
 
 import static java.util.Optional.ofNullable;
 
-import org.apache.winegrower.ContextualFramework;
+import org.apache.winegrower.Ripener;
 import org.apache.winegrower.service.OSGiServices;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
@@ -26,7 +26,7 @@ import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 public abstract class BaseInjection implements TestInstancePostProcessor, ParameterResolver {
     @Override
     public void postProcessTestInstance(final Object o, final ExtensionContext context) {
-        ofNullable(store(context).get(ContextualFramework.class, ContextualFramework.class))
+        ofNullable(store(context).get(Ripener.class, Ripener.class))
                 .ifPresent(fwk -> fwk.getServices().inject(o));
     }
 
@@ -34,19 +34,19 @@ public abstract class BaseInjection implements TestInstancePostProcessor, Parame
     public boolean supportsParameter(final ParameterContext parameterContext, final ExtensionContext context)
             throws ParameterResolutionException {
         final Class<?> type = parameterContext.getParameter().getType();
-        return type == ContextualFramework.class || type == OSGiServices.class;
+        return type == Ripener.class || type == OSGiServices.class;
     }
 
     @Override
     public Object resolveParameter(final ParameterContext parameterContext, final ExtensionContext context)
             throws ParameterResolutionException {
         final Class<?> type = parameterContext.getParameter().getType();
-        if (type == ContextualFramework.class) {
-            return store(context).get(ContextualFramework.class, ContextualFramework.class);
+        if (type == Ripener.class) {
+            return store(context).get(Ripener.class, Ripener.class);
         }
         if (type == OSGiServices.class) {
-            return ofNullable(store(context).get(ContextualFramework.class, ContextualFramework.class))
-                    .map(ContextualFramework::getServices)
+            return ofNullable(store(context).get(Ripener.class, Ripener.class))
+                    .map(Ripener::getServices)
                     .orElse(null);
         }
         return null;

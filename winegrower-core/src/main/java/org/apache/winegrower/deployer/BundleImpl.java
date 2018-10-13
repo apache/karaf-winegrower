@@ -43,7 +43,7 @@ import java.util.stream.Collector;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 
-import org.apache.winegrower.ContextualFramework;
+import org.apache.winegrower.Ripener;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
@@ -66,7 +66,7 @@ public class BundleImpl implements Bundle {
     private int state = Bundle.UNINSTALLED;
 
     BundleImpl(final Manifest manifest, final File file, final BundleContextImpl context,
-               final ContextualFramework.Configuration configuration, final long id) {
+               final Ripener.Configuration configuration, final long id) {
         this.file = file;
         this.dataFileBase = new File(configuration.getWorkDir(), file.getName());
         this.context = context;

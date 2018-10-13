@@ -24,7 +24,7 @@ import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.util.stream.Stream;
 
-import org.apache.winegrower.ContextualFramework;
+import org.apache.winegrower.Ripener;
 import org.apache.winegrower.extension.testing.junit5.Winegrower;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
@@ -35,21 +35,21 @@ public class WinegrowerExtension extends BaseInjection implements BeforeAllCallb
 
     @Override
     public void beforeAll(final ExtensionContext context) {
-        final ContextualFramework.Configuration configuration = context.getElement()
+        final Ripener.Configuration configuration = context.getElement()
                                                                        .map(e -> e.getAnnotation(Winegrower.class))
                                                                        .map(this::createConfiguration)
-                                                                       .orElseGet(ContextualFramework.Configuration::new);
-        store(context).put(ContextualFramework.class, new ContextualFramework.Impl(configuration).start());
+                                                                       .orElseGet(Ripener.Configuration::new);
+        store(context).put(Ripener.class, new Ripener.Impl(configuration).start());
     }
 
     @Override
     public void afterAll(final ExtensionContext context) {
-        ofNullable(store(context).get(ContextualFramework.class, ContextualFramework.class))
-                .ifPresent(ContextualFramework::stop);
+        ofNullable(store(context).get(Ripener.class, Ripener.class))
+                .ifPresent(Ripener::stop);
     }
 
-    private ContextualFramework.Configuration createConfiguration(final Winegrower winegrower) {
-        final ContextualFramework.Configuration configuration = new ContextualFramework.Configuration();
+    private Ripener.Configuration createConfiguration(final Winegrower winegrower) {
+        final Ripener.Configuration configuration = new Ripener.Configuration();
         of(winegrower.workDir())
                 .filter(it -> !it.isEmpty())
                 .ifPresent(wd -> configuration.setWorkDir(new File(wd)));

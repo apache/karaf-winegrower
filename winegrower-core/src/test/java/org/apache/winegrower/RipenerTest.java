@@ -27,21 +27,21 @@ import java.util.Map;
 
 import org.apache.winegrower.deployer.OSGiBundleLifecycle;
 import org.apache.winegrower.service.BundleActivatorHandler;
-import org.apache.winegrower.test.WithFramework;
-import org.apache.winegrower.test.WithFramework.Entry;
-import org.apache.winegrower.test.WithFramework.Service;
+import org.apache.winegrower.test.WithRipener;
+import org.apache.winegrower.test.WithRipener.Entry;
+import org.apache.winegrower.test.WithRipener.Service;
 import org.apache.winegrower.test.simpleactivator.MyActivator;
 import org.junit.jupiter.api.Test;
 import org.osgi.framework.BundleActivator;
 
-class ContextualFrameworkTest {
+class RipenerTest {
 
     @Test
-    @WithFramework
-    void workDir(@Service final ContextualFramework framework) throws IOException {
-        final File workDir = framework.getConfiguration().getWorkDir();
+    @WithRipener
+    void workDir(@Service final Ripener ripener) throws IOException {
+        final File workDir = ripener.getConfiguration().getWorkDir();
         assertFalse(workDir.exists());
-        final File file = framework.getRegistry()
+        final File file = ripener.getRegistry()
                                   .getBundles()
                                   .values()
                                   .iterator()
@@ -53,22 +53,22 @@ class ContextualFrameworkTest {
         }
         assertTrue(file.getParentFile().exists());
         assertTrue(workDir.exists());
-        framework.stop();
+        ripener.stop();
         assertFalse(workDir.exists());
     }
 
     @Test
-    @WithFramework
-    void ensureFrameworkBundle(@Service final ContextualFramework framework) {
-        assertEquals(1, framework.getRegistry().getBundles().size());
+    @WithRipener
+    void ensureFrameworkBundle(@Service final Ripener ripener) {
+        assertEquals(1, ripener.getRegistry().getBundles().size());
     }
 
     @Test
-    @WithFramework(includeResources = @Entry(path = "org.apache.winegrower.test.simpleactivator"))
-    void simpleActivator(@Service final ContextualFramework framework) {
-        assertEquals(2, framework.getRegistry().getBundles().size());
+    @WithRipener(includeResources = @Entry(path = "org.apache.winegrower.test.simpleactivator"))
+    void simpleActivator(@Service final Ripener ripener) {
+        assertEquals(2, ripener.getRegistry().getBundles().size());
 
-        final BundleActivatorHandler activatorHandler = framework.getRegistry().getBundles().values().stream()
+        final BundleActivatorHandler activatorHandler = ripener.getRegistry().getBundles().values().stream()
                 .filter(it -> it.getActivator() != null)
                 .findFirst()
                 .orElseThrow(IllegalStateException::new)
@@ -81,35 +81,35 @@ class ContextualFrameworkTest {
         assertNotNull(myActivator.getContext());
         assertEquals(1, myActivator.getStarted());
         assertEquals(0, myActivator.getStopped());
-        framework.stop();
+        ripener.stop();
         assertEquals(1, myActivator.getStarted());
         assertEquals(1, myActivator.getStopped());
     }
 
     @Test
-    @WithFramework(includeResources = @Entry(path = "org.apache.winegrower.test.simpleservice"))
-    void simpleServiceRegistration(@Service final ContextualFramework framework) {
-        assertEquals(1, framework.getServices().getServices().size());
+    @WithRipener(includeResources = @Entry(path = "org.apache.winegrower.test.simpleservice"))
+    void simpleServiceRegistration(@Service final Ripener ripener) {
+        assertEquals(1, ripener.getServices().getServices().size());
     }
 
     @Test
-    @WithFramework(includeResources = { @Entry(path = "org.apache.winegrower.test.simpleservice", jarName = "service"),
+    @WithRipener(includeResources = { @Entry(path = "org.apache.winegrower.test.simpleservice", jarName = "service"),
             @Entry(path = "org.apache.winegrower.test.simpleconsumer", jarName = "consumer") })
-    void simpleService(@Service final ContextualFramework framework) {
-        validateTracker(framework);
+    void simpleService(@Service final Ripener ripener) {
+        validateTracker(ripener);
     }
 
     @Test
-    @WithFramework(includeResources = { @Entry(path = "org.apache.winegrower.test.simpleservice", jarName = "1_service"),
+    @WithRipener(includeResources = { @Entry(path = "org.apache.winegrower.test.simpleservice", jarName = "1_service"),
             @Entry(path = "org.apache.winegrower.test.simpleconsumer", jarName = "2_consumer") })
-    void simpleServiceReversedOrder(@Service final ContextualFramework framework) {
-        validateTracker(framework);
+    void simpleServiceReversedOrder(@Service final Ripener ripener) {
+        validateTracker(ripener);
     }
 
-    private void validateTracker(final ContextualFramework framework) {
-        assertEquals(1, framework.getServices().getServices().size());
+    private void validateTracker(final Ripener ripener) {
+        assertEquals(1, ripener.getServices().getServices().size());
 
-        final Map<String, BundleActivatorHandler> activatorHandler = framework.getRegistry().getBundles().values().stream()
+        final Map<String, BundleActivatorHandler> activatorHandler = ripener.getRegistry().getBundles().values().stream()
                 .filter(it -> it.getActivator() != null)
                 .collect(toMap(it -> it.getBundle().getSymbolicName(), OSGiBundleLifecycle::getActivator));
         assertNotNull(activatorHandler);

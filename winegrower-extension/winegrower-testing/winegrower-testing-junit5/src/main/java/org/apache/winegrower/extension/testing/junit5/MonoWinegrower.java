@@ -19,6 +19,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+import org.apache.winegrower.Ripener;
 import org.apache.winegrower.extension.testing.junit5.internal.MonoWinegrowerExtension;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -26,7 +27,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
  * Ensure the class is executed under a winegrower context.
  * Compared to {@link Winegrower}, it does start the container
  * only once for the whole JVM lifecycle and it uses a SPI
- * on the {@link org.apache.winegrower.ContextualFramework.Configuration}
+ * on the {@link Ripener.Configuration}
  * to initialize the container (to let it be shared accross tests).
  */
 @Target(TYPE)

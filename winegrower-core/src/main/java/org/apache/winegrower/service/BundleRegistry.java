@@ -20,14 +20,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.jar.Manifest;
 
-import org.apache.winegrower.ContextualFramework;
+import org.apache.winegrower.Ripener;
 import org.apache.winegrower.deployer.OSGiBundleLifecycle;
 
 public class BundleRegistry {
     private final Map<Long, OSGiBundleLifecycle> bundles = new HashMap<>();
     private final File framework;
 
-    public BundleRegistry(final OSGiServices services, final ContextualFramework.Configuration configuration) {
+    public BundleRegistry(final OSGiServices services, final Ripener.Configuration configuration) {
         final String resource = getClass().getName().replace('.', '/') + ".class";
         final File file = toFile(Thread.currentThread().getContextClassLoader().getResource(resource));
         this.framework = file.getName().endsWith(".class") ?
@@ -38,7 +38,7 @@ public class BundleRegistry {
         final Manifest frameworkManifest = new Manifest();
         frameworkManifest.getMainAttributes().putValue("Manifest-Version", "1.0");
         frameworkManifest.getMainAttributes().putValue("Bundle-Version", "1.0");
-        frameworkManifest.getMainAttributes().putValue("Bundle-SymbolicName", "Contextual Framework");
+        frameworkManifest.getMainAttributes().putValue("Bundle-SymbolicName", "Ripener");
         bundles.put(0L, new OSGiBundleLifecycle(frameworkManifest, framework, services, this, configuration, 0L));
     }
 

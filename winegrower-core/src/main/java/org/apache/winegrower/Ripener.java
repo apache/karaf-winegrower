@@ -47,12 +47,12 @@ import org.apache.winegrower.service.OSGiServices;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public interface ContextualFramework extends AutoCloseable {
+public interface Ripener extends AutoCloseable {
     Configuration getConfiguration();
 
     long getStartTime();
 
-    ContextualFramework start();
+    Ripener start();
 
     void stop();
 
@@ -122,8 +122,8 @@ public interface ContextualFramework extends AutoCloseable {
     }
 
 
-    class Impl implements ContextualFramework {
-        private final static Logger LOGGER = LoggerFactory.getLogger(ContextualFramework.class);
+    class Impl implements Ripener {
+        private final static Logger LOGGER = LoggerFactory.getLogger(Ripener.class);
 
         private final OSGiServices services = new OSGiServices(this);
         private final BundleRegistry registry;
@@ -148,9 +148,9 @@ public interface ContextualFramework extends AutoCloseable {
         }
 
         @Override
-        public synchronized ContextualFramework start() {
+        public synchronized Ripener start() {
             startTime = System.currentTimeMillis();
-            LOGGER.info("Starting Apache Winegrower on {}",
+            LOGGER.info("Starting Apache Winegrower application on {}",
                     LocalDateTime.ofInstant(Instant.ofEpochMilli(startTime), ZoneId.systemDefault()));
             final StandaloneScanner scanner = new StandaloneScanner(configuration, registry.getFramework());
             final AtomicLong bundleIdGenerator = new AtomicLong(1);
@@ -165,7 +165,7 @@ public interface ContextualFramework extends AutoCloseable {
 
         @Override
         public synchronized void stop() {
-            LOGGER.info("Stopping Apache Winegrower on {}", LocalDateTime.now());
+            LOGGER.info("Stopping Apache Winegrower application on {}", LocalDateTime.now());
             final Map<Long, OSGiBundleLifecycle> bundles = registry.getBundles();
             bundles.forEach((k, v) -> v.stop());
             bundles.clear();
@@ -219,7 +219,7 @@ public interface ContextualFramework extends AutoCloseable {
                 latch.countDown();
             }
         });
-        try (final ContextualFramework framework = new ContextualFramework.Impl(new Configuration()).start()) {
+        try (final Ripener framework = new Ripener.Impl(new Configuration()).start()) {
             try {
                 latch.await();
             } catch (final InterruptedException e) {

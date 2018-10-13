@@ -28,7 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 import java.util.jar.Manifest;
 
-import org.apache.winegrower.ContextualFramework;
+import org.apache.winegrower.Ripener;
 import org.apache.winegrower.service.BundleRegistry;
 import org.apache.winegrower.service.OSGiServices;
 import org.junit.jupiter.api.BeforeAll;
@@ -41,8 +41,8 @@ class BundleImplTest {
     @BeforeAll
     static void initBundle() throws IOException {
         final Manifest manifest = new Manifest(new ByteArrayInputStream(("Manifest-Version: 1.0\nBundle-Version: 1.0\nBundle-SymbolicName: test\n").getBytes(StandardCharsets.UTF_8)));
-        final ContextualFramework.Configuration configuration = new ContextualFramework.Configuration();
-        final OSGiServices services = new OSGiServices(new ContextualFramework.Impl(configuration));
+        final Ripener.Configuration configuration = new Ripener.Configuration();
+        final OSGiServices services = new OSGiServices(new Ripener.Impl(configuration));
         final BundleRegistry registry = new BundleRegistry(services, configuration);
         final BundleContextImpl context = new BundleContextImpl(manifest, services, () -> bundle, registry);
         final File file = new File(registry.getFramework().getParentFile(), "test-classes");

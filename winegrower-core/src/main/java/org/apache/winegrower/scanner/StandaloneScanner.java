@@ -28,7 +28,7 @@ import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 
-import org.apache.winegrower.ContextualFramework;
+import org.apache.winegrower.Ripener;
 import org.apache.winegrower.scanner.manifest.ManifestCreator;
 import org.apache.xbean.finder.AnnotationFinder;
 import org.apache.xbean.finder.ClassLoaders;
@@ -43,11 +43,11 @@ public class StandaloneScanner {
     private static final Attributes.Name OSGI_MANIFEST_MARKER = new Attributes.Name("Bundle-Version");
 
     private final List<URL> urls;
-    private final ContextualFramework.Configuration configuration;
+    private final Ripener.Configuration configuration;
     private final ClassLoader loader;
     private final File frameworkJar;
 
-    public StandaloneScanner(final ContextualFramework.Configuration configuration, final File frameworkJar) {
+    public StandaloneScanner(final Ripener.Configuration configuration, final File frameworkJar) {
         this.configuration = configuration;
         this.frameworkJar = frameworkJar;
         this.loader = Thread.currentThread().getContextClassLoader();

@@ -18,7 +18,7 @@ package org.apache.winegrower.extension.testing.junit5.internal;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import org.apache.winegrower.ContextualFramework;
+import org.apache.winegrower.Ripener;
 import org.apache.winegrower.api.InjectedService;
 import org.apache.winegrower.extension.testing.junit5.Winegrower;
 import org.apache.winegrower.service.OSGiServices;
@@ -27,14 +27,14 @@ import org.junit.jupiter.api.Test;
 @Winegrower
 class WinegrowerExtensionTest {
     @InjectedService
-    private ContextualFramework fieldFramework;
+    private Ripener ripener;
 
     @InjectedService
     private OSGiServices services;
 
     @Test
-    void checkInjections(final ContextualFramework framework) {
-        assertEquals(framework, fieldFramework);
+    void checkInjections(final Ripener ripener) {
+        assertEquals(ripener, this.ripener);
         assertNotNull(services);
     }
 }

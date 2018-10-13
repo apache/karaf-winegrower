@@ -22,7 +22,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.function.Predicate;
 
-import org.apache.winegrower.ContextualFramework;
+import org.apache.winegrower.Ripener;
 
 public class KnownJarsFilter implements Predicate<String> {
     private final Collection<String> forceIncludes = new HashSet<>(); // none for now
@@ -214,7 +214,7 @@ public class KnownJarsFilter implements Predicate<String> {
         add("ziplock-");
     }};
 
-    public KnownJarsFilter(final ContextualFramework.Configuration config) {
+    public KnownJarsFilter(final Ripener.Configuration config) {
         ofNullable(config.getScanningIncludes()).ifPresent(i -> {
             forceIncludes.clear();
             forceIncludes.addAll(i.stream().map(String::trim).filter(j -> !j.isEmpty()).collect(toSet()));

@@ -44,8 +44,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 import java.util.stream.Stream;
 
-import org.apache.winegrower.ContextualFramework;
-import org.apache.winegrower.scanner.KnownJarsFilter;
+import org.apache.winegrower.Ripener;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,8 +55,8 @@ import org.junit.jupiter.api.extension.ParameterResolver;
 
 @Target(METHOD)
 @Retention(RUNTIME)
-@ExtendWith(WithFramework.Extension.class)
-public @interface WithFramework {
+@ExtendWith(WithRipener.Extension.class)
+public @interface WithRipener {
 
     @Target(PARAMETER)
     @Retention(RUNTIME)
@@ -93,7 +92,7 @@ public @interface WithFramework {
 
         @Override
         public void beforeEach(final ExtensionContext extensionContext) {
-            final WithFramework config = getConfig(extensionContext).orElseThrow(IllegalArgumentException::new);
+            final WithRipener config = getConfig(extensionContext).orElseThrow(IllegalArgumentException::new);
 
             final Thread thread = Thread.currentThread();
             final URL[] urls = createUrls(config, extensionContext);
@@ -102,14 +101,14 @@ public @interface WithFramework {
             store.put(Context.class, new Context(thread, thread.getContextClassLoader(), loader));
             thread.setContextClassLoader(loader);
 
-            final ContextualFramework.Configuration configuration = new ContextualFramework.Configuration();
+            final Ripener.Configuration configuration = new Ripener.Configuration();
             configuration.setScanningExcludes(singletonList("test-classes"));
             setConfiguration(configuration, config);
 
-            final ContextualFramework framework = new ContextualFramework.Impl(configuration).start();
-            store.put(ContextualFramework.class, framework);
+            final Ripener ripener = new Ripener.Impl(configuration).start();
+            store.put(Ripener.class, ripener);
 
-            framework.getServices().inject(extensionContext.getRequiredTestInstance());
+            ripener.getServices().inject(extensionContext.getRequiredTestInstance());
         }
 
         @Override
@@ -124,10 +123,10 @@ public @interface WithFramework {
                     f.deleteOnExit();
                 }
             }));
-            ofNullable(store.get(ContextualFramework.class, ContextualFramework.class)).ifPresent(ContextualFramework::stop);
+            ofNullable(store.get(Ripener.class, Ripener.class)).ifPresent(Ripener::stop);
         }
 
-        private void setConfiguration(final ContextualFramework.Configuration configuration, final WithFramework config) {
+        private void setConfiguration(final Ripener.Configuration configuration, final WithRipener config) {
             final Collection<String> includes = asList(config.includes());
             if (!includes.isEmpty()) {
                 configuration.setJarFilter(it -> includes.stream().anyMatch(e -> e.startsWith(it)));
@@ -139,7 +138,7 @@ public @interface WithFramework {
             }
         }
 
-        private URL[] createUrls(final WithFramework config, final ExtensionContext context) {
+        private URL[] createUrls(final WithRipener config, final ExtensionContext context) {
             return Stream.concat(Stream.of(config.dependencies())
                     .flatMap(it -> Stream.of(variabilize(it, context.getTestClass().map(Class::getName).orElse("default")),
                             variabilize(it, "default")))
@@ -161,12 +160,12 @@ public @interface WithFramework {
                     })).toArray(URL[]::new);
         }
 
-        private Optional<WithFramework> getConfig(ExtensionContext context) {
+        private Optional<WithRipener> getConfig(ExtensionContext context) {
             return context
-                    .getElement().map(e -> ofNullable(e.getAnnotation(WithFramework.class))
+                    .getElement().map(e -> ofNullable(e.getAnnotation(WithRipener.class))
                             .orElseGet(()-> context.getParent()
                                                    .flatMap(ExtensionContext::getElement)
-                                                   .map(it -> it.getAnnotation(WithFramework.class))
+                                                   .map(it -> it.getAnnotation(WithRipener.class))
                                                    .orElse(null)));
         }
 
@@ -238,7 +237,7 @@ public @interface WithFramework {
         }
 
         private boolean supports(final Class<?> type) {
-            return type == ContextualFramework.class;
+            return type == Ripener.class;
         }
 
         private <T> T findInjection(final ExtensionContext extensionContext, final Class<T> type) {

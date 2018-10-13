@@ -18,21 +18,21 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import org.apache.winegrower.api.InjectedService;
 import org.apache.winegrower.service.ServiceReferenceImpl;
-import org.apache.winegrower.test.WithFramework;
-import org.apache.winegrower.test.WithFramework.Entry;
-import org.apache.winegrower.test.WithFramework.Service;
+import org.apache.winegrower.test.WithRipener;
+import org.apache.winegrower.test.WithRipener.Entry;
+import org.apache.winegrower.test.WithRipener.Service;
 import org.apache.winegrower.test.simpleservice.MyService;
 import org.junit.jupiter.api.Test;
 
 class InjectionTest {
 
     @Test
-    @WithFramework(includeResources = @Entry(path = "org.apache.winegrower.test.simpleservice"))
-    void inject(@Service final ContextualFramework framework) {
-        final Injected injected = framework.getServices().inject(new Injected());
+    @WithRipener(includeResources = @Entry(path = "org.apache.winegrower.test.simpleservice"))
+    void inject(@Service final Ripener ripener) {
+        final Injected injected = ripener.getServices().inject(new Injected());
         assertNotNull(injected.service);
         assertEquals(
-                ServiceReferenceImpl.class.cast(framework.getServices().getServices().iterator().next().getReference()).getReference(),
+                ServiceReferenceImpl.class.cast(ripener.getServices().getServices().iterator().next().getReference()).getReference(),
                 injected.service);
     }
 

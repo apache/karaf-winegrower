@@ -17,7 +17,7 @@ import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.util.jar.Manifest;
 
-import org.apache.winegrower.ContextualFramework;
+import org.apache.winegrower.Ripener;
 import org.apache.winegrower.service.BundleActivatorHandler;
 import org.apache.winegrower.service.BundleRegistry;
 import org.apache.winegrower.service.OSGiServices;
@@ -33,7 +33,7 @@ public class OSGiBundleLifecycle {
     private BundleActivatorHandler activator;
 
     public OSGiBundleLifecycle(final Manifest manifest, final File file, final OSGiServices services,
-                               final BundleRegistry registry, final ContextualFramework.Configuration configuration,
+                               final BundleRegistry registry, final Ripener.Configuration configuration,
                                final long id) {
         this.context = new BundleContextImpl(manifest, services, this::getBundle, registry);
         this.bundle = new BundleImpl(manifest, file, context, configuration, id);
