@@ -56,5 +56,29 @@ class WinegrowerExtensionTest {
         // ...
     }
 }
-
 ----
+
+== Inject your Services
+
+You can get services injected using `@InjectedService` in a class field.
+It also supports the `Ripener` and `OSGiServices`. These last two can be injected
+as test method parameters as well:
+
+[source,java]
+----
+@Winegrower
+class WinegrowerExtensionTest {
+    @InjectedService
+    private Ripener ripener;
+
+    @InjectedService
+    private OSGiServices services;
+
+    @Test
+    void myTest(final Ripener ripener) {
+        // ....
+    }
+}
+----
+
+
