@@ -208,6 +208,7 @@ public interface Ripener extends AutoCloseable {
 
     static void main(final String[] args) {
         final CountDownLatch latch = new CountDownLatch(1);
+        final Ripener main = new Impl(new Configuration()).start();
         Runtime.getRuntime().addShutdownHook(new Thread() {
 
             {
@@ -216,15 +217,14 @@ public interface Ripener extends AutoCloseable {
 
             @Override
             public void run() {
+                main.stop();
                 latch.countDown();
             }
         });
-        try (final Ripener ripener = new Ripener.Impl(new Configuration()).start()) {
-            try {
-                latch.await();
-            } catch (final InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+        try {
+            latch.await();
+        } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 }

@@ -49,6 +49,7 @@
         <version>1.6.0</version>
         <configuration>
           <mainClass>org.apache.winegrower.Ripener</mainClass>
+          <includePluginDependencies>true</includePluginDependencies>
           <systemProperties>
             <systemProperty>
               <key>org.slf4j.simpleLogger.defaultLogLevel</key>
@@ -60,6 +61,13 @@
             </systemProperty>
           </systemProperties>
         </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>1.7.25</version>
+          </dependency>
+        </dependencies>
       </plugin>
     </plugins>
   </build>
