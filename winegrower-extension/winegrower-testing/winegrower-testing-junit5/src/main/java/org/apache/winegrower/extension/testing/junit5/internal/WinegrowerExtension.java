@@ -26,16 +26,11 @@ import java.util.stream.Stream;
 
 import org.apache.winegrower.ContextualFramework;
 import org.apache.winegrower.extension.testing.junit5.Winegrower;
-import org.apache.winegrower.service.OSGiServices;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.ParameterContext;
-import org.junit.jupiter.api.extension.ParameterResolutionException;
-import org.junit.jupiter.api.extension.ParameterResolver;
-import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 
-public class WinegrowerExtension implements BeforeAllCallback, AfterAllCallback, TestInstancePostProcessor, ParameterResolver {
+public class WinegrowerExtension extends BaseInjection implements BeforeAllCallback, AfterAllCallback {
     private static final ExtensionContext.Namespace NAMESPACE = ExtensionContext.Namespace.create(WinegrowerExtension.class.getName());
 
     @Override
@@ -51,34 +46,6 @@ public class WinegrowerExtension implements BeforeAllCallback, AfterAllCallback,
     public void afterAll(final ExtensionContext context) {
         ofNullable(store(context).get(ContextualFramework.class, ContextualFramework.class))
                 .ifPresent(ContextualFramework::stop);
-    }
-
-    @Override
-    public void postProcessTestInstance(final Object o, final ExtensionContext context) {
-        ofNullable(store(context).get(ContextualFramework.class, ContextualFramework.class))
-                .ifPresent(fwk -> fwk.getServices().inject(o));
-    }
-
-    @Override
-    public boolean supportsParameter(final ParameterContext parameterContext, final ExtensionContext context)
-            throws ParameterResolutionException {
-        final Class<?> type = parameterContext.getParameter().getType();
-        return type == ContextualFramework.class || type == OSGiServices.class;
-    }
-
-    @Override
-    public Object resolveParameter(final ParameterContext parameterContext, final ExtensionContext context)
-            throws ParameterResolutionException {
-        final Class<?> type = parameterContext.getParameter().getType();
-        if (type == ContextualFramework.class) {
-            return store(context).get(ContextualFramework.class, ContextualFramework.class);
-        }
-        if (type == OSGiServices.class) {
-            return ofNullable(store(context).get(ContextualFramework.class, ContextualFramework.class))
-                    .map(ContextualFramework::getServices)
-                    .orElse(null);
-        }
-        return null;
     }
 
     private ContextualFramework.Configuration createConfiguration(final Winegrower winegrower) {
@@ -117,7 +84,8 @@ public class WinegrowerExtension implements BeforeAllCallback, AfterAllCallback,
         return configuration;
     }
 
-    private ExtensionContext.Store store(final ExtensionContext context) {
+    @Override
+    protected ExtensionContext.Store store(final ExtensionContext context) {
         return context.getStore(NAMESPACE);
     }
 }
