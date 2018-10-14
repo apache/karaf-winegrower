@@ -38,7 +38,8 @@
     <module>simple</module>
     <module>bundle</module>
     <!-- <module>services</module> -->
-    <!-- <module>shell</module> -->
+    <!-- <module>scr</module> -->
+    <module>shell</module>
     <!-- <module>monitoring</module> -->
     <!-- <module>cdi</module> -->
     <!-- <module>spring</module> -->

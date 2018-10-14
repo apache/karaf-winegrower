@@ -22,8 +22,8 @@ It's also cloud ready and provides tooling to provision your applications on clo
             http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>com.github.rmannibucau</groupId>
-  <artifactId>karaf-boot-with-shell</artifactId>
+  <groupId>mygroupid</groupId>
+  <artifactId>mywinegrowerapp-with-shell</artifactId>
   <version>1.0-SNAPSHOT</version>
 
   <dependencies>

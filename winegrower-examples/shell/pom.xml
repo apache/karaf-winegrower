@@ -25,31 +25,52 @@
 
   <parent>
     <groupId>org.apache.winegrower</groupId>
-    <artifactId>winegrower-cepages</artifactId>
+    <artifactId>winegrower-examples</artifactId>
     <version>1.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <groupId>org.apache.winegrower.cepages</groupId>
+  <groupId>org.apache.winegrower.examples</groupId>
   <artifactId>shell</artifactId>
-  <name>Apache Winegrower :: Cepages :: Shell</name>
 
   <dependencies>
     <dependency>
-      <groupId>org.apache.karaf.shell</groupId>
-      <artifactId>org.apache.karaf.shell.core</artifactId>
-      <version>${karaf.version}</version>
+      <groupId>org.apache.winegrower</groupId>
+      <artifactId>winegrower-core</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.karaf.system</groupId>
-      <artifactId>org.apache.karaf.system.core</artifactId>
-      <version>${karaf.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.osgi</groupId>
-      <artifactId>osgi.cmpn</artifactId>
-      <version>${osgi.version}</version>
+      <groupId>org.apache.winegrower.cepages</groupId>
+      <artifactId>shell</artifactId>
+      <version>${project.version}</version>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>1.6.0</version>
+        <configuration>
+          <mainClass>org.apache.winegrower.Ripener</mainClass>
+          <systemProperties>
+            <systemProperty>
+              <key>org.slf4j.simpleLogger.defaultLogLevel</key>
+              <value>DEBUG</value>
+            </systemProperty>
+            <systemProperty>
+              <key>org.slf4j.simpleLogger.logFile</key>
+              <value>System.out</value>
+            </systemProperty>
+            <systemProperty>
+              <key>karaf.startLocalConsole</key>
+              <value>true</value>
+            </systemProperty>
+          </systemProperties>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 
 </project>
