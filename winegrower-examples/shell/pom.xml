@@ -32,6 +32,7 @@
 
   <groupId>org.apache.winegrower.examples</groupId>
   <artifactId>shell</artifactId>
+  <name>Apache Winegrower :: Examples :: Shell</name>
 
   <dependencies>
     <dependency>
