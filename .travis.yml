@@ -42,7 +42,7 @@ jobs:
     - stage: master_build
       env:
       - STEP=Update Documentation
-      script: mvn pre-site
+      script: cd winegrower-documentation && mvn pre-site gplus:execute@deploy-site -Pgh-pages
       jdk: oraclejdk8
 
     - stage: master_build

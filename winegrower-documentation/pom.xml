@@ -117,4 +117,52 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>gh-pages</id>
+
+      <properties>
+        <github.serverId>winegrower-github</github.serverId>
+      </properties>
+
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.gmavenplus</groupId>
+            <artifactId>gmavenplus-plugin</artifactId>
+            <version>1.6</version>
+            <executions>
+              <execution>
+                <id>deploy-site</id>
+                <phase>none</phase>
+                <goals>
+                  <goal>execute</goal>
+                </goals>
+                <configuration>
+                  <allowSystemExits>true</allowSystemExits>
+                  <scripts>
+                    <script>${project.basedir}/src/build/GithubPages.groovy</script>
+                  </scripts>
+                </configuration>
+              </execution>
+            </executions>
+            <dependencies>
+              <dependency>
+                <groupId>org.eclipse.jgit</groupId>
+                <artifactId>org.eclipse.jgit</artifactId>
+                <version>4.9.2.201712150930-r</version>
+              </dependency>
+              <dependency>
+                <groupId>org.codehaus.groovy</groupId>
+                <artifactId>groovy-all</artifactId>
+                <version>2.5.3</version>
+                <type>pom</type>
+              </dependency>
+            </dependencies>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

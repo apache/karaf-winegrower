@@ -183,4 +183,9 @@
     </plugins>
   </build>
 
+  <scm>
+    <developerConnection>scm:git:https://github.com/jbonofre/winegrower.git</developerConnection>
+    <connection>scm:git:https://github.com/jbonofre/winegrower.git</connection>
+    <url>https://github.com/jbonofre/winegrower</url>
+  </scm>
 </project>
