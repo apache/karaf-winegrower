@@ -17,7 +17,7 @@ jobs:
   include:
     # PR profile
     - stage: pullrequest_build
-      script: mvn $BUILD_ARGS
+      script: mvn clean install
       jdk: oraclejdk8
 
     # master profile
