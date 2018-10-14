@@ -30,7 +30,7 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>examples</artifactId>
+  <artifactId>winegrower-examples</artifactId>
   <packaging>pom</packaging>
   <name>Apache Winegrower :: Examples</name>
 
