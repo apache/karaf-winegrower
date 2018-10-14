@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.Writer;
 import java.util.Map;
 
+import org.apache.winegrower.deployer.BundleImpl;
 import org.apache.winegrower.deployer.OSGiBundleLifecycle;
 import org.apache.winegrower.service.BundleActivatorHandler;
 import org.apache.winegrower.test.WithRipener;
@@ -32,9 +33,19 @@ import org.apache.winegrower.test.WithRipener.Entry;
 import org.apache.winegrower.test.WithRipener.Service;
 import org.apache.winegrower.test.simpleactivator.MyActivator;
 import org.junit.jupiter.api.Test;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 
 class RipenerTest {
+
+    @Test
+    @WithRipener
+    void stopFrameworkBundle(@Service final Ripener ripener) {
+        final BundleImpl bundle = ripener.getRegistry().getBundles().get(0L).getBundle();
+        assertEquals(Bundle.ACTIVE, bundle.getState());
+        ripener.stop();
+        assertEquals(Bundle.UNINSTALLED, bundle.getState());
+    }
 
     @Test
     @WithRipener

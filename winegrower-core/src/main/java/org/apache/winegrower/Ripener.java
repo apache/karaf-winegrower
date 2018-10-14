@@ -28,6 +28,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.UUID;
@@ -167,7 +168,9 @@ public interface Ripener extends AutoCloseable {
         public synchronized void stop() {
             LOGGER.info("Stopping Apache Winegrower application on {}", LocalDateTime.now());
             final Map<Long, OSGiBundleLifecycle> bundles = registry.getBundles();
-            bundles.forEach((k, v) -> v.stop());
+            bundles.values().stream()
+                   .sorted((o1, o2) -> (int) (o2.getBundle().getBundleId() - o1.getBundle().getBundleId()))
+                   .forEach(OSGiBundleLifecycle::stop);
             bundles.clear();
             if (configuration.getWorkDir().exists()) {
                 try {
