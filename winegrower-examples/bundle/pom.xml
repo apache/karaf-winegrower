@@ -34,6 +34,9 @@
   <artifactId>bundle</artifactId>
   <name>Apache Winegrower :: Examples :: Bundle</name>
   <packaging>bundle</packaging>
+  <description>
+    Run "mvn package winegrower:pour" to see this bundle being deployed.
+  </description>
 
   <dependencies>
     <dependency>
@@ -71,36 +74,9 @@
         </configuration>
       </plugin>
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
-        <version>1.6.0</version>
-        <configuration>
-          <mainClass>org.apache.winegrower.Ripener</mainClass>
-          <includePluginDependencies>true</includePluginDependencies>
-          <systemProperties>
-            <systemProperty>
-              <key>org.slf4j.simpleLogger.defaultLogLevel</key>
-              <value>DEBUG</value>
-            </systemProperty>
-            <systemProperty>
-              <key>org.slf4j.simpleLogger.logFile</key>
-              <value>System.out</value>
-            </systemProperty>
-          </systemProperties>
-        </configuration>
-        <dependencies>
-          <dependency>
-            <groupId>org.apache.winegrower</groupId>
-            <artifactId>winegrower-core</artifactId>
-            <version>${project.version}</version>
-            <exclusions> <!-- avoid maven conflict -->
-              <exclusion>
-                <groupId>org.slf4j</groupId>
-                <artifactId>*</artifactId>
-              </exclusion>
-            </exclusions>
-          </dependency>
-        </dependencies>
+        <groupId>org.apache.winegrower</groupId>
+        <artifactId>winegrower-maven-plugin</artifactId>
+        <version>${project.version}</version>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

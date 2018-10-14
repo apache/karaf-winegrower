@@ -33,6 +33,10 @@
   <groupId>org.apache.winegrower.examples</groupId>
   <artifactId>shell</artifactId>
   <name>Apache Winegrower :: Examples :: Shell</name>
+  <description>
+    Get started running "mvn package winegrower:pour" and execute "winegrower:example test".
+    Ctrl+D/Ctrl+C to quit.
+  </description>
 
   <dependencies>
     <dependency>
@@ -50,25 +54,14 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
-        <version>1.6.0</version>
+        <groupId>org.apache.winegrower</groupId>
+        <artifactId>winegrower-maven-plugin</artifactId>
+        <version>${project.version}</version>
         <configuration>
-          <mainClass>org.apache.winegrower.Ripener</mainClass>
-          <systemProperties>
-            <systemProperty>
-              <key>org.slf4j.simpleLogger.defaultLogLevel</key>
-              <value>DEBUG</value>
-            </systemProperty>
-            <systemProperty>
-              <key>org.slf4j.simpleLogger.logFile</key>
-              <value>System.out</value>
-            </systemProperty>
-            <systemProperty>
-              <key>karaf.startLocalConsole</key>
-              <value>true</value>
-            </systemProperty>
-          </systemProperties>
+          <waitOnSystemIn>false</waitOnSystemIn> <!-- don't mess up the shell which does it -->
+          <systemVariables>
+            <karaf.startLocalConsole>true</karaf.startLocalConsole>
+          </systemVariables>
         </configuration>
       </plugin>
     </plugins>

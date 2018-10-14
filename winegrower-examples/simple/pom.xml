@@ -33,6 +33,10 @@
   <groupId>org.apache.winegrower.examples</groupId>
   <artifactId>simple</artifactId>
   <name>Apache Winegrower :: Examples :: Simple</name>
+  <description>
+    Run "mvn package winegrower:pour" to start the application.
+    Type "exit" to shutdown the application.
+  </description>
 
   <dependencies>
     <dependency>
@@ -50,30 +54,9 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
-        <version>1.6.0</version>
-        <configuration>
-          <mainClass>org.apache.winegrower.Ripener</mainClass>
-          <includePluginDependencies>true</includePluginDependencies>
-          <systemProperties>
-            <systemProperty>
-              <key>org.slf4j.simpleLogger.defaultLogLevel</key>
-              <value>DEBUG</value>
-            </systemProperty>
-            <systemProperty>
-              <key>org.slf4j.simpleLogger.logFile</key>
-              <value>System.out</value>
-            </systemProperty>
-          </systemProperties>
-        </configuration>
-        <dependencies>
-          <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <version>1.7.25</version>
-          </dependency>
-        </dependencies>
+        <groupId>org.apache.winegrower</groupId>
+        <artifactId>winegrower-maven-plugin</artifactId>
+        <version>${project.version}</version>
       </plugin>
     </plugins>
   </build>
