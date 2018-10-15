@@ -40,6 +40,7 @@
     <!-- <module>services</module> -->
     <!-- <module>scr</module> -->
     <module>shell</module>
+    <module>jaxrs</module>
     <!-- <module>monitoring</module> -->
     <!-- <module>cdi</module> -->
     <!-- <module>spring</module> -->

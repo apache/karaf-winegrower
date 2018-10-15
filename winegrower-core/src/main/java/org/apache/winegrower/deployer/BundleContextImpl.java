@@ -23,8 +23,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Dictionary;
+import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.jar.Manifest;
+import java.util.stream.Stream;
 
 import org.apache.winegrower.service.BundleRegistry;
 import org.apache.winegrower.service.OSGiServices;
@@ -168,8 +170,24 @@ public class BundleContextImpl implements BundleContext {
     @Override
     public ServiceReference<?>[] getServiceReferences(final String clazz, final String filter) {
         final Filter predicate = filter == null ? null : createFilter(filter);
+        final Bundle bundle = getBundle();
+        final Class<?> expected;
+        try {
+            expected = clazz == null ? Object.class : bundle.loadClass(clazz);
+        } catch (final ClassNotFoundException e) {
+            return new ServiceReference<?>[0];
+        }
         return services.getServices().stream()
-                .filter(it -> asList(ServiceRegistrationImpl.class.cast(it).getClasses()).contains(clazz))
+                .filter(it -> Stream.of(ServiceRegistrationImpl.class.cast(it).getClasses())
+                        .map(name -> {
+                            try {
+                                return bundle.loadClass(name);
+                            } catch (final NoClassDefFoundError | ClassNotFoundException e) {
+                                return null;
+                            }
+                        })
+                        .filter(Objects::nonNull)
+                        .anyMatch(expected::isAssignableFrom))
                 .filter(it -> predicate == null || predicate.match(it.getReference()))
                 .map(it -> ServiceRegistrationImpl.class.cast(it).getReference())
                 .toArray(ServiceReference[]::new);

@@ -82,4 +82,9 @@ public class OSGiBundleLifecycle {
         }
         bundle.onStop();
     }
+
+    @Override
+    public String toString() {
+        return "OSGiBundleLifecycle{bundle=" + bundle + '}';
+    }
 }

@@ -51,6 +51,9 @@ public class WinegrowerExtension extends BaseInjection implements BeforeAllCallb
         of(winegrower.workDir())
                 .filter(it -> !it.isEmpty())
                 .ifPresent(wd -> configuration.setWorkDir(new File(wd)));
+        of(winegrower.prioritizedBundles())
+                .filter(it -> it.length > 0)
+                .ifPresent(prioritizedBundles -> configuration.setScanningIncludes(asList(prioritizedBundles)));
         of(winegrower.scanningIncludes())
                 .filter(it -> it.length > 0)
                 .ifPresent(includes -> configuration.setScanningIncludes(asList(includes)));

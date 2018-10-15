@@ -14,7 +14,6 @@
 package org.apache.winegrower;
 
 import static java.util.Arrays.asList;
-import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
 
 import java.io.File;
@@ -28,7 +27,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collection;
-import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.UUID;
@@ -41,6 +40,7 @@ import java.util.stream.StreamSupport;
 import org.apache.winegrower.deployer.OSGiBundleLifecycle;
 import org.apache.winegrower.scanner.StandaloneScanner;
 import org.apache.winegrower.scanner.manifest.ActivatorManifestContributor;
+import org.apache.winegrower.scanner.manifest.BlueprintManifestContributor;
 import org.apache.winegrower.scanner.manifest.KarafCommandManifestContributor;
 import org.apache.winegrower.scanner.manifest.ManifestContributor;
 import org.apache.winegrower.service.BundleRegistry;
@@ -77,9 +77,25 @@ public interface Ripener extends AutoCloseable {
         private Collection<String> scanningIncludes;
         private Collection<String> scanningExcludes;
         private Collection<ManifestContributor> manifestContributors = Stream.concat(
-                Stream.of(new KarafCommandManifestContributor(), new ActivatorManifestContributor()), // built-in
-                StreamSupport.stream(ServiceLoader.load(ManifestContributor.class).spliterator(), false) // extensions
+                // built-in
+                Stream.of(new KarafCommandManifestContributor(), new ActivatorManifestContributor(), new BlueprintManifestContributor()),
+                // extensions
+                StreamSupport.stream(ServiceLoader.load(ManifestContributor.class).spliterator(), false)
         ).collect(toList());
+        // known bundles
+        private List<String> prioritizedBundles = asList(
+                "org.apache.aries.blueprint.core",
+                "org.apache.aries.blueprint.cm",
+                "pax-web-extender-whiteboard",
+                "pax-web-runtime");
+
+        public List<String> getPrioritizedBundles() {
+            return prioritizedBundles;
+        }
+
+        public void setPrioritizedBundles(final List<String> prioritizedBundles) {
+            this.prioritizedBundles = prioritizedBundles;
+        }
 
         public Collection<ManifestContributor> getManifestContributors() {
             return manifestContributors;
@@ -156,7 +172,7 @@ public interface Ripener extends AutoCloseable {
             final StandaloneScanner scanner = new StandaloneScanner(configuration, registry.getFramework());
             final AtomicLong bundleIdGenerator = new AtomicLong(1);
             Stream.concat(scanner.findOSGiBundles().stream(), scanner.findPotentialOSGiBundles().stream())
-                    .sorted(comparing(b -> b.getJar().getName()))
+                    .sorted(this::compareBundles)
                     .map(it -> new OSGiBundleLifecycle(it.getManifest(), it.getJar(), services, registry, configuration, bundleIdGenerator.getAndIncrement()))
                     .peek(OSGiBundleLifecycle::start)
                     .peek(it -> registry.getBundles().put(it.getBundle().getBundleId(), it))
@@ -206,6 +222,29 @@ public interface Ripener extends AutoCloseable {
         @Override // for try with resource syntax
         public void close() {
             stop();
+        }
+
+        private int compareBundles(final StandaloneScanner.BundleDefinition bundle1, final StandaloneScanner.BundleDefinition bundle2) {
+            final int index1 = matchPriorities(bundle1.getJar().getName());
+            final int index2 = matchPriorities(bundle2.getJar().getName());
+            if (index1 == index2) {
+                return bundle1.getJar().getName().compareTo(bundle2.getJar().getName());
+            }
+            if (index1 == -1) {
+                return 1;
+            }
+            if (index2 == -1) {
+                return -1;
+            }
+            return index1 - index2;
+        }
+
+        private int matchPriorities(final String name) {
+            return configuration.getPrioritizedBundles().stream()
+                    .filter(name::startsWith)
+                    .findFirst()
+                    .map(it -> configuration.getPrioritizedBundles().indexOf(it))
+                    .orElse(-1);
         }
     }
 

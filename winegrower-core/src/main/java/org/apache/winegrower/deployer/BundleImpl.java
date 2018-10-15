@@ -51,6 +51,7 @@ import org.osgi.framework.BundleListener;
 import org.osgi.framework.Constants;
 import org.osgi.framework.Filter;
 import org.osgi.framework.ServiceReference;
+import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.Version;
 import org.osgi.framework.wiring.BundleWiring;
 
@@ -167,6 +168,7 @@ public class BundleImpl implements Bundle {
     public ServiceReference<?>[] getRegisteredServices() {
         return context.getServices().getServices().stream()
                 .filter(it -> it.getReference().getBundle() == this)
+                .map(ServiceRegistration::getReference)
                 .toArray(ServiceReference[]::new);
     }
 

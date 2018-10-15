@@ -32,6 +32,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(WinegrowerExtension.class)
 public @interface Winegrower {
     String workDir() default "";
+    String[] prioritizedBundles() default {};
     Class<? extends ManifestContributor>[] manifestContributor() default {};
     Class<? extends JarFilter> jarFilter() default JarFilter.class;
     String[] scanningExcludes() default {};

@@ -14,12 +14,13 @@
 package org.apache.winegrower.service;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.list;
+import static java.util.stream.Collectors.toList;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Dictionary;
 import java.util.Hashtable;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
@@ -34,6 +35,8 @@ import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceFactory;
 import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceRegistration;
+import org.osgi.service.cm.ConfigurationException;
+import org.osgi.service.cm.ManagedService;
 
 // holder of all services
 public class OSGiServices {
@@ -110,7 +113,7 @@ public class OSGiServices {
                                                                final Bundle from) {
         final Hashtable<String, Object> serviceProperties = new Hashtable<>();
         if (properties != null) {
-            serviceProperties.putAll(Map.class.cast(properties));
+            list(properties.keys()).forEach(key -> serviceProperties.put(key, properties.get(key)));
         }
         serviceProperties.put(Constants.OBJECTCLASS, classes);
         serviceProperties.put(Constants.SERVICE_ID, idGenerator.getAndIncrement());
@@ -132,13 +135,21 @@ public class OSGiServices {
         });
         services.add(registration);
         final ServiceEvent event = new ServiceEvent(ServiceEvent.REGISTERED, registration.getReference());
+        if (ManagedService.class.isInstance(service)) {
+            try {
+                ManagedService.class.cast(service).updated(properties);
+            } catch (final ConfigurationException e) {
+                throw new IllegalStateException(e);
+            }
+        }
         getListeners(registration).forEach(listener -> listener.listener.serviceChanged(event));
         return registration;
     }
 
-    private Stream<ServiceListenerDefinition> getListeners(final ServiceRegistration<?> reg) {
+    private Collection<ServiceListenerDefinition> getListeners(final ServiceRegistration<?> reg) {
         return serviceListeners.stream()
-                .filter(it -> it.filter == null || it.filter.match(reg.getReference()));
+                .filter(it -> it.filter == null || it.filter.match(reg.getReference()))
+                .collect(toList());
     }
 
     public synchronized Collection<ServiceRegistration<?>> getServices() {

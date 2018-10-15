@@ -30,6 +30,7 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
 
+  <groupId>org.apache.winegrower.cepages</groupId>
   <artifactId>winegrower-cepages</artifactId>
   <name>Apache Winegrower :: Cepages</name>
   <packaging>pom</packaging>
@@ -40,6 +41,19 @@
 
   <modules>
     <module>winegrower-cepage-shell</module>
+    <module>winegrower-cepage-cxf-rs</module>
   </modules>
 
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.1.0</version>
+        <configuration>
+          <skipIfEmpty>true</skipIfEmpty>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>
