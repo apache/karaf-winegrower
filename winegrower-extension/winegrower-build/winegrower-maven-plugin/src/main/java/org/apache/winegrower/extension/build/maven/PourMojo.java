@@ -13,7 +13,6 @@
  */
 package org.apache.winegrower.extension.build.maven;
 
-import static java.util.Collections.singletonList;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 import static org.apache.maven.plugins.annotations.ResolutionScope.RUNTIME_PLUS_SYSTEM;
@@ -61,8 +60,8 @@ public class PourMojo extends AbstractMojo {
     @Parameter(property = "winegrower.dependencyScopes", defaultValue = "provided,compile,system,runtime")
     private Collection<String> dependencyScopes;
 
-    @Parameter(property = "winegrower.prioritizedBundles", defaultValue = "org.apache.aries.blueprint.core")
-    private Collection<String> prioritizedBundles;
+    @Parameter(property = "winegrower.prioritizedBundles")
+    private List<String> prioritizedBundles;
 
     @Parameter(property = "winegrower.systemVariables")
     private Map<String, String> systemVariables;
