@@ -25,36 +25,40 @@
 
   <parent>
     <groupId>org.apache.winegrower</groupId>
-    <artifactId>winegrower</artifactId>
+    <artifactId>winegrower-examples</artifactId>
     <version>1.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <groupId>org.apache.winegrower.cepages</groupId>
-  <artifactId>winegrower-cepages</artifactId>
-  <name>Apache Winegrower :: Cepages</name>
-  <packaging>pom</packaging>
+  <groupId>org.apache.winegrower.examples</groupId>
+  <artifactId>jaxrs-whiteboard</artifactId>
+  <name>Apache Winegrower :: Examples :: JAXRS Whiteboard</name>
 
-  <properties>
-    <karaf.version>4.2.1</karaf.version>
-  </properties>
+  <description>
+    Run "mvn package winegrower:pour" then hit http://localhost:8080/cxf/api/harvest.
+  </description>
 
-  <modules>
-    <module>winegrower-cepage-shell</module>
-    <module>winegrower-cepage-cxf-rs</module>
-    <module>winegrower-cepage-jaxrs</module>
-  </modules>
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.winegrower</groupId>
+      <artifactId>winegrower-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.winegrower.cepages</groupId>
+      <artifactId>jaxrs</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
 
   <build>
     <plugins>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>3.1.0</version>
-        <configuration>
-          <skipIfEmpty>true</skipIfEmpty>
-        </configuration>
+        <groupId>org.apache.winegrower</groupId>
+        <artifactId>winegrower-maven-plugin</artifactId>
+        <version>${project.version}</version>
       </plugin>
     </plugins>
   </build>
+
 </project>

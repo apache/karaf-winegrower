@@ -41,6 +41,7 @@
     <!-- <module>scr</module> -->
     <module>shell</module>
     <module>jaxrs</module>
+    <module>jaxrs-whiteboard</module>
     <!-- <module>monitoring</module> -->
     <!-- <module>cdi</module> -->
     <!-- <module>spring</module> -->
