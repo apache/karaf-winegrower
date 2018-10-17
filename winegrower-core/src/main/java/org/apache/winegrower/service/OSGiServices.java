@@ -15,8 +15,10 @@ package org.apache.winegrower.service;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.list;
+import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Dictionary;
@@ -35,11 +37,17 @@ import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceFactory;
 import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceRegistration;
+import org.osgi.service.cm.Configuration;
+import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ManagedService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 // holder of all services
 public class OSGiServices {
+    private static final Logger LOGGER = LoggerFactory.getLogger(OSGiServices.class);
+
     private final AtomicLong idGenerator = new AtomicLong(1);
 
     private final Collection<ServiceListenerDefinition> serviceListeners = new ArrayList<>();
@@ -111,7 +119,13 @@ public class OSGiServices {
     public synchronized ServiceRegistration<?> registerService(final String[] classes, final Object service,
                                                                final Dictionary<String, ?> properties,
                                                                final Bundle from) {
-        final Hashtable<String, Object> serviceProperties = new Hashtable<>();
+        final Hashtable<String, Object> serviceProperties = new Hashtable<String, Object>() {
+            @Override
+            public Object get(final Object key) {
+                final String property = System.getProperty(String.valueOf(key));
+                return property != null ? property : super.get(key);
+            }
+        };
         if (properties != null) {
             list(properties.keys()).forEach(key -> serviceProperties.put(key, properties.get(key)));
         }
@@ -125,8 +139,21 @@ public class OSGiServices {
             serviceProperties.put(Constants.SERVICE_SCOPE, Constants.SCOPE_SINGLETON);
         }
 
+        final Object pid = serviceProperties.get("service.pid");
+        if (pid != null) {
+            final ConfigurationAdmin configurationAdmin = framework.getConfigurationAdmin();
+            try {
+                final Configuration configuration = configurationAdmin.getConfiguration(String.valueOf(pid));
+                ofNullable(configuration.getProperties())
+                        .ifPresent(prop -> list(prop.keys())
+                                .forEach(key -> serviceProperties.put(key, configuration.getProperties().get(key))));
+            } catch (final IOException e) {
+                LOGGER.warn(e.getMessage());
+            }
+        }
+
         final ServiceRegistrationImpl<Object> registration = new ServiceRegistrationImpl<>(classes,
-                properties, new ServiceReferenceImpl<>(serviceProperties, from, service), reg -> {
+                serviceProperties, new ServiceReferenceImpl<>(serviceProperties, from, service), reg -> {
             final ServiceEvent event = new ServiceEvent(ServiceEvent.UNREGISTERING, reg.getReference());
             getListeners(reg).forEach(listener -> listener.listener.serviceChanged(event));
             synchronized (OSGiServices.this) {
@@ -137,7 +164,7 @@ public class OSGiServices {
         final ServiceEvent event = new ServiceEvent(ServiceEvent.REGISTERED, registration.getReference());
         if (ManagedService.class.isInstance(service)) {
             try {
-                ManagedService.class.cast(service).updated(properties);
+                ManagedService.class.cast(service).updated(serviceProperties);
             } catch (final ConfigurationException e) {
                 throw new IllegalStateException(e);
             }

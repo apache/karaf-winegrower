@@ -44,7 +44,9 @@ import org.apache.winegrower.scanner.manifest.BlueprintManifestContributor;
 import org.apache.winegrower.scanner.manifest.KarafCommandManifestContributor;
 import org.apache.winegrower.scanner.manifest.ManifestContributor;
 import org.apache.winegrower.service.BundleRegistry;
+import org.apache.winegrower.service.DefaultConfigurationAdmin;
 import org.apache.winegrower.service.OSGiServices;
+import org.osgi.service.cm.ConfigurationAdmin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +62,8 @@ public interface Ripener extends AutoCloseable {
     OSGiServices getServices();
 
     BundleRegistry getRegistry();
+
+    ConfigurationAdmin getConfigurationAdmin();
 
     @Override
     void close();
@@ -217,6 +221,11 @@ public interface Ripener extends AutoCloseable {
         @Override
         public BundleRegistry getRegistry() {
             return registry;
+        }
+
+        @Override
+        public ConfigurationAdmin getConfigurationAdmin() {
+            return new DefaultConfigurationAdmin();
         }
 
         @Override // for try with resource syntax
