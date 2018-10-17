@@ -55,15 +55,15 @@ public class OSGiBundleLifecycle {
         final String activatorClass = context.getManifest().getMainAttributes().getValue("Bundle-Activator");
         if (activatorClass != null) {
             try {
-                activator = new BundleActivatorHandler(BundleActivator.class.cast(
-                        Thread.currentThread().getContextClassLoader()
+                activator = new BundleActivatorHandler(BundleActivator.class.cast(getBundle().getLoader()
                               .loadClass(activatorClass)
                               .getConstructor()
                               .newInstance()), context);
                 activator.start();
-            } catch (final InstantiationException | IllegalAccessException | NoSuchMethodException | ClassNotFoundException e) {
+            } catch (final NoClassDefFoundError | InstantiationException | IllegalAccessException |
+                    NoSuchMethodException | ClassNotFoundException e) {
                 throw new IllegalArgumentException(e);
-            } catch (InvocationTargetException e) {
+            } catch (final InvocationTargetException e) {
                 throw new IllegalArgumentException(e.getTargetException());
             }
         }
