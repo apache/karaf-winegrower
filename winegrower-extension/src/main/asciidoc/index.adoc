@@ -6,3 +6,4 @@ more efficient.
 * xref:maven/index.adoc[Maven] documentation
 * xref:junit5/index.adoc[JUnit 5] documentation
 * xref:cdi/index.adoc[CDI] documentation
+* xref:servlet/index.adoc[Servlet] documentation

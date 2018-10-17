@@ -1,0 +1,33 @@
+= Apache Winegrower Servlet
+
+This module allows to deploy Winegrower in a Servlet environment
+like Apache Tomcat, Standalone Jetty, Meecrowave or even a EE server like Apache TomEE.
+
+Just drop the module in your webapp:
+
+[source,xml]
+----
+<dependency>
+  <groupId>org.apache.winegrower</groupId>
+  <artifactId>winegrower-servlet</artifactId>
+  <version>${winegrower.version}</version>
+</dependency>
+----
+
+TIP: the `Ripener` instance is set in the `ServletContext` as an attribute. The key of the attribute is the `Ripener` qualified class name.
+
+== Configuration
+
+The configuration can be set as servlet context init parameters:
+
+[cols="*",options="header"]
+|====
+| Name | Description | Default
+| winegrower.servlet.ripener.skip                               | Should the  `Ripener` be started                      | true
+| winegrower.servlet.ripener.configuration.workdir              | Instance work directory                               | -
+| winegrower.servlet.ripener.configuration.prioritizedBundles   | Comma separated list of prioritized bundles           | -
+| winegrower.servlet.ripener.configuration.scanningIncludes     | Bundle discovery includes (not native OSGi bundles)   | -
+| winegrower.servlet.ripener.configuration.scanningExcludes     | Bundle discovery excludes (not native OSGi bundles)   | -
+| winegrower.servlet.ripener.configuration.manifestContributors | Comma separated list of contributors                  | -
+| winegrower.servlet.ripener.configuration.jarFilter            | Filter implementation class name                      | -
+|====

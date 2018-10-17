@@ -136,7 +136,7 @@ public class PourMojo extends AbstractMojo {
         ofNullable(scanningIncludes).filter(it -> !it.isEmpty()).ifPresent(configuration::setScanningIncludes);
         ofNullable(scanningExcludes).filter(it -> !it.isEmpty()).ifPresent(configuration::setScanningIncludes);
         ofNullable(manifestContributors).filter(it -> !it.isEmpty()).ifPresent(contributors -> {
-            configuration.setManifestContributors(manifestContributors.stream().map(clazz -> {
+            configuration.setManifestContributors(contributors.stream().map(clazz -> {
                 try {
                     return Thread.currentThread().getContextClassLoader().loadClass(clazz).getConstructor().newInstance();
                 } catch (final InstantiationException | NoSuchMethodException | IllegalAccessException

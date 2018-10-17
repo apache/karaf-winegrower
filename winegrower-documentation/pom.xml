@@ -69,6 +69,17 @@
             </configuration>
           </execution>
           <execution>
+            <id>servlet</id>
+            <phase>pre-site</phase>
+            <goals>
+              <goal>process-asciidoc</goal>
+            </goals>
+            <configuration>
+              <sourceDirectory>${project.basedir}/../winegrower-extension/winegrower-servlet/src/main/asciidoc</sourceDirectory>
+              <outputDirectory>${project.build.directory}/documentation/extensions/servlet</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
             <id>maven</id>
             <phase>pre-site</phase>
             <goals>
