@@ -15,11 +15,9 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<component name="Harvest">
-  <property name="osgi.jaxrs.endpoint" value="/api/"/>
-  <property name="osgi.jaxrs.resource" value="true"/>
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.3.0" immediate="true" name="org.apache.winegrower.examples.jaxrs.Harvest">
   <implementation class="org.apache.winegrower.examples.jaxrs.Harvest"/>
   <service>
     <provide interface="org.apache.winegrower.examples.jaxrs.Harvest"/>
   </service>
-</component>
+</scr:component>

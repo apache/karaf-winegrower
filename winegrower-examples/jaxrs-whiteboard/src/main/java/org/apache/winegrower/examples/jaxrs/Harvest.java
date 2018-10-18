@@ -20,7 +20,10 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
+import org.osgi.service.component.annotations.Component;
+
 @Path("/api/harvest")
+@Component(service = Harvest.class)
 public class Harvest {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
