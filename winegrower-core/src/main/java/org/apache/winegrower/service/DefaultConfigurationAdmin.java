@@ -15,8 +15,6 @@ package org.apache.winegrower.service;
 
 import static java.util.Collections.list;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.Hashtable;

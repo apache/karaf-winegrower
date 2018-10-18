@@ -27,6 +27,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collection;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
@@ -40,9 +41,9 @@ import java.util.stream.StreamSupport;
 import org.apache.winegrower.deployer.OSGiBundleLifecycle;
 import org.apache.winegrower.scanner.StandaloneScanner;
 import org.apache.winegrower.scanner.manifest.ActivatorManifestContributor;
-import org.apache.winegrower.scanner.manifest.OSGIInfContributor;
 import org.apache.winegrower.scanner.manifest.KarafCommandManifestContributor;
 import org.apache.winegrower.scanner.manifest.ManifestContributor;
+import org.apache.winegrower.scanner.manifest.OSGIInfContributor;
 import org.apache.winegrower.service.BundleRegistry;
 import org.apache.winegrower.service.DefaultConfigurationAdmin;
 import org.apache.winegrower.service.OSGiServices;
@@ -90,8 +91,8 @@ public interface Ripener extends AutoCloseable {
         private List<String> prioritizedBundles = asList(
                 "org.apache.aries.blueprint.core",
                 "org.apache.aries.blueprint.cm",
-                "org.apache.aries.jax.rs.whiteboard",
                 "pax-web-extender-whiteboard",
+                "org.apache.aries.jax.rs.whiteboard",
                 "pax-web-runtime");
 
         public List<String> getPrioritizedBundles() {
@@ -147,6 +148,7 @@ public interface Ripener extends AutoCloseable {
     class Impl implements Ripener {
         private static final Logger LOGGER = LoggerFactory.getLogger(Ripener.class);
 
+        private final DefaultConfigurationAdmin configurationAdmin = new DefaultConfigurationAdmin();
         private final OSGiServices services = new OSGiServices(this);
         private final BundleRegistry registry;
 
@@ -157,6 +159,10 @@ public interface Ripener extends AutoCloseable {
         public Impl(final Configuration configuration) {
             this.configuration = configuration;
             this.registry = new BundleRegistry(services, configuration);
+
+            this.services.registerService(
+                    new String[]{ConfigurationAdmin.class.getName()}, this.configurationAdmin, new Hashtable<>(),
+                    this.registry.getBundles().get(0L).getBundle());
         }
 
         @Override
@@ -226,7 +232,7 @@ public interface Ripener extends AutoCloseable {
 
         @Override
         public ConfigurationAdmin getConfigurationAdmin() {
-            return new DefaultConfigurationAdmin();
+            return configurationAdmin;
         }
 
         @Override // for try with resource syntax

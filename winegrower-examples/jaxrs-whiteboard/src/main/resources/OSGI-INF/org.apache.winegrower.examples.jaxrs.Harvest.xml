@@ -15,7 +15,9 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.3.0" immediate="true" name="org.apache.winegrower.examples.jaxrs.Harvest">
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.3.0" name="org.apache.winegrower.examples.jaxrs.Harvest">
+  <property name="osgi.jaxrs.resource" value="true" />
+  <property name="osgi.jaxrs.application.select" value="(osgi.jaxrs.name=.default)" />
   <implementation class="org.apache.winegrower.examples.jaxrs.Harvest"/>
   <service>
     <provide interface="org.apache.winegrower.examples.jaxrs.Harvest"/>

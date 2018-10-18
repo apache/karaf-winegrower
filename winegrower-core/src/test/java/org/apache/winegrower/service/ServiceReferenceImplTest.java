@@ -45,10 +45,7 @@ class ServiceReferenceImplTest {
                         // no-op
                     }
                 });
-        final Object reference = ref.getReference();
-        assertEquals(reference, ref.getReference());
-        ref.unget();
-        assertNotSame(reference, ref.getReference());
+        assertNotSame(ref.getReference(), ref.getReference());
     }
 
     static class SomeService {}

@@ -14,6 +14,7 @@
 package org.apache.winegrower.deployer;
 
 import org.apache.winegrower.service.ServiceReferenceImpl;
+import org.osgi.framework.ServiceFactory;
 import org.osgi.framework.ServiceObjects;
 import org.osgi.framework.ServiceReference;
 
@@ -31,7 +32,9 @@ public class ServiceObjectsImpl<S> implements ServiceObjects<S> {
 
     @Override
     public void ungetService(final S service) {
-        if (reference.getReference() == service) {
+        if (reference.hasFactory()) {
+            ServiceFactory.class.cast(reference.getFactory()).ungetService(reference.getBundle(), reference.getRegistration(), service);
+        } else if (reference.getReference() == service) {
             reference.unget();
         }
     }

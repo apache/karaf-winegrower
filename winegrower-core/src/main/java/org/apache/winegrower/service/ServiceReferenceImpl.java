@@ -26,13 +26,22 @@ public class ServiceReferenceImpl<T> implements ServiceReference<T> {
     private final Bundle bundle;
     private final Bundle[] usingBundles = new Bundle[0];
     private final Object reference;
+    private final boolean usesFactory;
     private ServiceRegistrationImpl registration;
-    private volatile Object referenceInstance;
 
     ServiceReferenceImpl(final Dictionary<String, ?> properties, final Bundle bundle, final Object reference) {
         this.properties = properties;
         this.bundle = bundle;
         this.reference = reference;
+        this.usesFactory = ServiceFactory.class.isInstance(reference);
+    }
+
+    public boolean hasFactory() {
+        return usesFactory;
+    }
+
+    public ServiceRegistrationImpl getRegistration() {
+        return registration;
     }
 
     void setRegistration(final ServiceRegistrationImpl registration) {
@@ -40,17 +49,8 @@ public class ServiceReferenceImpl<T> implements ServiceReference<T> {
     }
 
     public Object getReference() {
-        if (ServiceFactory.class.isInstance(reference)) {
-            if (referenceInstance != null) {
-                return referenceInstance;
-            }
-            synchronized (this) {
-                if (referenceInstance != null) {
-                    return referenceInstance;
-                }
-                referenceInstance = ServiceFactory.class.cast(reference).getService(bundle, registration);
-            }
-            return referenceInstance;
+        if (usesFactory) {
+            return ServiceFactory.class.cast(reference).getService(bundle, registration);
         }
         return reference;
     }
@@ -89,20 +89,21 @@ public class ServiceReferenceImpl<T> implements ServiceReference<T> {
     }
 
     public boolean unget() {
-        if (referenceInstance != null) {
-            synchronized (this) {
-                if (referenceInstance != null) {
-                    ServiceFactory.class.cast(reference).ungetService(bundle, registration, referenceInstance);
-                    referenceInstance = null;
-                    return true;
-                }
-            }
+        if (usesFactory) {
+            throw new UnsupportedOperationException();
         }
-        return false;
+        return true;
+    }
+
+    public ServiceFactory<?> getFactory() {
+        if (!usesFactory) {
+            throw new UnsupportedOperationException();
+        }
+        return ServiceFactory.class.cast(reference);
     }
 
     @Override
     public String toString() {
-        return "ServiceReferenceImpl{reference=" + reference + ", referenceInstance=" + referenceInstance + '}';
+        return "ServiceReferenceImpl{reference=" + reference + '}';
     }
 }

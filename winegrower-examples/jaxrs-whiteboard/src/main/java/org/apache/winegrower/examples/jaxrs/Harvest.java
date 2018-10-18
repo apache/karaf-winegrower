@@ -22,7 +22,7 @@ import javax.ws.rs.core.MediaType;
 
 import org.osgi.service.component.annotations.Component;
 
-@Path("/api/harvest")
+@Path("harvest")
 @Component(service = Harvest.class)
 public class Harvest {
     @GET

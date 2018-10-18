@@ -16,8 +16,11 @@ package org.apache.winegrower;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import java.util.stream.Stream;
+
 import org.apache.winegrower.api.InjectedService;
 import org.apache.winegrower.service.ServiceReferenceImpl;
+import org.apache.winegrower.service.ServiceRegistrationImpl;
 import org.apache.winegrower.test.WithRipener;
 import org.apache.winegrower.test.WithRipener.Entry;
 import org.apache.winegrower.test.WithRipener.Service;
@@ -31,12 +34,14 @@ class InjectionTest {
     void inject(@Service final Ripener ripener) {
         final Injected injected = ripener.getServices().inject(new Injected());
         assertNotNull(injected.service);
-        assertEquals(
-                ServiceReferenceImpl.class.cast(ripener.getServices().getServices().iterator().next().getReference()).getReference(),
-                injected.service);
+        assertEquals(ServiceReferenceImpl.class.cast(ripener.getServices().getServices().stream()
+                .filter(it -> Stream.of(ServiceRegistrationImpl.class.cast(it).getClasses())
+                        .anyMatch(v -> v.equals(MyService.class.getName())))
+                .findFirst().orElseThrow(IllegalArgumentException::new).getReference()).getReference(), injected.service);
     }
 
     public static class Injected {
+
         @InjectedService
         private MyService service;
     }

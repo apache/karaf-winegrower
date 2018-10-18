@@ -36,10 +36,13 @@ import org.osgi.framework.PrototypeServiceFactory;
 import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceFactory;
 import org.osgi.framework.ServiceListener;
+import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
+import org.osgi.service.cm.ConfigurationEvent;
 import org.osgi.service.cm.ConfigurationException;
+import org.osgi.service.cm.ConfigurationListener;
 import org.osgi.service.cm.ManagedService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -129,9 +132,7 @@ public class OSGiServices {
         if (properties != null) {
             list(properties.keys()).forEach(key -> serviceProperties.put(key, properties.get(key)));
         }
-        if (!serviceProperties.containsKey(Constants.OBJECTCLASS)) {
-            serviceProperties.put(Constants.OBJECTCLASS, classes.length == 1 ? classes[0] : classes);
-        }
+        serviceProperties.put(Constants.OBJECTCLASS, classes.length == 1 ? classes[0] : classes);
         serviceProperties.put(Constants.SERVICE_ID, idGenerator.getAndIncrement());
         serviceProperties.put(Constants.SERVICE_BUNDLEID, from.getBundleId());
         if (ServiceFactory.class.isInstance(service)) {
@@ -144,13 +145,21 @@ public class OSGiServices {
         final Object pid = serviceProperties.get("service.pid");
         if (pid != null) {
             final ConfigurationAdmin configurationAdmin = framework.getConfigurationAdmin();
+            final String pidStr = String.valueOf(pid);
             try {
-                final Configuration configuration = configurationAdmin.getConfiguration(String.valueOf(pid));
+                final Configuration configuration = configurationAdmin.getConfiguration(pidStr);
                 ofNullable(configuration.getProperties())
                         .ifPresent(prop -> list(prop.keys())
                                 .forEach(key -> serviceProperties.put(key, configuration.getProperties().get(key))));
             } catch (final IOException e) {
                 LOGGER.warn(e.getMessage());
+            }
+
+            if (Stream.of(classes).anyMatch(it -> it.equals(ConfigurationListener.class.getName()))) {
+                final ConfigurationEvent event = new ConfigurationEvent(
+                        (ServiceReference<ConfigurationAdmin>) services.iterator().next().getReference(),
+                        ConfigurationEvent.CM_UPDATED,null, pidStr);
+                ConfigurationListener.class.cast(service).configurationEvent(event);
             }
         }
 
