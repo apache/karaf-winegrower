@@ -13,15 +13,13 @@
  */
 package org.apache.winegrower.examples.jaxrs;
 
-import org.osgi.service.component.annotations.Component;
+import java.time.LocalDate;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
-import java.time.LocalDate;
 
-@Component(service = Harvest.class)
 @Path("/api/harvest")
 public class Harvest {
     @GET

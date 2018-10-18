@@ -40,7 +40,7 @@ import java.util.stream.StreamSupport;
 import org.apache.winegrower.deployer.OSGiBundleLifecycle;
 import org.apache.winegrower.scanner.StandaloneScanner;
 import org.apache.winegrower.scanner.manifest.ActivatorManifestContributor;
-import org.apache.winegrower.scanner.manifest.BlueprintManifestContributor;
+import org.apache.winegrower.scanner.manifest.OSGIInfContributor;
 import org.apache.winegrower.scanner.manifest.KarafCommandManifestContributor;
 import org.apache.winegrower.scanner.manifest.ManifestContributor;
 import org.apache.winegrower.service.BundleRegistry;
@@ -82,7 +82,7 @@ public interface Ripener extends AutoCloseable {
         private Collection<String> scanningExcludes;
         private Collection<ManifestContributor> manifestContributors = Stream.concat(
                 // built-in
-                Stream.of(new KarafCommandManifestContributor(), new ActivatorManifestContributor(), new BlueprintManifestContributor()),
+                Stream.of(new KarafCommandManifestContributor(), new ActivatorManifestContributor(), new OSGIInfContributor()),
                 // extensions
                 StreamSupport.stream(ServiceLoader.load(ManifestContributor.class).spliterator(), false)
         ).collect(toList());
@@ -90,6 +90,7 @@ public interface Ripener extends AutoCloseable {
         private List<String> prioritizedBundles = asList(
                 "org.apache.aries.blueprint.core",
                 "org.apache.aries.blueprint.cm",
+                "org.apache.aries.jax.rs.whiteboard",
                 "pax-web-extender-whiteboard",
                 "pax-web-runtime");
 

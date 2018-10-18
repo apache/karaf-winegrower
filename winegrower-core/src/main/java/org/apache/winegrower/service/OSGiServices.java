@@ -129,7 +129,9 @@ public class OSGiServices {
         if (properties != null) {
             list(properties.keys()).forEach(key -> serviceProperties.put(key, properties.get(key)));
         }
-        serviceProperties.put(Constants.OBJECTCLASS, classes);
+        if (!serviceProperties.containsKey(Constants.OBJECTCLASS)) {
+            serviceProperties.put(Constants.OBJECTCLASS, classes.length == 1 ? classes[0] : classes);
+        }
         serviceProperties.put(Constants.SERVICE_ID, idGenerator.getAndIncrement());
         serviceProperties.put(Constants.SERVICE_BUNDLEID, from.getBundleId());
         if (ServiceFactory.class.isInstance(service)) {
