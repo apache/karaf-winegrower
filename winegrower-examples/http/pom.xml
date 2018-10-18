@@ -24,7 +24,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.apache.winegrower</groupId>
+    <groupId>org.apache.winegrower.examples</groupId>
     <artifactId>winegrower-examples</artifactId>
     <version>1.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
