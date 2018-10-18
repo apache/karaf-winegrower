@@ -47,4 +47,14 @@
     </dependency>
   </dependencies>
 
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.winegrower</groupId>
+        <artifactId>winegrower-maven-plugin</artifactId>
+        <version>${project.version}</version>
+      </plugin>
+    </plugins>
+  </build>
+
 </project>
