@@ -41,6 +41,7 @@
 
   <modules>
     <module>winegrower-cepage-shell</module>
+    <module>winegrower-cepage-http</module>
     <module>winegrower-cepage-cxf-rs</module>
     <module>winegrower-cepage-jaxrs</module>
   </modules>

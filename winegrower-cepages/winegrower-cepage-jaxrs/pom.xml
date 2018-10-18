@@ -33,12 +33,12 @@
   <artifactId>jaxrs</artifactId>
   <name>Apache Winegrower :: Cepages :: JAXRS</name>
 
-  <properties>
-    <cxf.version>3.2.6</cxf.version>
-    <pax-web.version>7.2.3</pax-web.version>
-  </properties>
-
   <dependencies>
+    <dependency>
+      <groupId>org.apache.winegrower.cepages</groupId>
+      <artifactId>cxf-rs</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.apache.aries.jax.rs</groupId>
       <artifactId>org.apache.aries.jax.rs.whiteboard</artifactId>
@@ -48,72 +48,6 @@
       <groupId>org.apache.aries.component-dsl</groupId>
       <artifactId>org.apache.aries.component-dsl.component-dsl</artifactId>
       <version>1.2.1</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.cxf</groupId>
-      <artifactId>cxf-rt-frontend-jaxrs</artifactId>
-      <version>${cxf.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.cxf</groupId>
-      <artifactId>cxf-rt-rs-client</artifactId>
-      <version>${cxf.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.cxf</groupId>
-      <artifactId>cxf-rt-rs-sse</artifactId>
-      <version>${cxf.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>javax.servlet</groupId>
-      <artifactId>javax.servlet-api</artifactId>
-      <version>3.0.1</version>
-    </dependency>
-    <dependency> <!-- todo: use tomcat ? -->
-      <groupId>org.ops4j.pax.web</groupId>
-      <artifactId>pax-web-jetty</artifactId>
-      <version>${pax-web.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.aggregate</groupId>
-      <artifactId>jetty-all</artifactId>
-      <classifier>uber</classifier>
-      <version>9.4.11.v20180605</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.ow2.asm</groupId>
-          <artifactId>asm-commons</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.ow2.asm</groupId>
-          <artifactId>asm</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.ops4j.pax.web</groupId>
-      <artifactId>pax-web-runtime</artifactId>
-      <version>${pax-web.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.ops4j.pax.web</groupId>
-      <artifactId>pax-web-extender-whiteboard</artifactId>
-      <version>${pax-web.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.ops4j.pax.web</groupId>
-      <artifactId>pax-web-api</artifactId>
-      <version>${pax-web.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.ops4j.pax.web</groupId>
-      <artifactId>pax-web-spi</artifactId>
-      <version>${pax-web.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.karaf.web</groupId>
-      <artifactId>org.apache.karaf.web.core</artifactId>
-      <version>${karaf.version}</version>
     </dependency>
   </dependencies>
 

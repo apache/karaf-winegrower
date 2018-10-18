@@ -30,10 +30,14 @@
 
   <properties>
     <cxf.version>3.2.6</cxf.version>
-    <pax-web.version>7.2.3</pax-web.version>
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>org.apache.winegrower.cepages</groupId>
+      <artifactId>winegrower-cepage-http</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.apache.cxf</groupId>
       <artifactId>cxf-rt-frontend-jaxrs</artifactId>
@@ -64,56 +68,6 @@
       <artifactId>org.apache.aries.proxy</artifactId>
       <version>1.1.2</version>
     </dependency>
-    <dependency>
-      <groupId>javax.servlet</groupId>
-      <artifactId>javax.servlet-api</artifactId>
-      <version>3.0.1</version>
-    </dependency>
-    <dependency> <!-- todo: use tomcat ? -->
-      <groupId>org.ops4j.pax.web</groupId>
-      <artifactId>pax-web-jetty</artifactId>
-      <version>${pax-web.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.aggregate</groupId>
-      <artifactId>jetty-all</artifactId>
-      <classifier>uber</classifier>
-      <version>9.4.11.v20180605</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.ow2.asm</groupId>
-          <artifactId>asm-commons</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.ow2.asm</groupId>
-          <artifactId>asm</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.ops4j.pax.web</groupId>
-      <artifactId>pax-web-runtime</artifactId>
-      <version>${pax-web.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.ops4j.pax.web</groupId>
-      <artifactId>pax-web-extender-whiteboard</artifactId>
-      <version>${pax-web.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.ops4j.pax.web</groupId>
-      <artifactId>pax-web-api</artifactId>
-      <version>${pax-web.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.ops4j.pax.web</groupId>
-      <artifactId>pax-web-spi</artifactId>
-      <version>${pax-web.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.karaf.web</groupId>
-      <artifactId>org.apache.karaf.web.core</artifactId>
-      <version>${karaf.version}</version>
-    </dependency>
   </dependencies>
+
 </project>
