@@ -32,8 +32,8 @@ public class ServiceReferenceImpl<T> implements ServiceReference<T> {
     ServiceReferenceImpl(final Dictionary<String, ?> properties, final Bundle bundle, final Object reference) {
         this.properties = properties;
         this.bundle = bundle;
-        this.reference = reference;
         this.usesFactory = ServiceFactory.class.isInstance(reference);
+        this.reference = reference;
     }
 
     public boolean hasFactory() {

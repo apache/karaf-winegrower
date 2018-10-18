@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Dictionary;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.jar.Manifest;
@@ -36,6 +38,7 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.BundleListener;
+import org.osgi.framework.Constants;
 import org.osgi.framework.Filter;
 import org.osgi.framework.FrameworkListener;
 import org.osgi.framework.FrameworkUtil;
@@ -53,6 +56,7 @@ public class BundleContextImpl implements BundleContext {
     private final BundleRegistry registry;
     private final Collection<BundleListener> bundleListeners = new ArrayList<>();
     private final Collection<FrameworkListener> frameworkListeners = new ArrayList<>();
+    private final Map<ServiceReference<?>, Object> serviceInstances = new HashMap<>();
 
     BundleContextImpl(final Manifest manifest, final OSGiServices services, final Supplier<Bundle> bundleSupplier,
                       final BundleRegistry registry) {
@@ -226,12 +230,20 @@ public class BundleContextImpl implements BundleContext {
 
     @Override
     public <S> S getService(final ServiceReference<S> reference) {
-        return (S) ServiceReferenceImpl.class.cast(reference).getReference();
+        final ServiceReferenceImpl ref = ServiceReferenceImpl.class.cast(reference);
+        if (Constants.SCOPE_BUNDLE.equals(ref.getProperty(Constants.SERVICE_SCOPE))) {
+            return (S) serviceInstances.computeIfAbsent(ref, r -> ref.getReference());
+        }
+        return (S) ref.getReference();
     }
 
     @Override
     public boolean ungetService(final ServiceReference<?> reference) {
-        return ServiceReferenceImpl.class.cast(reference).unget();
+        final ServiceReferenceImpl serviceReference = ServiceReferenceImpl.class.cast(reference);
+        if (Constants.SCOPE_BUNDLE.equals(serviceReference.getProperty(Constants.SERVICE_SCOPE))) {
+            return serviceInstances.remove(serviceReference) != null;
+        }
+        return serviceReference.unget();
     }
 
     @Override
