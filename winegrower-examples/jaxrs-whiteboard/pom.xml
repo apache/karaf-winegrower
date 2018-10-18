@@ -66,6 +66,9 @@
             <winegrower.service.org.apache.aries.jax.rs.whiteboard.default.osgi.http.whiteboard.context.name>/</winegrower.service.org.apache.aries.jax.rs.whiteboard.default.osgi.http.whiteboard.context.name>
             <winegrower.service.org.apache.aries.jax.rs.whiteboard.default.osgi.http.whiteboard.context.path>/</winegrower.service.org.apache.aries.jax.rs.whiteboard.default.osgi.http.whiteboard.context.path>
           </systemVariables>
+          <ignoredBundles>
+            <ignoredBundle>cxf-</ignoredBundle>
+          </ignoredBundles>
         </configuration>
       </plugin>
     </plugins>

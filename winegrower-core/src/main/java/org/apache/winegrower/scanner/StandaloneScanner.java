@@ -96,6 +96,7 @@ public class StandaloneScanner {
                 .stream()
                 .map(Files::toFile)
                 .filter(this::isIncluded)
+                .filter(it -> this.configuration.getIgnoredBundles().stream().noneMatch(ex -> it.getName().startsWith(ex)))
                 .map(this::toDefinition)
                 .filter(Objects::nonNull)
                 .collect(toList());

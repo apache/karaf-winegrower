@@ -35,6 +35,7 @@ public @interface Winegrower {
     String[] prioritizedBundles() default {};
     Class<? extends ManifestContributor>[] manifestContributor() default {};
     Class<? extends JarFilter> jarFilter() default JarFilter.class;
+    String[] ignoredBundles() default {};
     String[] scanningExcludes() default {};
     String[] scanningIncludes() default {};
 

@@ -57,6 +57,9 @@ public class WinegrowerExtension extends BaseInjection implements BeforeAllCallb
         of(winegrower.scanningIncludes())
                 .filter(it -> it.length > 0)
                 .ifPresent(includes -> configuration.setScanningIncludes(asList(includes)));
+        of(winegrower.ignoredBundles())
+                .filter(it -> it.length > 0)
+                .ifPresent(bundles -> configuration.setIgnoredBundles(asList(bundles)));
         of(winegrower.scanningExcludes())
                 .filter(it -> it.length > 0)
                 .ifPresent(excludes -> configuration.setScanningExcludes(asList(excludes)));

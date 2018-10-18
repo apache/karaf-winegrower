@@ -14,6 +14,7 @@
 package org.apache.winegrower;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 
 import java.io.File;
@@ -81,6 +82,7 @@ public interface Ripener extends AutoCloseable {
         private Predicate<String> jarFilter = it -> DEFAULT_EXCLUSIONS.stream().anyMatch(it::startsWith);
         private Collection<String> scanningIncludes;
         private Collection<String> scanningExcludes;
+        private Collection<String> ignoredBundles = emptyList();
         private Collection<ManifestContributor> manifestContributors = Stream.concat(
                 // built-in
                 Stream.of(new KarafCommandManifestContributor(), new ActivatorManifestContributor(), new OSGIInfContributor()),
@@ -94,6 +96,14 @@ public interface Ripener extends AutoCloseable {
                 "pax-web-extender-whiteboard",
                 "org.apache.aries.jax.rs.whiteboard",
                 "pax-web-runtime");
+
+        public Collection<String> getIgnoredBundles() {
+            return ignoredBundles;
+        }
+
+        public void setIgnoredBundles(final Collection<String> ignoredBundles) {
+            this.ignoredBundles = ignoredBundles;
+        }
 
         public List<String> getPrioritizedBundles() {
             return prioritizedBundles;

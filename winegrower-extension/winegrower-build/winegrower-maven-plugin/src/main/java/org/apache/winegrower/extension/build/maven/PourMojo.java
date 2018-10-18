@@ -54,6 +54,9 @@ public class PourMojo extends AbstractMojo {
     @Parameter(property = "winegrower.scanningExcludes")
     private Collection<String> scanningExcludes;
 
+    @Parameter(property = "winegrower.ignoredBundles")
+    private Collection<String> ignoredBundles;
+
     @Parameter(property = "winegrower.manifestContributors")
     private Collection<String> manifestContributors;
 
@@ -133,6 +136,7 @@ public class PourMojo extends AbstractMojo {
         final Ripener.Configuration configuration = new Ripener.Configuration();
         ofNullable(workDir).ifPresent(configuration::setWorkDir);
         ofNullable(prioritizedBundles).filter(it -> !it.isEmpty()).ifPresent(configuration::setPrioritizedBundles);
+        ofNullable(ignoredBundles).filter(it -> !it.isEmpty()).ifPresent(configuration::setIgnoredBundles);
         ofNullable(scanningIncludes).filter(it -> !it.isEmpty()).ifPresent(configuration::setScanningIncludes);
         ofNullable(scanningExcludes).filter(it -> !it.isEmpty()).ifPresent(configuration::setScanningIncludes);
         ofNullable(manifestContributors).filter(it -> !it.isEmpty()).ifPresent(contributors -> {

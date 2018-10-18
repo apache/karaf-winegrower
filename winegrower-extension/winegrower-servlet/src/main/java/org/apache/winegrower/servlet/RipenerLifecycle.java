@@ -64,6 +64,11 @@ public class RipenerLifecycle implements ServletContextListener {
                 .filter(it -> !it.isEmpty())
                 .map(it -> asList(it.split(",")))
                 .ifPresent(configuration::setPrioritizedBundles);
+        ofNullable(servletContext.getInitParameter("winegrower.servlet.ripener.configuration.ignoredBundles"))
+                .map(String::valueOf)
+                .filter(it -> !it.isEmpty())
+                .map(it -> asList(it.split(",")))
+                .ifPresent(configuration::setIgnoredBundles);
         ofNullable(servletContext.getInitParameter("winegrower.servlet.ripener.configuration.scanningIncludes"))
                 .map(String::valueOf)
                 .filter(it -> !it.isEmpty())
