@@ -32,6 +32,7 @@
 
   <artifactId>jaxrs</artifactId>
   <name>Apache Winegrower :: Cepages :: JAXRS</name>
+  <packaging>pom</packaging>
 
   <dependencies>
     <dependency>

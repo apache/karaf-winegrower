@@ -47,6 +47,7 @@
       <groupId>org.apache.winegrower.cepages</groupId>
       <artifactId>shell</artifactId>
       <version>${project.version}</version>
+      <type>pom</type>
     </dependency>
   </dependencies>
 

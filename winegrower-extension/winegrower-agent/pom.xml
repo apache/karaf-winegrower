@@ -40,6 +40,14 @@
       <artifactId>winegrower-core</artifactId>
       <version>${project.version}</version>
     </dependency>
+
+    <dependency> <!-- for reactor order only -->
+      <groupId>org.apache.winegrower.cepages</groupId>
+      <artifactId>jaxrs</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+      <type>pom</type>
+    </dependency>
   </dependencies>
 
   <build>
@@ -62,20 +70,20 @@
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-shade-plugin</artifactId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <version>3.1.0</version>
         <executions>
           <execution>
-            <id>fatjar</id>
+            <id>core</id>
+            <phase>package</phase>
             <goals>
-              <goal>shade</goal>
+              <goal>single</goal>
             </goals>
             <configuration>
-              <!-- TODO: slf4j is a bad choice here, to revise: drop from the framework or relocate it -->
-              <createSourcesJar>true</createSourcesJar>
-              <shadedArtifactAttached>true</shadedArtifactAttached>
-              <shadedClassifierName>fatjar</shadedClassifierName>
-              <createDependencyReducedPom>true</createDependencyReducedPom>
-              <dependencyReducedPomLocation>${project.build.directory}/reduced-pom.xml</dependencyReducedPomLocation>
+              <descriptors>
+                <descriptor>src/main/assembly/core.xml</descriptor>
+                <descriptor>src/main/assembly/jaxrs.xml</descriptor>
+              </descriptors>
             </configuration>
           </execution>
         </executions>

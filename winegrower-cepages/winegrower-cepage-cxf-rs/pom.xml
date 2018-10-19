@@ -27,6 +27,7 @@
 
   <artifactId>cxf-rs</artifactId>
   <name>Apache Winegrower :: Cepages :: CXF JAX-RS</name>
+  <packaging>pom</packaging>
 
   <dependencies>
     <dependency>

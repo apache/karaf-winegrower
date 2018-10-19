@@ -44,6 +44,7 @@
       <groupId>org.apache.winegrower.cepages</groupId>
       <artifactId>cxf-rs</artifactId>
       <version>${project.version}</version>
+      <type>pom</type>
     </dependency>
   </dependencies>
 

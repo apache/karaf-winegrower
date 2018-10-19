@@ -32,6 +32,7 @@
 
   <artifactId>winegrower-cepage-http</artifactId>
   <name>Apache Winegrower :: Cepages :: HTTP</name>
+  <packaging>pom</packaging>
 
   <properties>
     <pax-web.version>7.2.3</pax-web.version>

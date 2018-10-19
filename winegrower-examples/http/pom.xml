@@ -30,7 +30,6 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <groupId>org.apache.winegrower.examples</groupId>
   <artifactId>http</artifactId>
   <name>Apache Winegrower :: Examples :: HTTP</name>
 
@@ -44,6 +43,7 @@
       <groupId>org.apache.winegrower.cepages</groupId>
       <artifactId>winegrower-cepage-http</artifactId>
       <version>${project.version}</version>
+      <type>pom</type>
     </dependency>
   </dependencies>
 

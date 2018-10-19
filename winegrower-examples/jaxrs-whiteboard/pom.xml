@@ -47,6 +47,7 @@
       <groupId>org.apache.winegrower.cepages</groupId>
       <artifactId>jaxrs</artifactId>
       <version>${project.version}</version>
+      <type>pom</type>
     </dependency>
     <dependency>
       <groupId>org.apache.felix</groupId>
