@@ -22,7 +22,7 @@
             http://maven.apache.org/xsd/assembly-2.0.0.xsd">
   <id>core</id>
   <formats>
-    <format>jar</format>
+    <format>zip</format>
   </formats>
   <fileSets>
     <fileSet>
@@ -34,12 +34,19 @@
         <include>${project.basedir}/../../LICENSE</include>
       </includes>
     </fileSet>
+    <fileSet>
+      <directory>${project.build.directory}</directory>
+      <outputDirectory>${project.artifactId}/lib</outputDirectory>
+      <includes>
+        <include>${project.build.finalName}.${project.packaging}</include>
+      </includes>
+    </fileSet>
   </fileSets>
   <includeBaseDirectory>false</includeBaseDirectory>
   <dependencySets>
     <dependencySet>
+      <outputDirectory>${project.artifactId}/lib</outputDirectory>
       <useProjectArtifact>true</useProjectArtifact>
-      <unpack>true</unpack>
       <scope>runtime</scope>
     </dependencySet>
   </dependencySets>

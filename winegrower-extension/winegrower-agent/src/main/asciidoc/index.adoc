@@ -6,18 +6,16 @@ starts Winegrower `Ripener` class.
 It uses the same configuration as other extensions and it is read from
 the agent args.
 
-It provides a shade jar which is easier to use:
-
 [source,sh]
 ----
--javaagent:winegrower-agent-${winegrower.version}-fatjar.jar
+-javaagent:winegrower-agent-${winegrower.version}.jar
 ----
 
 With configuration it can look like:
 
 [source,sh]
 ----
--javaagent:winegrower-agent-${winegrower.version}-fatjar.jar=workDir=/tmp/winegrower|ignoredBundles=cxf
+-javaagent:winegrower-agent-${winegrower.version}.jar=workDir=/tmp/winegrower|ignoredBundles=cxf
 ----
 
 You can see the available options and their actual values activating the debug mode which will log the whole configuration:
@@ -26,3 +24,26 @@ You can see the available options and their actual values activating the debug m
 ----
 -Dwinegrower.agent.debug=true
 ----
+
+== Select your "distribution"
+
+The java agent is just starting a ripener but it does not provide any library. To do that
+you have to set `libs` parameter of the agent. You can use `core` or `jaxrs` prebuilt binaries (point to their lib folder
+once the zip exploded):
+
+[source,sh]
+----
+-javaagent:winegrower-agent-${winegrower.version}.jar=libs=/opt/winegrower/distro/lib
+----
+
+If you pick the JAX-RS distribution for instance and unpack it in /opt/winegrower/jaxrs
+and write a plugin (let say a JAX-RS whiteboard endpoint) then you can
+deploy the following plugin using the JAX-RS distribution using this JVM configuration:
+
+[source,sh]
+----
+-javaagent:winegrower-agent.jar=libs=/opt/user/plugin,/opt/winegrower/jaxrs/lib|ignoredBundles=cxf \
+    -Dwinegrower.service.org.apache.aries.jax.rs.whiteboard.default.osgi.http.whiteboard.context.path=/test
+----
+
+The configuration is the one needed for JAX-RS whiteboard and is propagated to the `Ripener` instance started by the java agent.
