@@ -71,6 +71,17 @@
             </configuration>
           </execution>
           <execution>
+            <id>agent</id>
+            <phase>pre-site</phase>
+            <goals>
+              <goal>process-asciidoc</goal>
+            </goals>
+            <configuration>
+              <sourceDirectory>${project.basedir}/../winegrower-extension/winegrower-agent/src/main/asciidoc</sourceDirectory>
+              <outputDirectory>${project.build.directory}/documentation/extensions/agent</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
             <id>servlet</id>
             <phase>pre-site</phase>
             <goals>

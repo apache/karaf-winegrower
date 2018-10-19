@@ -38,6 +38,7 @@
     <module>winegrower-build</module>
     <module>winegrower-cdi</module>
     <module>winegrower-servlet</module>
+    <module>winegrower-agent</module>
   </modules>
 
 </project>

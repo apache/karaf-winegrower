@@ -1,0 +1,28 @@
+= Apache Winegrower Agent
+
+The Apache Winegrower agent provides a Javaagent which will
+starts Winegrower `Ripener` class.
+
+It uses the same configuration as other extensions and it is read from
+the agent args.
+
+It provides a shade jar which is easier to use:
+
+[source,sh]
+----
+-javaagent:winegrower-agent-${winegrower.version}-fatjar.jar
+----
+
+With configuration it can look like:
+
+[source,sh]
+----
+-javaagent:winegrower-agent-${winegrower.version}-fatjar.jar=workDir=/tmp/winegrower|ignoredBundles=cxf
+----
+
+You can see the available options and their actual values activating the debug mode which will log the whole configuration:
+
+[source,sh]
+----
+-Dwinegrower.agent.debug=true
+----
