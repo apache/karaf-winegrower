@@ -1,0 +1,15 @@
+Manifest-Version: 1.0
+Created-By: Apache Maven
+Automatic-Module-Name: ${winegrower.build.name}
+Can-Redefine-Classes: false
+Can-Retransform-Classes: false
+Agent-Class: org.apache.winegrower.extension.agent.WinegrowerAgent
+Premain-Class: org.apache.winegrower.extension.agent.WinegrowerAgent
+Implementation-Title: ${project.name}
+Implementation-URL: https://www.apache.org/winegrower/
+Implementation-Vendor-Id: ${project.groupId}
+Implementation-Vendor: The Apache Software Foundation
+Implementation-Version: ${project.version}
+Specification-Title: Apache Winegrower :: Extension :: Agent
+Specification-Vendor: The Apache Software Foundation
+Specification-Version: 1.0

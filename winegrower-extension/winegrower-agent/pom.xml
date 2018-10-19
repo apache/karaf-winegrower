@@ -34,6 +34,8 @@
     <winegrower.build.name>${winegrower.build.name.base}.extension.agent</winegrower.build.name>
   </properties>
 
+
+
   <dependencies>
     <dependency>
       <groupId>org.apache.winegrower</groupId>
@@ -51,20 +53,19 @@
   </dependencies>
 
   <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
         <configuration>
           <archive>
-            <manifestEntries>
-              <Automatic-Module-Name>${winegrower.build.name}</Automatic-Module-Name>
-              <Premain-Class>org.apache.winegrower.extension.agent.WinegrowerAgent</Premain-Class>
-              <Agent-Class>org.apache.winegrower.extension.agent.WinegrowerAgent</Agent-Class>
-              <!-- for now no instrumentation -->
-              <Can-Redefine-Classes>false</Can-Redefine-Classes>
-              <Can-Retransform-Classes>false</Can-Retransform-Classes>
-            </manifestEntries>
+            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
           </archive>
         </configuration>
       </plugin>
@@ -84,6 +85,9 @@
                 <descriptor>src/main/assembly/core.xml</descriptor>
                 <descriptor>src/main/assembly/jaxrs.xml</descriptor>
               </descriptors>
+              <archive>
+                <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+              </archive>
             </configuration>
           </execution>
         </executions>
