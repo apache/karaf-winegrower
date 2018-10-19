@@ -43,9 +43,16 @@ public class WinegrowerAgent {
             print("agentargs: " + agentArgs);
         }
         ofNullable(extractConfig(agentArgs, "libs="))
-                .ifPresent(value -> Stream.of(value.split(",")).forEach(lib -> {
+            .ifPresent(value -> Stream.of(value.split(","))
+                .map(File::new)
+                .filter(File::exists)
+                .flatMap(it -> it.isDirectory() ?
+                        ofNullable(it.listFiles()).map(Stream::of).orElseGet(Stream::empty) :
+                        Stream.of(it))
+                .filter(it -> it.getName().endsWith(".zip") || it.getName().endsWith(".jar"))
+                .forEach(lib -> {
                     try {
-                        instrumentation.appendToSystemClassLoaderSearch(new JarFile(new File(lib)));
+                        instrumentation.appendToSystemClassLoaderSearch(new JarFile(lib));
                     } catch (final IOException e) {
                         throw new IllegalArgumentException(e);
                     }
