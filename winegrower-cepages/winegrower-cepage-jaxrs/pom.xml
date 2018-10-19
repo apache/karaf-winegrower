@@ -39,6 +39,7 @@
       <groupId>org.apache.winegrower.cepages</groupId>
       <artifactId>cxf-rs</artifactId>
       <version>${project.version}</version>
+      <type>pom</type>
     </dependency>
     <dependency>
       <groupId>org.apache.aries.jax.rs</groupId>
