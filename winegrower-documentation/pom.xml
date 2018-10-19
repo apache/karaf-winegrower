@@ -30,114 +30,73 @@
   <artifactId>winegrower-documentation</artifactId>
   <name>Apache Winegrower :: Extension :: CDI</name>
 
+  <properties>
+    <documentation.theme.url>scm:git:https://github.com/apache/karaf-decanter.git</documentation.theme.url>
+    <groovy.version>2.5.3</groovy.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.codehaus.groovy</groupId>
+      <artifactId>groovy-all</artifactId>
+      <version>${groovy.version}</version>
+      <type>pom</type>
+    </dependency>
+  </dependencies>
   <build>
     <plugins>
       <plugin>
-        <groupId>org.asciidoctor</groupId>
-        <artifactId>asciidoctor-maven-plugin</artifactId>
-        <version>1.5.7.1</version>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-scm-plugin</artifactId>
+        <version>1.11.1</version>
         <executions>
           <execution>
-            <id>main</id>
+            <id>clone-theme</id>
             <phase>pre-site</phase>
             <goals>
-              <goal>process-asciidoc</goal>
+              <goal>checkout</goal>
             </goals>
             <configuration>
-              <sourceDirectory>${project.basedir}/src/main/asciidoc</sourceDirectory>
-              <outputDirectory>${project.build.directory}/documentation</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>core</id>
-            <phase>pre-site</phase>
-            <goals>
-              <goal>process-asciidoc</goal>
-            </goals>
-            <configuration>
-              <sourceDirectory>${project.basedir}/../winegrower-core/src/main/asciidoc</sourceDirectory>
-              <outputDirectory>${project.build.directory}/documentation/core</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>extension</id>
-            <phase>pre-site</phase>
-            <goals>
-              <goal>process-asciidoc</goal>
-            </goals>
-            <configuration>
-              <sourceDirectory>${project.basedir}/../winegrower-extension/src/main/asciidoc</sourceDirectory>
-              <outputDirectory>${project.build.directory}/documentation/extensions</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>agent</id>
-            <phase>pre-site</phase>
-            <goals>
-              <goal>process-asciidoc</goal>
-            </goals>
-            <configuration>
-              <sourceDirectory>${project.basedir}/../winegrower-extension/winegrower-agent/src/main/asciidoc</sourceDirectory>
-              <outputDirectory>${project.build.directory}/documentation/extensions/agent</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>servlet</id>
-            <phase>pre-site</phase>
-            <goals>
-              <goal>process-asciidoc</goal>
-            </goals>
-            <configuration>
-              <sourceDirectory>${project.basedir}/../winegrower-extension/winegrower-servlet/src/main/asciidoc</sourceDirectory>
-              <outputDirectory>${project.build.directory}/documentation/extensions/servlet</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>maven</id>
-            <phase>pre-site</phase>
-            <goals>
-              <goal>process-asciidoc</goal>
-            </goals>
-            <configuration>
-              <sourceDirectory>${project.basedir}/../winegrower-extension/winegrower-build/winegrower-maven-plugin/src/main/asciidoc</sourceDirectory>
-              <outputDirectory>${project.build.directory}/documentation/extensions/maven</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>junit5</id>
-            <phase>pre-site</phase>
-            <goals>
-              <goal>process-asciidoc</goal>
-            </goals>
-            <configuration>
-              <sourceDirectory>${project.basedir}/../winegrower-extension/winegrower-testing/winegrower-testing-junit5/src/main/asciidoc</sourceDirectory>
-              <outputDirectory>${project.build.directory}/documentation/extensions/junit5</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>cdi</id>
-            <phase>pre-site</phase>
-            <goals>
-              <goal>process-asciidoc</goal>
-            </goals>
-            <configuration>
-              <sourceDirectory>${project.basedir}/../winegrower-extension/winegrower-cdi/src/main/asciidoc</sourceDirectory>
-              <outputDirectory>${project.build.directory}/documentation/extensions/cdi</outputDirectory>
+              <checkoutDirectory>${project.basedir}/.asciidoctor/theme</checkoutDirectory>
+              <connectionUrl>${documentation.theme.url}</connectionUrl>
+              <developerConnectionUrl>${documentation.theme.url}</developerConnectionUrl>
+              <tagBase>decanter-2.1.0</tagBase>
+              <skipCheckoutIfExists>true</skipCheckoutIfExists>
             </configuration>
           </execution>
         </executions>
-        <configuration>
-          <backend>html5</backend>
-          <sourceHighlighter>coderay</sourceHighlighter>
-          <attributes>
-            <toc>left</toc>
-            <icons>font</icons>
-            <sectanchors>true</sectanchors>
-            <idprefix/>
-            <idseparator>-</idseparator>
-            <docinfo1>true</docinfo1>
-          </attributes>
-        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.gmavenplus</groupId>
+        <artifactId>gmavenplus-plugin</artifactId>
+        <version>1.6</version>
+        <executions>
+          <execution>
+            <id>render</id>
+            <phase>pre-site</phase>
+            <goals>
+              <goal>execute</goal>
+            </goals>
+            <configuration>
+              <scripts>
+                <script>${project.basedir}/src/build/Documentation.groovy</script>
+              </scripts>
+            </configuration>
+          </execution>
+        </executions>
+        <dependencies>
+          <dependency>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy-all</artifactId>
+            <version>${groovy.version}</version>
+            <type>pom</type>
+          </dependency>
+          <dependency>
+            <groupId>org.asciidoctor</groupId>
+            <artifactId>asciidoctorj</artifactId>
+            <version>1.5.7</version>
+          </dependency>
+        </dependencies>
       </plugin>
     </plugins>
   </build>
@@ -180,7 +139,7 @@
               <dependency>
                 <groupId>org.codehaus.groovy</groupId>
                 <artifactId>groovy-all</artifactId>
-                <version>2.5.3</version>
+                <version>${groovy.version}</version>
                 <type>pom</type>
               </dependency>
             </dependencies>

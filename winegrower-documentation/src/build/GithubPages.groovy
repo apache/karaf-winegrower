@@ -11,6 +11,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.winegrower.build
+
 import org.apache.maven.settings.crypto.DefaultSettingsDecryptionRequest
 import org.apache.maven.settings.crypto.SettingsDecrypter
 import org.eclipse.jgit.api.Git
