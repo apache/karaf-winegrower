@@ -36,11 +36,17 @@
   </properties>
 
   <dependencies>
+
     <dependency>
       <groupId>org.codehaus.groovy</groupId>
       <artifactId>groovy-all</artifactId>
       <version>${groovy.version}</version>
       <type>pom</type>
+    </dependency>
+    <dependency>
+      <groupId>org.asciidoctor</groupId>
+      <artifactId>asciidoctorj</artifactId>
+      <version>1.5.7</version>
     </dependency>
   </dependencies>
   <build>
