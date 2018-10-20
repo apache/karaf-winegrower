@@ -26,6 +26,14 @@ import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.BasicFileAttributes
 
 def color = '#303284'
+def inlineCss = """
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+}
+main {
+  background-color: white !important;
+}
+"""
 def header = """
 <header>
       <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark" style="background-color: ${color} !important;">
@@ -81,9 +89,9 @@ def header = """
 """
 
 def footer= """
-<footer class="container-fluid bg-dark pt-5 pb-3 text-white text-center" style="background-color: ${color} !important;">
-  <div class="mx-auto pb-5">
-    <div>Karaf goodness without OSGi build headache!</div>
+<footer class="container-fluid bg-dark text-white text-center" style="background-color: ${color} !important;">
+  <div class="mx-auto">
+    <blockquote class="blockquote"><p class="mb-0 text-white">Karaf goodness without OSGi build headache!</div></blockquote>
   </div>
   <p class="float-right"><a href="#">Back to top</a></p>
   <p>&copy; 2018 <a href="https://www.apache.org">Apache Software Foundation</a> - <a href="privacy.html">Privacy Policy</a><br>
@@ -164,12 +172,12 @@ def render = {file ->
     renderedFile.text = rendered
     // add bootstrap and move apache css at the end to ensure it is used
             .replace('<link rel="stylesheet" href="css/apache.css">', '')
-            .replace('</head>', "${bootstrapCss}<link rel=\"stylesheet\" href=\"css/apache.css\"></head>")
+            .replace('</head>', "${bootstrapCss}<link rel=\"stylesheet\" href=\"css/apache.css\"><style>${inlineCss}</style></head>")
             .replace('</body>', "</div>${bootstrapJs}</body>")
     // wrap in main tag
-            .replace('<div id="header">', "${header.replace('@{relativePath}', relativeLink)}<main role=\"main\"><div id=\"header\">")
+            .replace('<div id="header">', "${header.replace('@{relativePath}', relativeLink)}<main role=\"main\"><div id=\"header\" style=\"background-color: white;\">")
             .replace('</body>', "</main>${footer}</body>")
-            .replace('<body', "<body style=\"padding-top: 3rem;\"")
+            .replace('<body', "<body style=\"padding-top: 3rem;background-color: ${color} !important;\"")
     // home link
             .replace('"index.html"', "\"${relativeLink}index.html\"")
     // drop adoc footer
