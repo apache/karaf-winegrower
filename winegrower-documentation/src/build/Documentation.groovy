@@ -25,6 +25,7 @@ import java.nio.file.FileVisitResult
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.SimpleFileVisitor
+import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.BasicFileAttributes
 
 import static java.util.Collections.singleton
@@ -37,59 +38,64 @@ body {
 main {
   background-color: white !important;
 }
+*[id]:before { 
+  display: block; 
+  content: " "; 
+  margin-top: -75px; 
+  height: 75px; 
+  visibility: hidden; 
+}
 """
 def header = """
-<header>
-      <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark" style="background-color: ${color} !important;">
-        <div class="container">
-          <a class="navbar-brand" href="index.html">
-            <img src="https://karaf.apache.org/images/karaf-logo-new.png">
-          </a>
-          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-          </button>
-          <div class="collapse navbar-collapse justify-content-end" id="navbarCollapse">
-            <div>
-              <ul class="navbar-nav mr-auto align-items-center text-uppercase">
-                <li class="nav-item active">
-                  <a class="nav-link" href="index.html">Home</span></a>
-                </li>
-                <!--
-                <li class="nav-item">
-                  <a class="nav-link" href="download.html">Download</a>
-                </li>
-                -->
-                <li class="nav-item dropdown">
-                  <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Documentation
-                  </a>
-                  <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                    <a class="dropdown-item" href="@{relativePath}index.html">Home</a>
-                    <div class="dropdown-divider"></div>
-                    <a class="dropdown-item" href="@{relativePath}core/index.html">Core</a>
-                    <div class="dropdown-divider"></div>
-                    <a class="dropdown-item" href="@{relativePath}extension/index.html">Extensions</a>
-                    <a class="dropdown-item" href="@{relativePath}extension/maven/index.html">Maven</a>
-                    <a class="dropdown-item" href="@{relativePath}extension/junit5/index.html">Junit 5</a>
-                    <a class="dropdown-item" href="@{relativePath}extension/cdi/index.html">CDI</a>
-                    <a class="dropdown-item" href="@{relativePath}extension/servlet/index.html">Servlet</a>
-                    <a class="dropdown-item" href="@{relativePath}extension/agent/index.html">Javaagent</a>
-                  </div>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="https://karaf.apache.org/community.html">Community</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link disabled" href="https://www.apache.org">
-                    <img src="https://karaf.apache.org/images/apache-feather-tm-new.png">
-                  </a>
-                </li>
-              </ul>
-            <div>
-          </div>
-        </div>
-      </div></div></nav>
-    </header>
+  <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark" style="background-color: ${color} !important;">
+    <div class="container">
+      <a class="navbar-brand" href="index.html">
+        <img src="https://karaf.apache.org/images/karaf-logo-new.png">
+      </a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse justify-content-end" id="navbarCollapse">
+        <div>
+          <ul class="navbar-nav mr-auto align-items-center text-uppercase">
+            <li class="nav-item active">
+              <a class="nav-link" href="index.html">Home</span></a>
+            </li>
+            <!--
+            <li class="nav-item">
+              <a class="nav-link" href="download.html">Download</a>
+            </li>
+            -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                Documentation
+              </a>
+              <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                <a class="dropdown-item" href="@{relativePath}index.html">Home</a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item" href="@{relativePath}core/index.html">Core</a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item" href="@{relativePath}extension/index.html">Extensions</a>
+                <a class="dropdown-item" href="@{relativePath}extension/maven/index.html">Maven</a>
+                <a class="dropdown-item" href="@{relativePath}extension/junit5/index.html">Junit 5</a>
+                <a class="dropdown-item" href="@{relativePath}extension/cdi/index.html">CDI</a>
+                <a class="dropdown-item" href="@{relativePath}extension/servlet/index.html">Servlet</a>
+                <a class="dropdown-item" href="@{relativePath}extension/agent/index.html">Javaagent</a>
+              </div>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="https://karaf.apache.org/community.html">Community</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link disabled" href="https://www.apache.org">
+                <img src="https://karaf.apache.org/images/apache-feather-tm-new.png">
+              </a>
+            </li>
+          </ul>
+        <div>
+      </div>
+    </div>
+  </div></div></nav>
 """
 
 def footer= """
@@ -110,6 +116,38 @@ def bootstrapJs = """
 <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+"""
+def otherJs = """
+<script>
+(function () {
+  var anchors = document.querySelectorAll('h2');
+  var wrapper = document.querySelector('div.anchors');
+  if (!anchors || anchors.length == 0) {
+    document.querySelector('main > div').className = 'col-sm-12';
+    wrapper.className = '';
+    return;
+  }
+  var ul = document.createElement('ul');
+  var title = document.createElement('h2');
+  title.innerHTML = 'Menu';
+  ul.append(title);
+  wrapper.append(ul);
+  function addLink(elt) {
+    var name = elt.innerHTML;
+    var id = elt.id;
+    if (!id) {
+      return;
+    }
+    var link = document.createElement('a');
+    link.href = '#' + id;
+    link.innerHTML = name;
+    var li = document.createElement('li');
+    li.append(link);
+    ul.append(li);
+  }
+  anchors.forEach(addLink);
+})();
+</script>
 """
 
 def root = project.basedir.parentFile
@@ -174,17 +212,19 @@ def render = {file ->
         relativeLink = relativeLink + '/'
     }
     renderedFile.text = rendered
-    // add bootstrap and move apache css at the end to ensure it is used
+            // wrap in main tag
+            .replace('<div id="header">', "${header.replace('@{relativePath}', relativeLink)}" +
+                "<main class=\"row\" role=\"main\"><div class=\"col-sm-10\">" +
+                "<div id=\"header\" style=\"background-color: white;\">")
+            .replace('</body>', "</div><div class=\"anchors col-sm-2\"></div></main>${footer}</body>")
+            .replace('<body', "<body style=\"padding-top: 3rem;background-color: ${color} !important;\"")
+            // add bootstrap and move apache css at the end to ensure it is used
             .replace('<link rel="stylesheet" href="css/apache.css">', '')
             .replace('</head>', "${bootstrapCss}<link rel=\"stylesheet\" href=\"css/apache.css\"><style>${inlineCss}</style></head>")
-            .replace('</body>', "</div>${bootstrapJs}</body>")
-    // wrap in main tag
-            .replace('<div id="header">', "${header.replace('@{relativePath}', relativeLink)}<main role=\"main\"><div id=\"header\" style=\"background-color: white;\">")
-            .replace('</body>', "</main>${footer}</body>")
-            .replace('<body', "<body style=\"padding-top: 3rem;background-color: ${color} !important;\"")
-    // home link
+            .replace('</body>', "</div>${bootstrapJs}${otherJs}</body>")
+            // home link
             .replace('"index.html"', "\"${relativeLink}index.html\"")
-    // drop adoc footer
+            // drop adoc footer
             .replaceAll('<div id="footer-text">[^<]+</div>', '')
             .replaceAll('<div id="footer">[^<]+</div>', '')
 
