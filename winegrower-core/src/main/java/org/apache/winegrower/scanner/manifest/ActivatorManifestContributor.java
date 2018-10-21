@@ -13,6 +13,7 @@
  */
 package org.apache.winegrower.scanner.manifest;
 
+import java.util.List;
 import java.util.function.Supplier;
 import java.util.jar.Manifest;
 
@@ -23,7 +24,15 @@ public class ActivatorManifestContributor implements ManifestContributor {
 
     @Override
     public void contribute(final AnnotationFinder finder, final Supplier<Manifest> manifest) {
-        finder.findAnnotatedClasses(ImplicitActivator.class).stream().findFirst().map(Class::getName)
-                .ifPresent(clazz -> manifest.get().getMainAttributes().putValue("Bundle-Activator", clazz));
+        final List<Class<?>> annotatedClasses = finder.findAnnotatedClasses(ImplicitActivator.class);
+        switch (annotatedClasses.size()) {
+            case 0:
+                return;
+            case 1:
+                manifest.get().getMainAttributes().putValue("Bundle-Activator", annotatedClasses.iterator().next().getName());
+                return;
+            default:
+                throw new IllegalArgumentException("You can't get more than one activator: " + annotatedClasses);
+        }
     }
 }

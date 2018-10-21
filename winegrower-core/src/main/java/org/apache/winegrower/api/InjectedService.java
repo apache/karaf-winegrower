@@ -19,6 +19,9 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
+/**
+ * WARN: Only available using OSGiService.inject() or junit5 extension.
+ */
 @Target(FIELD)
 @Retention(RUNTIME)
 public @interface InjectedService {}

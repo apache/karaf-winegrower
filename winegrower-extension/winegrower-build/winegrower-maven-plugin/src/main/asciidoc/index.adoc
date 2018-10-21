@@ -120,3 +120,28 @@ Then once the distributino unzipped you can start using:
 |skipArchiveRootFolder|boolean|winegrower.skipArchiveRootFolder|false|Should the distribution keep a root folder.
 |workDir|File|winegrower.workDir|${project.build.directory}/${project.artifactId}-distribution|Where the distribution is built during the build.
 |===
+
+== From Winegrower no-manifest deployment to OSGi deployments
+
+Winegrower supports some custom API not requiring a full OSGi packaging
+and in particular a valid OSGi `META-INF/MANIFEST.MF`. This is typically the case
+if you are using `@ImplicitActivator`.
+
+If you want to enable this feature you can either register the activator
+manually through bnd or bundle plugins but you can also use `winegrower:manifest` goal
+which will create a manifest with all the supported features.
+
+TIP: you can mix this tool with another manifest generator using `manifestBase` configuration.
+
+=== Configuration
+
+
+[cols="e,m,m,m,a",headers]
+|===
+|Name|Type|Property|Default|Description
+|classes|File|winegrower.classes|${project.build.outputDirectory}|The module to consider for the created manifest file.
+|output|File|winegrower.output|${project.build.outputDirectory}/META-INF/MANIFEST.MF|Where to create the manifest file.
+|manifestBase|File|winegrower.manifestBase|-|Path to an existing manifest used as base for the one the plugin will create.
+|customEntries|Map<String, String>|winegrower.customEntries|-|A map of entries to add to the manifest.
+|manifestContributors|List<String>|winegrower.manifestContributors|built in ones|The manifest contributors to use for this generation. It is a fully qualified list of implementations of `ManifestContributor`.
+|===

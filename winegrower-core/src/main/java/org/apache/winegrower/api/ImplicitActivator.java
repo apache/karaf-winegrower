@@ -19,7 +19,9 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
-// todo: move to the standard @Activator
+/**
+ * If moving to OSGi from Winegrower you will need to use winegrower:manifest goal.
+ */
 @Target(TYPE)
 @Retention(RUNTIME)
 public @interface ImplicitActivator {}

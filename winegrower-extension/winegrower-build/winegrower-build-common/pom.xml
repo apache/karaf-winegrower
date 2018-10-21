@@ -39,7 +39,6 @@
       <groupId>org.apache.winegrower</groupId>
       <artifactId>winegrower-core</artifactId>
       <version>${project.version}</version>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
@@ -50,6 +49,16 @@
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-text</artifactId>
       <version>1.6</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.xbean</groupId>
+      <artifactId>xbean-finder-shaded</artifactId>
+      <version>${xbean.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.xbean</groupId>
+      <artifactId>xbean-asm7-shaded</artifactId>
+      <version>${xbean.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.winegrower</groupId>
