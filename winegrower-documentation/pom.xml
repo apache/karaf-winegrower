@@ -88,6 +88,11 @@
             <artifactId>asciidoctorj</artifactId>
             <version>1.5.7</version>
           </dependency>
+          <dependency>
+            <groupId>org.eclipse.jgit</groupId>
+            <artifactId>org.eclipse.jgit</artifactId>
+            <version>4.9.2.201712150930-r</version>
+          </dependency>
         </dependencies>
       </plugin>
     </plugins>
@@ -99,43 +104,12 @@
 
       <properties>
         <github.serverId>winegrower-github</github.serverId>
+        <winegrower.documentation.publish>true</winegrower.documentation.publish>
       </properties>
 
+      <!-- once hosted @apache
       <build>
         <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-site-plugin</artifactId>
-            <version>3.7</version>
-            <configuration>
-              <skip>true</skip>
-              <skipDeploy>true</skipDeploy>
-            </configuration>
-          </plugin>
-          <plugin>
-            <groupId>com.github.github</groupId>
-            <artifactId>site-maven-plugin</artifactId>
-            <version>0.12</version>
-            <executions>
-              <execution>
-                <id>scm-publish</id>
-                <phase>site-deploy</phase>
-                <goals>
-                  <goal>site</goal>
-                </goals>
-                <configuration>
-                  <server>${github.serverId}</server>
-                  <message>Publishing documentation update // ${maven.build.timestamp}</message>
-                  <outputDirectory>${project.build.directory}/documentation</outputDirectory>
-                  <merge>true</merge>
-                  <url>${project.scm.url}</url>
-                  <noJekyll>true</noJekyll>
-                  <userName>${user.name}</userName>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <!-- once hosted @apache
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-scm-publish-plugin</artifactId>
@@ -158,9 +132,9 @@
               <serverId>${github.serverId}</serverId>
             </configuration>
           </plugin>
-          -->
         </plugins>
       </build>
+      -->
     </profile>
   </profiles>
 

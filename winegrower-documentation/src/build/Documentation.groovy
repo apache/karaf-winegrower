@@ -13,17 +13,21 @@
  */
 package org.apache.winegrower.build
 
+import org.apache.maven.settings.crypto.DefaultSettingsDecryptionRequest
+import org.apache.maven.settings.crypto.SettingsDecrypter
 import org.asciidoctor.Asciidoctor
 import org.asciidoctor.AttributesBuilder
 import org.asciidoctor.OptionsBuilder
-import org.asciidoctor.Placement
+import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 
 import java.nio.file.FileVisitResult
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.SimpleFileVisitor
-import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.BasicFileAttributes
+
+import static java.util.Collections.singleton
 
 def color = '#303284'
 def inlineCss = """
@@ -210,3 +214,50 @@ Files.walkFileTree(root.toPath(), new SimpleFileVisitor<Path>() {
         return FileVisitResult.CONTINUE
     }
 })
+
+
+
+if (project.properties["winegrower.documentation.publish"] == 'true') {
+
+    def source = new File(project.build.directory, 'documentation')
+    if (!source.exists() || !new File(source, 'index.html').exists()) {
+        log.warn('Not ready to deploy, skipping')
+        return
+    }
+
+    def branch = 'refs/heads/gh-pages'
+    def workDir = new File(project.build.directory, UUID.randomUUID().toString() + '_' + System.currentTimeMillis())
+
+    def url = project.parent.scm.url
+    def serverId = project.properties['github.serverId']
+    log.info("Using server ${serverId}")
+
+    def server = session.settings.servers.findAll { it.id == serverId }.iterator().next()
+    def decryptedServer = session.container.lookup(SettingsDecrypter).decrypt(new DefaultSettingsDecryptionRequest(server))
+    server = decryptedServer.server != null ? decryptedServer.server : server
+
+    log.info("Using url=${url}")
+    log.info("Using user=${server.username}")
+    log.info("Using branch=${branch}")
+
+    def credentialsProvider = new UsernamePasswordCredentialsProvider(server.username, server.password)
+    def git = Git.cloneRepository()
+            .setCredentialsProvider(credentialsProvider)
+            .setURI(url)
+            .setDirectory(workDir)
+            .setBranchesToClone(singleton(branch))
+            .setBranch(branch)
+            .call()
+
+    new AntBuilder().copy(todir: workDir.absolutePath, overwrite: true) {
+        fileset(dir: source.absolutePath)
+    }
+
+    // we don't drop old files, stay conservative for now
+    def message = "Updating the documentation for version ${project.version} // " + new Date().toString()
+    git.add().addFilepattern(".").call()
+    git.commit().setAll(true).setMessage(message).call()
+    git.status().call()
+    git.push().setCredentialsProvider(credentialsProvider).add(branch).call()
+    log.info("Updated the documentation on ${new Date()}")
+}
