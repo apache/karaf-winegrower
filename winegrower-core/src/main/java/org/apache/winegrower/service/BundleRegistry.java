@@ -40,7 +40,7 @@ public class BundleRegistry {
         frameworkManifest.getMainAttributes().putValue("Bundle-Version", "1.0");
         frameworkManifest.getMainAttributes().putValue("Bundle-SymbolicName", "Ripener");
         final OSGiBundleLifecycle frameworkBundle = new OSGiBundleLifecycle(
-                frameworkManifest, framework, services, this, configuration, 0L);
+                frameworkManifest, framework, services, this, configuration, 0L, null);
         frameworkBundle.start();
         bundles.put(0L, frameworkBundle);
     }

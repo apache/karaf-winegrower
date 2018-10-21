@@ -42,6 +42,16 @@
       <scope>compile</scope>
     </dependency>
     <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-compress</artifactId>
+      <version>1.18</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-text</artifactId>
+      <version>1.6</version>
+    </dependency>
+    <dependency>
       <groupId>org.apache.winegrower</groupId>
       <artifactId>winegrower-testing-junit5</artifactId>
       <version>${project.version}</version>

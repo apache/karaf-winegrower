@@ -35,20 +35,6 @@
     <groovy.version>2.5.3</groovy.version>
   </properties>
 
-  <dependencies>
-
-    <dependency>
-      <groupId>org.codehaus.groovy</groupId>
-      <artifactId>groovy-all</artifactId>
-      <version>${groovy.version}</version>
-      <type>pom</type>
-    </dependency>
-    <dependency>
-      <groupId>org.asciidoctor</groupId>
-      <artifactId>asciidoctorj</artifactId>
-      <version>1.5.7</version>
-    </dependency>
-  </dependencies>
   <build>
     <plugins>
       <plugin>
@@ -118,37 +104,26 @@
       <build>
         <plugins>
           <plugin>
-            <groupId>org.codehaus.gmavenplus</groupId>
-            <artifactId>gmavenplus-plugin</artifactId>
-            <version>1.6</version>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-scm-publish-plugin</artifactId>
+            <version>1.1</version>
             <executions>
               <execution>
-                <id>deploy-site</id>
-                <phase>none</phase>
+                <id>scm-publish</id>
+                <phase>site-deploy</phase>
                 <goals>
-                  <goal>execute</goal>
+                  <goal>publish-scm</goal>
                 </goals>
-                <configuration>
-                  <allowSystemExits>true</allowSystemExits>
-                  <scripts>
-                    <script>${project.basedir}/src/build/GithubPages.groovy</script>
-                  </scripts>
-                </configuration>
               </execution>
             </executions>
-            <dependencies>
-              <dependency>
-                <groupId>org.eclipse.jgit</groupId>
-                <artifactId>org.eclipse.jgit</artifactId>
-                <version>4.9.2.201712150930-r</version>
-              </dependency>
-              <dependency>
-                <groupId>org.codehaus.groovy</groupId>
-                <artifactId>groovy-all</artifactId>
-                <version>${groovy.version}</version>
-                <type>pom</type>
-              </dependency>
-            </dependencies>
+            <configuration>
+              <content>${project.build.directory}/documentation</content>
+              <pubScmUrl>scm:git:${project.scm.connection}</pubScmUrl>
+              <scmBranch>gh-pages</scmBranch>
+              <tryUpdate>true</tryUpdate>
+              <checkoutDirectory>${project.parent.basedir}/.site-content</checkoutDirectory>
+              <serverId>${github.serverId}</serverId>
+            </configuration>
           </plugin>
         </plugins>
       </build>

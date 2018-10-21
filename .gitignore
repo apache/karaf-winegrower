@@ -4,3 +4,4 @@ target
 *.iws
 *.ipr
 .asciidoctor
+.site-content

@@ -13,20 +13,29 @@
  */
 package org.apache.winegrower.scanner;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.list;
+import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 import static org.apache.xbean.finder.archive.ClasspathArchive.archive;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
+import java.util.stream.Stream;
 
 import org.apache.winegrower.Ripener;
 import org.apache.winegrower.scanner.manifest.ManifestCreator;
@@ -46,6 +55,8 @@ public class StandaloneScanner {
     private final Ripener.Configuration configuration;
     private final ClassLoader loader;
     private final File frameworkJar;
+    private final Map<String, Manifest> providedManifests;
+    private final Map<String, List<String>> providedIndex;
 
     public StandaloneScanner(final Ripener.Configuration configuration, final File frameworkJar) {
         this.configuration = configuration;
@@ -57,6 +68,47 @@ public class StandaloneScanner {
                     .getUrls();
         } catch (final IOException e) {
             throw new IllegalStateException(e);
+        }
+
+        try { // fatjar plugin
+            providedManifests = list(this.loader.getResources("WINEGROWER-INF/manifests.properties")).stream()
+                .flatMap(url -> {
+                    final Properties properties = new Properties();
+                    try (final InputStream stream = url.openStream()) {
+                        properties.load(stream);
+                    } catch (final IOException e) {
+                        throw new IllegalArgumentException(e);
+                    }
+                    return properties.stringPropertyNames().stream()
+                            .collect(toMap(identity(), key -> {
+                                final String property = properties.getProperty(key);
+                                final Manifest manifest = new Manifest();
+                                try (final ByteArrayInputStream mfStream = new ByteArrayInputStream(property.getBytes(StandardCharsets.UTF_8))) {
+                                    manifest.read(mfStream);
+                                } catch (final IOException e) {
+                                    throw new IllegalArgumentException(e);
+                                }
+                                return manifest;
+                            })).entrySet().stream();
+                })
+                .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+            providedIndex = list(this.loader.getResources("WINEGROWER-INF/index.properties")).stream()
+                    .flatMap(url -> {
+                        final Properties properties = new Properties();
+                        try (final InputStream stream = url.openStream()) {
+                            properties.load(stream);
+                        } catch (final IOException e) {
+                            throw new IllegalArgumentException(e);
+                        }
+                        return properties.stringPropertyNames().stream()
+                                .collect(toMap(identity(), key -> {
+                                    final String property = properties.getProperty(key);
+                                    return asList(property.split(","));
+                                })).entrySet().stream();
+                    })
+                    .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+        } catch (final IOException e) {
+            throw new IllegalArgumentException(e);
         }
     }
 
@@ -81,7 +133,7 @@ public class StandaloneScanner {
                           return null;
                       }
                       LOGGER.debug("{} was scanned and is converted to a bundle", it.file);
-                      return new BundleDefinition(manifest, it.file);
+                      return new BundleDefinition(manifest, it.file, null);
                   } catch (final LinkageError e) {
                       LOGGER.debug("{} is not scannable, maybe exclude it in framework configuration", it.file);
                       return null;
@@ -92,13 +144,15 @@ public class StandaloneScanner {
     }
 
     public Collection<BundleDefinition> findOSGiBundles() {
-        return urls
-                .stream()
-                .map(Files::toFile)
-                .filter(this::isIncluded)
-                .filter(it -> this.configuration.getIgnoredBundles().stream().noneMatch(ex -> it.getName().startsWith(ex)))
-                .map(this::toDefinition)
-                .filter(Objects::nonNull)
+        return Stream.concat(
+                    urls.stream()
+                        .map(Files::toFile)
+                        .filter(this::isIncluded)
+                        .filter(it -> this.configuration.getIgnoredBundles().stream().noneMatch(ex -> it.getName().startsWith(ex)))
+                        .map(this::toDefinition)
+                        .filter(Objects::nonNull),
+                    providedManifests.entrySet().stream()
+                        .map(it -> new BundleDefinition(it.getValue(), null, providedIndex.get(it.getKey()))))
                 .collect(toList());
     }
 
@@ -113,7 +167,7 @@ public class StandaloneScanner {
                 try (final InputStream stream = new FileInputStream(manifest)) {
                     final Manifest mf = new Manifest(stream);
                     if (isOSGi(mf)) {
-                        return new BundleDefinition(mf, file);
+                        return new BundleDefinition(mf, file, null);
                     }
                     return null;
                 } catch (final IOException e) {
@@ -128,7 +182,7 @@ public class StandaloneScanner {
                 return null;
             }
             if (isOSGi(manifest)) {
-                return new BundleDefinition(manifest, file);
+                return new BundleDefinition(manifest, file, null);
             }
             return null;
         } catch (final Exception e) {
@@ -143,10 +197,16 @@ public class StandaloneScanner {
     public static class BundleDefinition {
         private final Manifest manifest;
         private final File jar;
+        private final Collection<String> files;
 
-        private BundleDefinition(final Manifest manifest, final File jar) {
+        private BundleDefinition(final Manifest manifest, final File jar, final Collection<String> files) {
             this.manifest = manifest;
             this.jar = jar;
+            this.files = files;
+        }
+
+        public Collection<String> getFiles() {
+            return files;
         }
 
         public Manifest getManifest() {

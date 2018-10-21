@@ -64,15 +64,19 @@ public class BundleImpl implements Bundle {
     private final String symbolicName;
     private final Dictionary<String, String> headers;
     private final File dataFileBase;
+    private final Collection<String> includedResources;
     private int state = Bundle.UNINSTALLED;
 
     BundleImpl(final Manifest manifest, final File file, final BundleContextImpl context,
-               final Ripener.Configuration configuration, final long id) {
+               final Ripener.Configuration configuration, final long id,
+               final Collection<String> includedResources) {
         this.file = file;
-        this.dataFileBase = new File(configuration.getWorkDir(), file.getName());
+        this.dataFileBase = new File(configuration.getWorkDir(),
+                file == null ? Long.toString(System.identityHashCode(manifest)) : file.getName());
         this.context = context;
         this.id = id;
         this.loader = Thread.currentThread().getContextClassLoader();
+        this.includedResources = includedResources;
         this.version = ofNullable(manifest.getMainAttributes().getValue(Constants.BUNDLE_VERSION))
             .map(Version::new)
             .orElse(Version.emptyVersion);
@@ -161,7 +165,7 @@ public class BundleImpl implements Bundle {
 
     @Override
     public String getLocation() {
-        return file.getAbsolutePath();
+        return includedResources != null ? null : file.getAbsolutePath();
     }
 
     @Override
@@ -209,6 +213,11 @@ public class BundleImpl implements Bundle {
 
     @Override
     public Enumeration<String> getEntryPaths(final String path) {
+        if (includedResources != null) {
+            return enumeration(includedResources.stream()
+                    .filter(it -> it.startsWith(path))
+                    .collect(toList()));
+        }
         if (file.isDirectory()) {
             final Path base = file.toPath().toAbsolutePath();
             final Path subPath = new File(file, path == null ? "" : (path.startsWith("/") ? path.substring(1) : path)).toPath();
@@ -245,7 +254,7 @@ public class BundleImpl implements Bundle {
 
     @Override
     public long getLastModified() {
-        return file.lastModified();
+        return file == null ? -1 : file.lastModified();
     }
 
     @Override
@@ -253,6 +262,16 @@ public class BundleImpl implements Bundle {
         final Filter filter = filePattern == null ?
                 null : context.createFilter("(filename=" + filePattern + ")");
         final String prefix = path == null ? "" : (path.startsWith("/") ? path.substring(1) : path);
+
+        if (includedResources != null) {
+            if (!recurse) {
+                return enumeration(includedResources.stream()
+                    .filter(it -> doFilterEntry(filter, prefix, it))
+                    .map(loader::getResource)
+                    .collect(toList()));
+            }
+        }
+
         final File baseFile = new File(file, prefix);
         final Path base = baseFile.toPath();
         final Path filePath = this.file.toPath();

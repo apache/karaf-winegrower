@@ -15,6 +15,7 @@ package org.apache.winegrower.deployer;
 
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Collection;
 import java.util.jar.Manifest;
 
 import org.apache.winegrower.Ripener;
@@ -34,9 +35,9 @@ public class OSGiBundleLifecycle {
 
     public OSGiBundleLifecycle(final Manifest manifest, final File file, final OSGiServices services,
                                final BundleRegistry registry, final Ripener.Configuration configuration,
-                               final long id) {
+                               final long id, final Collection<String> includedResources) {
         this.context = new BundleContextImpl(manifest, services, this::getBundle, registry);
-        this.bundle = new BundleImpl(manifest, file, context, configuration, id);
+        this.bundle = new BundleImpl(manifest, file, context, configuration, id, includedResources);
     }
 
     public BundleActivatorHandler getActivator() {

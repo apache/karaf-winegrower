@@ -1,5 +1,20 @@
 = Apache Winegrower Maven Plugin
 
+Apache Winegrower Maven plugin provides the elementary tasks to develop and package your application depending your need.
+
+Here is how to declare it:
+
+[source,xml]
+----
+<plugin>
+  <groupId>org.apache.winegrower</groupId>
+  <artifactId>winegrower-maven-plugin</artifactId>
+  <version>${winegrower.version}</version>
+</plugin>
+----
+
+== Start a dev instance (a.k.a. `Pour`)
+
 Apache Winegrower Maven plugin allows to start an instance very easily thanks to `pour` command:
 
 [source,sh]
@@ -7,7 +22,7 @@ Apache Winegrower Maven plugin allows to start an instance very easily thanks to
 mvn winegrower:pour
 ----
 
-== Configuration
+=== Configuration
 
 [cols="e,m,m,m,a",headers]
 |===
@@ -22,7 +37,7 @@ mvn winegrower:pour
 |waitOnSystemIn|boolean|winegrower.waitOnSystemIn|${project.build.directory}/winegrower/workdir|should the mojo wait you enter any character to exist, it is useful to disable it if you use the Karaf shell which reads `System.in` as well.
 |===
 
-== Example
+=== Example
 
 [source,xml]
 ----
@@ -38,3 +53,70 @@ mvn winegrower:pour
   </configuration>
 </plugin>
 ----
+
+== Create a fatjar
+
+Creating a fatjar is a common need. For OSGi it becomes quite an issue
+since you need to keep each `MANIFEST.MF` as it since some values can't become plural.
+This is the main blocker making the `maven-shade-plugin` and `maven-assembly-plugin` quite helpless
+on that task.
+
+To solve that, Winegrower provides a `fatjar` goal which will generate an index of each shaded jars
+and keep their manifests as it and the runtime knows how to read them back.
+
+[source,sh]
+----
+mvn winegrower:fatjar
+----
+
+=== Configuration
+
+[cols="e,m,m,m,a",headers]
+|===
+|Name|Type|Property|Default|Description
+|attach|boolean|winegrower.attach|true|should the built jar be attached (installed)
+|buildArtifact|File|winegrower.buildArtifact|${project.build.directory}/${project.build.finalName}.${project.packaging}.|Path of the project artifact if any.
+|classifier|String|winegrower.classifier|fatjar|The classifier to use if the produced artifact is attached.
+|includeScopes|Collection<String>|winegrower.includeScopes|provided,compile,runtime|The scopes included in the produced artifact.
+|output|File|winegrower.output|${project.build.directory}/${project.artifactId}-fatjar.jar|Where the fatjar is produced.
+|===
+
+== Create a distribution
+
+Since Winegrower does not require an OSGi runtime anymore, it also provide a `distribution` goal
+which will bundle your application as a standard java application with a `lib/` folder
+and scripts in `bin` to start/stop the application.
+
+The scripts are highly inspired from Apache Tomcat ones so if you are familiar with this server
+you shouldn't be lost.
+
+[source,sh]
+----
+mvn winegrower:distribution
+----
+
+Then once the distributino unzipped you can start using:
+
+[source,sh]
+----
+./bin/wingrower.sh run
+----
+
+=== Configuration
+
+[cols="e,m,m,m,a",headers]
+|===
+|Name|Type|Property|Default|Description
+|attach|boolean|winegrower.attach|true|should the built distributions be attached (installed)
+|buildArtifact|File|winegrower.buildArtifact|${project.build.directory}/${project.build.finalName}.${project.packaging}.|Path of the project artifact if any.
+|classifier|String|winegrower.classifier|fatjar-%s.|The classifier to use if the produced artifact is attached. Note it is a pattern (`String.format`) taking the format as parameter.
+|includeScopes|Collection<String>|winegrower.includeScopes|provided,compile,runtime|The scopes included in the produced artifact.
+|conf|String|winegrower.conf|src/main/winegrower/conf|Path synchronized with the distribution conf folder.
+|bin|String|winegrower.bin|src/main/winegrower/bin|Path synchronized with the distribution bin folder.
+|formats|Collection<String>|winegrower.formats|zip|Distribution formats, `zip` and `tar.gz` are supported.
+|keepExplodedFolder|boolean|winegrower.keepExplodedFolder|false|Should the distribution work directory be kept in the build directory.
+|libs|Collection<String>|winegrower.libs|-|List of maven coordinates (`group:artifact:version[?transitive]`) to include in the distribution even if not visible as dependency.
+|main|String|winegrower.main|org.apache.winegrower.Ripener|The main to run when starting the distribution.
+|skipArchiveRootFolder|boolean|winegrower.skipArchiveRootFolder|false|Should the distribution keep a root folder.
+|workDir|File|winegrower.workDir|${project.build.directory}/${project.artifactId}-distribution|Where the distribution is built during the build.
+|===

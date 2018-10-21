@@ -49,8 +49,8 @@ class BundleImplTest {
         registry = new BundleRegistry(services, configuration);
         final BundleContextImpl context = new BundleContextImpl(manifest, services, () -> bundle, registry);
         final File file = new File(registry.getFramework().getParentFile(), "test-classes");
-        bundle = new BundleImpl(manifest, file, context, configuration, 1);
-        registry.getBundles().put(bundle.getBundleId(), new OSGiBundleLifecycle(manifest, file, services, registry, configuration, 1));
+        bundle = new BundleImpl(manifest, file, context, configuration, 1, null);
+        registry.getBundles().put(bundle.getBundleId(), new OSGiBundleLifecycle(manifest, file, services, registry, configuration, 1, null));
     }
 
     @Test
