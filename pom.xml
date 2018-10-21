@@ -201,6 +201,13 @@
     </plugins>
   </build>
 
+  <distributionManagement>
+    <site>
+      <id>site</id>
+      <url>${project.scm.url}</url>
+    </site>
+  </distributionManagement>
+
   <scm>
     <developerConnection>scm:git:https://github.com/jbonofre/winegrower.git</developerConnection>
     <connection>scm:git:https://github.com/jbonofre/winegrower.git</connection>
