@@ -130,6 +130,7 @@
                   <merge>true</merge>
                   <url>${project.scm.url}</url>
                   <noJekyll>true</noJekyll>
+                  <userName>${user.name}</userName>
                 </configuration>
               </execution>
             </executions>

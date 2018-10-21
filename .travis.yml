@@ -42,7 +42,7 @@ jobs:
     - stage: master_build
       env:
       - STEP=Update Documentation
-      script: cd winegrower-documentation && mvn site-deploy -Pgh-pages --settings ../.travis/settings.xml
+      script: cd winegrower-documentation && mvn site-deploy -Pgh-pages -Duser.name=ci --settings ../.travis/settings.xml
       jdk: oraclejdk8
 
     - stage: master_build
