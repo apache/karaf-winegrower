@@ -45,6 +45,9 @@ main {
   height: 75px; 
   visibility: hidden; 
 }
+#header {
+  background-color: white;
+}
 """
 def header = """
   <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark" style="background-color: ${color} !important;">
@@ -215,7 +218,8 @@ def render = {file ->
             // wrap in main tag
             .replace('<div id="header">', "${header.replace('@{relativePath}', relativeLink)}" +
                 "<main class=\"row\" role=\"main\"><div class=\"col-sm-10\">" +
-                "<div id=\"header\" style=\"background-color: white;\">")
+                "<div id=\"header\" class=\"container\">")
+            .replace('<div id="content"', '<div id="content" class="container"')
             .replace('</body>', "</div><div class=\"anchors col-sm-2\"></div></main>${footer}</body>")
             .replace('<body', "<body style=\"padding-top: 3rem;background-color: ${color} !important;\"")
             // add bootstrap and move apache css at the end to ensure it is used
