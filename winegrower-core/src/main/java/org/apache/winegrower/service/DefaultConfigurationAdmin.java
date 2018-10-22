@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.winegrower.lang.Substitutor;
 import org.osgi.framework.Filter;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.InvalidSyntaxException;
@@ -198,7 +199,13 @@ public class DefaultConfigurationAdmin implements ConfigurationAdmin {
             } catch (final IOException e) {
                 throw new IllegalArgumentException(e);
             }
-            return Map.class.cast(properties);
+            final Map<String, String> placeholders = new HashMap<>(Map.class.cast(properties));
+            placeholders.putAll(Map.class.cast(System.getProperties()));
+            final Substitutor substitutor = new Substitutor(placeholders);
+            return properties.stringPropertyNames().stream()
+                .collect(toMap(
+                    identity(),
+                    it -> it.contains("${") && it.contains("}") ? substitutor.replace(it) : properties.getProperty(it)));
         }
     }
 }
