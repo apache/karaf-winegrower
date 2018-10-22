@@ -38,6 +38,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Hashtable;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -168,7 +169,7 @@ public interface Ripener extends AutoCloseable {
     class Impl implements Ripener {
         private static final Logger LOGGER = LoggerFactory.getLogger(Ripener.class);
 
-        private final DefaultConfigurationAdmin configurationAdmin = new DefaultConfigurationAdmin();
+        private final ConfigurationAdmin configurationAdmin;
         private final OSGiServices services = new OSGiServices(this);
         private final BundleRegistry registry;
 
@@ -180,6 +181,7 @@ public interface Ripener extends AutoCloseable {
             this.configuration = configuration;
             this.registry = new BundleRegistry(services, configuration);
 
+            this.configurationAdmin = loadConfigurationAdmin();
             this.services.registerService(
                     new String[]{ConfigurationAdmin.class.getName()}, this.configurationAdmin, new Hashtable<>(),
                     this.registry.getBundles().get(0L).getBundle());
@@ -189,6 +191,14 @@ public interface Ripener extends AutoCloseable {
             } catch (final IOException e) {
                 LOGGER.warn(e.getMessage());
             }
+        }
+
+        private ConfigurationAdmin loadConfigurationAdmin() {
+            final Iterator<ConfigurationAdmin> configurationAdminIterator = ServiceLoader.load(ConfigurationAdmin.class).iterator();
+            if (configurationAdminIterator.hasNext()) {
+                return configurationAdminIterator.next();
+            }
+            return new DefaultConfigurationAdmin();
         }
 
         public void loadConfiguration(final InputStream stream) throws IOException {
