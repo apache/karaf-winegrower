@@ -37,6 +37,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
@@ -182,15 +183,17 @@ public interface Ripener extends AutoCloseable {
             this.registry = new BundleRegistry(services, configuration);
 
             this.configurationAdmin = loadConfigurationAdmin();
-            this.services.registerService(
-                    new String[]{ConfigurationAdmin.class.getName()}, this.configurationAdmin, new Hashtable<>(),
-                    this.registry.getBundles().get(0L).getBundle());
+            registerBuiltInService(ConfigurationAdmin.class, this.configurationAdmin, new Hashtable<>());
 
             try (final InputStream stream = Thread.currentThread().getContextClassLoader().getResourceAsStream("winegrower.properties")) {
                 loadConfiguration(stream);
             } catch (final IOException e) {
                 LOGGER.warn(e.getMessage());
             }
+        }
+
+        public <T> void registerBuiltInService(final Class<T> type, final T impl, final Dictionary<String, Object> props) {
+            this.services.registerService(new String[]{type.getName()}, impl, props, this.registry.getBundles().get(0L).getBundle());
         }
 
         private ConfigurationAdmin loadConfigurationAdmin() {

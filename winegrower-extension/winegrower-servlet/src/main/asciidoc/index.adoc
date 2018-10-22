@@ -31,3 +31,8 @@ The configuration can be set as servlet context init parameters:
 | winegrower.servlet.ripener.configuration.manifestContributors | Comma separated list of contributors                  | -
 | winegrower.servlet.ripener.configuration.jarFilter            | Filter implementation class name                      | -
 |====
+
+== `HttpService`
+
+By default a servlet based implementation of `HttpService` will be registered.
+If you want to avoid it or provide another implementation, ensure to set the init parameter `winegrower.servlet.services.http.register` to `false`.
