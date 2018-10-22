@@ -115,9 +115,6 @@ in the previous classpath. You can now run "test:hello".
 Note that to shortcut the build phase you can use `@ImplicitActivator`
 which to define a `BundleActivator`.
 
-WARN: this feature is not yet supported by OSGi environment and will need `maven-bundle-plugin` to replace
-the annotation by the `Bundle-Activator` manifest entry.
-
 Here is an example:
 
 [source,java]
