@@ -48,6 +48,9 @@ main {
 #header {
   background-color: white;
 }
+.row {
+  margin: 0 !important;
+}
 """
 def header = """
   <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark" style="background-color: ${color} !important;">
