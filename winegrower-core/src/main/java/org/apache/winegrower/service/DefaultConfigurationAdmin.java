@@ -96,7 +96,8 @@ public class DefaultConfigurationAdmin implements ConfigurationAdmin {
                     System.getProperty(WINEGROWER_CONFIG_PATH,
                             System.getProperty("karaf.base",
                                     System.getProperty("catalina.base",
-                                            System.getProperty("karaf.home")))),
+                                            System.getProperty("karaf.home",
+                                                    System.getProperty("karaf.etc"))))),
                     pid + WINEGROWER_CONFIG_EXTENSION);
             loadConfig(pid);
 
