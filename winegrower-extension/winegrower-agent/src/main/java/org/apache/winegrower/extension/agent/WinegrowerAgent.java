@@ -22,7 +22,10 @@ import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
+import java.util.Dictionary;
+import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 import java.util.jar.JarFile;
 import java.util.stream.Stream;
@@ -59,14 +62,15 @@ public class WinegrowerAgent {
                   }));
 
         try {
-            doStart(agentArgs);
+            doStart(agentArgs, instrumentation);
         } catch (final Throwable e) {
             throw new IllegalStateException(e);
         }
     }
 
-    private static void doStart(final String agentArgs) throws Throwable {
+    private static void doStart(final String agentArgs, final Instrumentation instrumentation) throws Throwable {
         final ClassLoader loader = Thread.currentThread().getContextClassLoader();
+        final Class<?> bundleClass = loader.loadClass("org.osgi.framework.Bundle");
         final Class<?> ripenerImplClass = loader.loadClass("org.apache.winegrower.Ripener$Impl");
         final Class<?> ripenerConfigurationClass = loader.loadClass("org.apache.winegrower.Ripener$Configuration");
 
@@ -83,6 +87,16 @@ public class WinegrowerAgent {
                 } // else: not that important
             }
         }, WinegrowerAgent.class.getName() + "-shutdown"));
+
+        final Object services = ripenerImplClass.getMethod("getServices").invoke(ripener);
+        final Object bundleRegistry = ripenerImplClass.getMethod("getRegistry").invoke(ripener);
+        final Object bundle0 = Map.class.cast(bundleRegistry
+                .getClass()
+                .getMethod("getBundles")
+                .invoke(bundleRegistry))
+                .get(0L);
+        services.getClass().getMethod("registerService", String[].class, Object.class, Dictionary.class, bundleClass)
+                .invoke(services, new String[]{Instrumentation.class.getName()}, instrumentation, new Hashtable<>(), bundle0);
     }
 
     private static void doCall(final Object instance, final String mtd, final Class<?>[] paramTypes, final Object[] args) {
@@ -102,7 +116,7 @@ public class WinegrowerAgent {
         }
     }
 
-    private static Object createConfiguration(final Class<?> configType, String agentArgs) throws Throwable {
+    private static Object createConfiguration(final Class<?> configType, final String agentArgs) throws Throwable {
         final Object configuration = configType.getConstructor().newInstance();
         ofNullable(extractConfig(agentArgs,"workDir="))
                 .map(String::valueOf)

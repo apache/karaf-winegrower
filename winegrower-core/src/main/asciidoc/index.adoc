@@ -1,3 +1,29 @@
 = Apache Winegrower Core
 
-TBD
+Winegrower core is the implementation of the light and embeddable OSGi model.
+It intends to respect OSGi programming model except the classloading one.
+It means you can use `Activator`, `scr` etc...without isolation which boots the packaging
+and deployment of your application.
+
+== Entry point
+
+The entry point is the `Ripener` class which is the "container" API.
+The nested `Ripener.Impl` class is one implementation you can use out of the box.
+
+=== Configuration
+
+`Ripener` takes a `Ripener.Configuration` configuration as parameter.
+
+ignoredBundles:: which valid bundles must be ignored. Useful when some bundles are conflicting like JAX-RS whiteboard of Apache Aries and the native CXF bundles.
+jarFilter:: a filter on OSGi bundles. It will behave as `ignoredBundles` but is intended to host bundles which don't need to be bundles (like `commons-*`) and keep your configuration readable.
+manifestContributors:: the list of implementation of `ManifestContributor` to create a manifest on the fly for not OSGi bundle jars.
+prioritizedBundles:: a sorted list of bundles which will be started before others.
+scanningExcludes:: exclusions for non OSGi jars scanning.
+scanningIncludes:: inclusions for non OSGi jars scanning.
+workDir:: where to create temporary files when a bundle needs it.
+
+=== Package default configuration
+
+The configuration is takend from the agent by default but you can also embed some default values for your convenience.
+This is done providing a `winegrower.properties` in the agent classloader. It takes the same configuration as the agent.
+

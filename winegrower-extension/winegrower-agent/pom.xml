@@ -41,6 +41,7 @@
       <groupId>org.apache.winegrower</groupId>
       <artifactId>winegrower-core</artifactId>
       <version>${project.version}</version>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>

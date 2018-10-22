@@ -15,12 +15,18 @@ package org.apache.winegrower;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static java.util.Locale.ROOT;
 import static java.util.Optional.ofNullable;
+import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,10 +35,12 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -175,6 +183,88 @@ public interface Ripener extends AutoCloseable {
             this.services.registerService(
                     new String[]{ConfigurationAdmin.class.getName()}, this.configurationAdmin, new Hashtable<>(),
                     this.registry.getBundles().get(0L).getBundle());
+
+            try (final InputStream stream = Thread.currentThread().getContextClassLoader().getResourceAsStream("winegrower.properties")) {
+                loadConfiguration(stream);
+            } catch (final IOException e) {
+                LOGGER.warn(e.getMessage());
+            }
+        }
+
+        public void loadConfiguration(final InputStream stream) throws IOException {
+            final Properties embedConfig = new Properties();
+            if (stream != null) {
+                embedConfig.load(stream);
+                if (!embedConfig.isEmpty()) {
+                    loadConfiguration(embedConfig);
+                }
+            }
+        }
+
+        // case insensitive
+        public void loadConfiguration(final Properties embedConfig) {
+            final Map<Object, Method> setters = Stream.of(this.configuration.getClass().getMethods())
+                .filter(it -> it.getName().startsWith("set") && it.getParameterCount() == 1)
+                .collect(toMap(it ->
+                        (Character.toLowerCase(it.getName().charAt(3)) + it.getName().substring(4)).toLowerCase(ROOT),
+                        identity()));
+            final Collection<String> matched = new ArrayList<>();
+            embedConfig.stringPropertyNames().stream().filter(it -> setters.containsKey(it.toLowerCase(ROOT))).forEach(key -> {
+                final String value = embedConfig.getProperty(key);
+                if (value == null) {
+                    return;
+                }
+                final String keyLowerCase = key.toLowerCase(ROOT);
+                final Method setter = setters.get(keyLowerCase);
+                matched.add(keyLowerCase);
+                final Class<?> type = setter.getParameters()[0].getType();
+                try {
+                    if (type == String.class) {
+                        setter.invoke(this.configuration, value);
+                        return;
+                    } else if (type == File.class) {
+                        setter.invoke(this.configuration, new File(value));
+                        return;
+                    }
+
+                    // from here all parameters are lists
+                    final Collection<String> asList = Stream.of(value.split(","))
+                                                            .map(String::trim)
+                                                            .filter(it -> !it.isEmpty())
+                                                            .collect(toList());
+                    if (type == Predicate.class) { // Predicate<String> + startsWith logic
+                        final Predicate<String> predicate =
+                                val -> val != null && asList.stream().anyMatch(val::startsWith);
+                        setter.invoke(this.configuration, predicate);
+                    } else if (type == List.class) {
+                        setter.invoke(this.configuration, asList);
+                    } else if (type == Collection.class
+                            && ManifestContributor.class == ParameterizedType.class.cast(
+                                    setter.getParameters()[0].getParameterizedType()).getActualTypeArguments()[0]) {
+                        final ClassLoader loader = Thread.currentThread().getContextClassLoader();
+                        setter.invoke(this.configuration, asList.stream()
+                            .map(it -> {
+                                try {
+                                    return loader.loadClass(it);
+                                } catch (final ClassNotFoundException e) {
+                                    throw new IllegalArgumentException(e);
+                                }
+                            })
+                            .collect(toList()));
+                    } else if (type == Collection.class ) { // Collection<String>
+                        setter.invoke(this.configuration, asList);
+                    } else {
+                        throw new IllegalArgumentException("Unsupported: " + setter);
+                    }
+                } catch (final IllegalAccessException e) {
+                    throw new IllegalArgumentException(e);
+                } catch (final InvocationTargetException e) {
+                    throw new IllegalArgumentException(e.getTargetException());
+                }
+            });
+
+            embedConfig.stringPropertyNames().stream().filter(it -> !matched.contains(it.toLowerCase(ROOT)))
+                       .forEach(it -> LOGGER.warn("Didn't match configuration {}, did you mispell it?", it));
         }
 
         @Override

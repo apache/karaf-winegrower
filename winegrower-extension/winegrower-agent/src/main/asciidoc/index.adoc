@@ -47,3 +47,20 @@ deploy the following plugin using the JAX-RS distribution using this JVM configu
 ----
 
 The configuration is the one needed for JAX-RS whiteboard and is propagated to the `Ripener` instance started by the java agent.
+
+== Configuration keys
+
+Note: see link:../../index.html[core] configuration for more details on how to use these configuration entries.
+
+- ignoredBundles
+- jarFilter
+- manifestContributors
+- prioritizedBundles
+- scanningExcludes
+- scanningIncludes
+- workDir
+
+It also support the specific configuration `libs` which takes either a folder which is converted in the list of contained jars
+or directly some jar paths. The paths are appended to the system classloader before the `Ripener` is started.
+It allows to explode some distribution and start it without having to do a fatjar or so of the distribution.
+

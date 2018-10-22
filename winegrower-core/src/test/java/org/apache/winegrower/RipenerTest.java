@@ -13,6 +13,7 @@
  */
 package org.apache.winegrower;
 
+import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -24,6 +25,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.Map;
+import java.util.Properties;
 
 import org.apache.winegrower.deployer.BundleImpl;
 import org.apache.winegrower.deployer.OSGiBundleLifecycle;
@@ -37,6 +39,18 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 
 class RipenerTest {
+    @Test
+    void overrideConfiguration() {
+        final Ripener.Impl ripener = new Ripener.Impl(new Ripener.Configuration());
+        ripener.loadConfiguration(new Properties() {{
+            setProperty("scanningIncludes", "foo");
+            setProperty("jarFilter", "bar");
+        }});
+        final Ripener.Configuration configuration = ripener.getConfiguration();
+        assertEquals(singletonList("foo"), configuration.getScanningIncludes());
+        assertTrue(configuration.getJarFilter().test("bar-1"));
+        assertFalse(configuration.getJarFilter().test("dummy"));
+    }
 
     @Test
     @WithRipener
