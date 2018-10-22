@@ -24,18 +24,19 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>org.apache.winegrower</groupId>
-    <artifactId>winegrower</artifactId>
+    <groupId>org.apache.winegrower.examples</groupId>
+    <artifactId>winegrower-examples</artifactId>
     <version>1.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>winegrower-core</artifactId>
-  <name>Apache Winegrower :: Core</name>
+  <artifactId>config</artifactId>
+  <packaging>bundle</packaging>
+  <name>Apache Winegrower :: Examples :: Config</name>
 
-  <properties>
-    <winegrower.build.name>${winegrower.build.name.base}.core</winegrower.build.name>
-  </properties>
+  <description>
+    This example shows different ways of loading configuration.
+  </description>
 
   <dependencies>
     <dependency>
@@ -45,26 +46,49 @@
     <dependency>
       <groupId>org.osgi</groupId>
       <artifactId>osgi.cmpn</artifactId>
-      <version>${osgi.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.xbean</groupId>
-      <artifactId>xbean-finder-shaded</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.felix</groupId>
-      <artifactId>org.apache.felix.utils</artifactId>
-      <version>1.11.0</version>
+      <version>6.0.0</version>
     </dependency>
 
+    <!-- test -->
+    <dependency>
+      <groupId>org.apache.winegrower</groupId>
+      <artifactId>winegrower-testing-junit5</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-simple</artifactId>
+      <version>${slf4j.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <inherited>true</inherited>
+        <version>3.5.1</version>
+        <configuration>
+          <instructions>
+            <Bundle-Activator>org.apache.winegrower.examples.Config</Bundle-Activator>
+          </instructions>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.winegrower</groupId>
+        <artifactId>winegrower-maven-plugin</artifactId>
+        <version>${project.version}</version>
+        <configuration>
+          <systemVariables>
+            <winegrower.service.my.example.config.foo>bar</winegrower.service.my.example.config.foo>
+          </systemVariables>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
 </project>
