@@ -19,18 +19,22 @@ import static java.util.stream.Collectors.toMap;
 
 import java.util.Map;
 import java.util.Scanner;
+import java.util.function.Consumer;
 
 import org.apache.winegrower.Ripener;
 
 public class Run implements Runnable {
     private final Ripener.Configuration configuration;
     private final Map<String, String> systemVariables;
+    private final Consumer<Runnable> waitOnExit;
     private Ripener framework;
 
     public Run(final Ripener.Configuration configuration,
-               final Map<String, String> systemVariables) {
+               final Map<String, String> systemVariables,
+               final Consumer<Runnable> waitOnExit) {
         this.configuration = configuration;
         this.systemVariables = systemVariables;
+        this.waitOnExit = waitOnExit;
     }
 
     public Ripener getFramework() {
@@ -69,6 +73,14 @@ public class Run implements Runnable {
     }
 
     protected void waitForExit() {
+        if (waitOnExit != null) {
+            waitOnExit.accept(this::defaultWaitOnExit);
+        } else {
+            defaultWaitOnExit();
+        }
+    }
+
+    private void defaultWaitOnExit() {
         final Scanner scanner = new Scanner(System.in);
         String command;
         while ((command = scanner.next()) != null) {

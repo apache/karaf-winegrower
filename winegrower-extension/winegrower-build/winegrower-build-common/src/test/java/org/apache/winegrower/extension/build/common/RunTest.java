@@ -37,7 +37,7 @@ class RunTest {
         final CountDownLatch stopped = new CountDownLatch(1);
         try {
             final String systemProp = getClass().getName() + ".run";
-            final Run run = new Run(new Ripener.Configuration(), singletonMap(systemProp, "set")) {
+            final Run run = new Run(new Ripener.Configuration(), singletonMap(systemProp, "set"), null) {
 
                 @Override
                 protected void onStop() {
