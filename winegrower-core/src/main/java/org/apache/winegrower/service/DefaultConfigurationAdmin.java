@@ -118,16 +118,33 @@ public abstract class DefaultConfigurationAdmin implements ConfigurationAdmin {
             return existing;
         }
         final DefaultConfiguration created = new DefaultConfiguration(providedConfiguration,
-                key.factoryPid, key.pid, location, name);
-        configurations.putIfAbsent(key, created);
-        onUpdate(created.factoryPid, created.pid); // after the put to ensure listConfiguration in a listener works
-        return created;
-    }
+                factoryPid, pid, location, name) {
+            @Override
+            public void setBundleLocation(final String location) {
+                super.setBundleLocation(location);
+                final ConfigurationEvent event = new ConfigurationEvent(
+                        getSelfReference(), ConfigurationEvent.CM_LOCATION_CHANGED, factoryPid, pid);
+                configurationListeners.forEach(it -> it.configurationEvent(event));
+            }
 
-    private void onUpdate(final String factoryPid, final String pid) {
-        final ConfigurationEvent event = new ConfigurationEvent(getSelfReference(), ConfigurationEvent.CM_UPDATED, factoryPid,
-                pid);
-        configurationListeners.forEach(it -> it.configurationEvent(event));
+            @Override
+            public void update(Dictionary<String, ?> properties) {
+                super.update(properties);
+                final ConfigurationEvent event = new ConfigurationEvent(
+                        getSelfReference(), ConfigurationEvent.CM_UPDATED, factoryPid, pid);
+                configurationListeners.forEach(it -> it.configurationEvent(event));
+            }
+
+            @Override
+            public void delete() {
+                super.delete();
+                final ConfigurationEvent event = new ConfigurationEvent(
+                        getSelfReference(), ConfigurationEvent.CM_DELETED, factoryPid, pid);
+                configurationListeners.forEach(it -> it.configurationEvent(event));
+            }
+        };
+        configurations.putIfAbsent(key, created);
+        return created;
     }
 
     protected abstract ServiceReference<ConfigurationAdmin> getSelfReference();
