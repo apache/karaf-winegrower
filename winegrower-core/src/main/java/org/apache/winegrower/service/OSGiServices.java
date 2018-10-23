@@ -55,10 +55,12 @@ public class OSGiServices {
 
     private final Collection<ServiceListenerDefinition> serviceListeners = new ArrayList<>();
     private final Collection<ServiceRegistrationImpl<?>> services = new ArrayList<>();
+    private final Collection<ConfigurationListener> configurationListeners;
     private final Ripener framework;
 
-    public OSGiServices(final Ripener framework) {
+    public OSGiServices(final Ripener framework, final Collection<ConfigurationListener> configurationListeners) {
         this.framework = framework;
+        this.configurationListeners = configurationListeners;
     }
 
     public <T> T inject(final T instance) {
@@ -142,6 +144,10 @@ public class OSGiServices {
             serviceProperties.put(Constants.SERVICE_SCOPE, Constants.SCOPE_SINGLETON);
         }
 
+        if (Stream.of(classes).anyMatch(it -> it.equals(ConfigurationListener.class.getName()))) {
+            configurationListeners.add(ConfigurationListener.class.cast(service));
+        }
+
         final Object pid = serviceProperties.get("service.pid");
         if (pid != null) {
             final ConfigurationAdmin configurationAdmin = framework.getConfigurationAdmin();
@@ -153,13 +159,6 @@ public class OSGiServices {
                                 .forEach(key -> serviceProperties.put(key, configuration.getProperties().get(key))));
             } catch (final IOException e) {
                 LOGGER.warn(e.getMessage());
-            }
-
-            if (Stream.of(classes).anyMatch(it -> it.equals(ConfigurationListener.class.getName()))) {
-                final ConfigurationEvent event = new ConfigurationEvent(
-                        (ServiceReference<ConfigurationAdmin>) services.iterator().next().getReference(),
-                        ConfigurationEvent.CM_UPDATED,null, pidStr);
-                ConfigurationListener.class.cast(service).configurationEvent(event);
             }
         }
 

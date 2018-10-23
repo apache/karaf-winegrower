@@ -61,7 +61,9 @@ import org.apache.winegrower.scanner.manifest.OSGIInfContributor;
 import org.apache.winegrower.service.BundleRegistry;
 import org.apache.winegrower.service.DefaultConfigurationAdmin;
 import org.apache.winegrower.service.OSGiServices;
+import org.osgi.framework.ServiceReference;
 import org.osgi.service.cm.ConfigurationAdmin;
+import org.osgi.service.cm.ConfigurationListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -172,7 +174,7 @@ public interface Ripener extends AutoCloseable {
         private static final Logger LOGGER = LoggerFactory.getLogger(Ripener.class);
 
         private final ConfigurationAdmin configurationAdmin;
-        private final OSGiServices services = new OSGiServices(this);
+        private final OSGiServices services;
         private final BundleRegistry registry;
 
         private final Configuration configuration;
@@ -181,9 +183,12 @@ public interface Ripener extends AutoCloseable {
 
         public Impl(final Configuration configuration) {
             this.configuration = configuration;
+
+            final Collection<ConfigurationListener> configurationListeners = new ArrayList<>();
+            this.services = new OSGiServices(this, configurationListeners);
             this.registry = new BundleRegistry(services, configuration);
 
-            this.configurationAdmin = loadConfigurationAdmin();
+            this.configurationAdmin = loadConfigurationAdmin(configurationListeners);
             registerBuiltInService(ConfigurationAdmin.class, this.configurationAdmin, new Hashtable<>());
 
             try (final InputStream stream = Thread.currentThread().getContextClassLoader().getResourceAsStream("winegrower.properties")) {
@@ -197,12 +202,17 @@ public interface Ripener extends AutoCloseable {
             this.services.registerService(new String[]{type.getName()}, impl, props, this.registry.getBundles().get(0L).getBundle());
         }
 
-        private ConfigurationAdmin loadConfigurationAdmin() {
+        private ConfigurationAdmin loadConfigurationAdmin(final Collection<ConfigurationListener> configurationListeners) {
             final Iterator<ConfigurationAdmin> configurationAdminIterator = ServiceLoader.load(ConfigurationAdmin.class).iterator();
             if (configurationAdminIterator.hasNext()) {
                 return configurationAdminIterator.next();
             }
-            return new DefaultConfigurationAdmin(new HashMap<>());
+            return new DefaultConfigurationAdmin(new HashMap<>(), configurationListeners) {
+                @Override
+                protected ServiceReference<ConfigurationAdmin> getSelfReference() {
+                    return (ServiceReference<ConfigurationAdmin>) services.getServices().iterator().next().getReference();
+                }
+            };
         }
 
         public void loadConfiguration(final InputStream stream) throws IOException {

@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.jar.Manifest;
@@ -45,7 +46,7 @@ class BundleImplTest {
     static void initBundle() throws IOException {
         final Manifest manifest = new Manifest(new ByteArrayInputStream(("Manifest-Version: 1.0\nBundle-Version: 1.0\nBundle-SymbolicName: test\n").getBytes(StandardCharsets.UTF_8)));
         final Ripener.Configuration configuration = new Ripener.Configuration();
-        final OSGiServices services = new OSGiServices(new Ripener.Impl(configuration));
+        final OSGiServices services = new OSGiServices(new Ripener.Impl(configuration), new ArrayList<>());
         registry = new BundleRegistry(services, configuration);
         final BundleContextImpl context = new BundleContextImpl(manifest, services, () -> bundle, registry);
         final File file = new File(registry.getFramework().getParentFile(), "test-classes");

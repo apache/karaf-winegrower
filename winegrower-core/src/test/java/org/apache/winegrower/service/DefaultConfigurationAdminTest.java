@@ -13,43 +13,51 @@
  */
 package org.apache.winegrower.service;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 
 import java.io.File;
+import java.util.Hashtable;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.osgi.framework.ServiceReference;
 import org.osgi.service.cm.Configuration;
+import org.osgi.service.cm.ConfigurationAdmin;
 
 class DefaultConfigurationAdminTest {
 
-  @Test
-  @DisplayName("Should return value from system property")
-  void systemPropertiesTest() {
-    System.setProperty("winegrower.service.test.foo", "bar");
-    DefaultConfigurationAdmin configurationAdmin = new DefaultConfigurationAdmin(emptyMap());
-    Configuration configuration = configurationAdmin.getConfiguration("test");
-    Assertions.assertEquals("bar", configuration.getProperties().get("foo"));
-  }
+    private final DefaultConfigurationAdmin configurationAdmin = new DefaultConfigurationAdmin(emptyMap(), emptyList()) {
+        @Override
+        protected ServiceReference<ConfigurationAdmin> getSelfReference() { // not needed for this tests
+            return new ServiceReferenceImpl<>(new Hashtable<>(), null, null);
+        }
+    };
 
-  @Test
-  @DisplayName("Should return value from cfg file in classpath")
-  void externalConfigClasspathTest() {
-    DefaultConfigurationAdmin configurationAdmin = new DefaultConfigurationAdmin(emptyMap());
-    Configuration configuration = configurationAdmin.getConfiguration("external.test");
-    Assertions.assertEquals("bar", configuration.getProperties().get("foo"));
-  }
+    @Test
+    @DisplayName("Should return value from system property")
+    void systemPropertiesTest() {
+        System.setProperty("winegrower.service.test.foo", "bar");
+        Configuration configuration = configurationAdmin.getConfiguration("test");
+        Assertions.assertEquals("bar", configuration.getProperties().get("foo"));
+    }
 
-  @Test
-  @DisplayName("Should return value from cfg file in winegrower.config.path location")
-  void externalConfigPathTest() {
-    File file = new File("src/test/resources");
-    System.out.println(file.getAbsolutePath());
-    System.setProperty("winegrower.config.path", "src/test/resources");
-    DefaultConfigurationAdmin configurationAdmin = new DefaultConfigurationAdmin(emptyMap());
-    Configuration configuration = configurationAdmin.getConfiguration("external.test");
-    Assertions.assertEquals("bar", configuration.getProperties().get("foo"));
-  }
+    @Test
+    @DisplayName("Should return value from cfg file in classpath")
+    void externalConfigClasspathTest() {
+        Configuration configuration = configurationAdmin.getConfiguration("external.test");
+        Assertions.assertEquals("bar", configuration.getProperties().get("foo"));
+    }
+
+    @Test
+    @DisplayName("Should return value from cfg file in winegrower.config.path location")
+    void externalConfigPathTest() {
+        File file = new File("src/test/resources");
+        System.out.println(file.getAbsolutePath());
+        System.setProperty("winegrower.config.path", "src/test/resources");
+        Configuration configuration = configurationAdmin.getConfiguration("external.test");
+        Assertions.assertEquals("bar", configuration.getProperties().get("foo"));
+    }
 
 }
