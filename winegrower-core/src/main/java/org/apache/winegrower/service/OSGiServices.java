@@ -36,11 +36,9 @@ import org.osgi.framework.PrototypeServiceFactory;
 import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceFactory;
 import org.osgi.framework.ServiceListener;
-import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
-import org.osgi.service.cm.ConfigurationEvent;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ConfigurationListener;
 import org.osgi.service.cm.ManagedService;
@@ -148,12 +146,26 @@ public class OSGiServices {
             configurationListeners.add(ConfigurationListener.class.cast(service));
         }
 
-        final Object pid = serviceProperties.get("service.pid");
+        final Object pid = serviceProperties.get(Constants.SERVICE_PID);
         if (pid != null) {
             final ConfigurationAdmin configurationAdmin = framework.getConfigurationAdmin();
             final String pidStr = String.valueOf(pid);
             try {
                 final Configuration configuration = configurationAdmin.getConfiguration(pidStr);
+                ofNullable(configuration.getProperties())
+                        .ifPresent(prop -> list(prop.keys())
+                                .forEach(key -> serviceProperties.put(key, configuration.getProperties().get(key))));
+            } catch (final IOException e) {
+                LOGGER.warn(e.getMessage());
+            }
+        }
+
+        final Object factoryPid = serviceProperties.get("service.factoryPid");
+        if (factoryPid != null) {
+            final ConfigurationAdmin configurationAdmin = framework.getConfigurationAdmin();
+            final String pidStr = String.valueOf(factoryPid);
+            try {
+                final Configuration configuration = configurationAdmin.createFactoryConfiguration(pidStr);
                 ofNullable(configuration.getProperties())
                         .ifPresent(prop -> list(prop.keys())
                                 .forEach(key -> serviceProperties.put(key, configuration.getProperties().get(key))));
