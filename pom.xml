@@ -38,7 +38,7 @@
 
   <properties>
     <junit.version>5.3.1</junit.version>
-    <osgi.version>6.0.0</osgi.version>
+    <osgi.version>7.0.0</osgi.version>
     <slf4j.version>1.7.25</slf4j.version>
     <xbean.version>4.11</xbean.version>
 
@@ -55,7 +55,6 @@
     <module>winegrower-cepages</module>
     <module>winegrower-examples</module>
     <module>winegrower-documentation</module>
-    <!-- <module>winegrower-testing</module> -->
   </modules>
 
   <dependencies>
@@ -75,7 +74,12 @@
     <dependencies>
       <dependency>
         <groupId>org.osgi</groupId>
-        <artifactId>org.osgi.core</artifactId>
+        <artifactId>osgi.core</artifactId>
+        <version>${osgi.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>osgi.cmpn</artifactId>
         <version>${osgi.version}</version>
       </dependency>
       <dependency>

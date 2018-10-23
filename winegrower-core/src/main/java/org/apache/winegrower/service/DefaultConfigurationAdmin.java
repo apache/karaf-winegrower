@@ -13,6 +13,7 @@
  */
 package org.apache.winegrower.service;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.list;
 import static java.util.Optional.ofNullable;
 import static java.util.function.Function.identity;
@@ -28,10 +29,12 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Dictionary;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.winegrower.lang.Substitutor;
@@ -67,18 +70,28 @@ public abstract class DefaultConfigurationAdmin implements ConfigurationAdmin {
     }
 
     @Override
+    public Configuration getFactoryConfiguration(final String factoryPid, final String name, final String location) {
+        return getOrCreate(factoryPid, null, location, name);
+    }
+
+    @Override
+    public Configuration getFactoryConfiguration(final String factoryPid, final String name) {
+        return getOrCreate(factoryPid, null, null, name);
+    }
+
+    @Override
     public Configuration createFactoryConfiguration(final String pid) {
         return createFactoryConfiguration(pid, null);
     }
 
     @Override
     public Configuration createFactoryConfiguration(final String pid, final String location) {
-        return getOrCreate(pid, null, location);
+        return getOrCreate(pid, null, location, null);
     }
 
     @Override
     public Configuration getConfiguration(final String pid, final String location) {
-        return getOrCreate(null, pid, location);
+        return getOrCreate(null, pid, location, null);
     }
 
     @Override
@@ -97,14 +110,15 @@ public abstract class DefaultConfigurationAdmin implements ConfigurationAdmin {
         }
     }
 
-    private Configuration getOrCreate(final String factoryPid, final String pid, final String location) {
+    private Configuration getOrCreate(final String factoryPid, final String pid, final String location,
+                                      final String name) {
         final Key key = new Key(factoryPid, pid);
         final Configuration existing = configurations.get(key);
         if (existing != null) {
             return existing;
         }
         final DefaultConfiguration created = new DefaultConfiguration(providedConfiguration,
-                key.factoryPid, key.pid, location);
+                key.factoryPid, key.pid, location, name);
         configurations.putIfAbsent(key, created);
         onUpdate(created.factoryPid, created.pid); // after the put to ensure listConfiguration in a listener works
         return created;
@@ -130,18 +144,23 @@ public abstract class DefaultConfigurationAdmin implements ConfigurationAdmin {
 
         private final Map<String, String> configRegistry;
 
+        private final String name;
+
         private String location;
 
         private final Hashtable<String, Object> properties;
 
         private final AtomicLong changeCount = new AtomicLong();
 
+        private final Set<ConfigurationAttribute> attributes = new HashSet<>();
+
         private DefaultConfiguration(final Map<String, String> configRegistry, final String factoryPid, final String pid,
-                final String location) {
+                final String location, final String name) {
             this.configRegistry = configRegistry;
             this.factoryPid = factoryPid;
             this.pid = pid;
             this.location = location;
+            this.name = name;
             this.properties = new Hashtable<>();
             this.defaultExternalConfigLocation = new File(
                     // support a cascade of known "homes"
@@ -188,6 +207,7 @@ public abstract class DefaultConfigurationAdmin implements ConfigurationAdmin {
             // ensure the factoryPid/pid is there if exists
             ofNullable(pid).ifPresent(v -> properties.putIfAbsent("service.pid", v));
             ofNullable(factoryPid).ifPresent(v -> properties.putIfAbsent("service.factoryPid", v));
+            ofNullable(name).ifPresent(v -> properties.putIfAbsent("name", v));
         }
 
         @Override
@@ -198,6 +218,11 @@ public abstract class DefaultConfigurationAdmin implements ConfigurationAdmin {
         @Override
         public Dictionary<String, Object> getProperties() {
             return properties;
+        }
+
+        @Override
+        public Dictionary<String, Object> getProcessedProperties(final ServiceReference<?> reference) {
+            return reference.getProperties();
         }
 
         @Override
@@ -234,6 +259,16 @@ public abstract class DefaultConfigurationAdmin implements ConfigurationAdmin {
         }
 
         @Override
+        public boolean updateIfDifferent(final Dictionary<String, ?> properties) {
+            if (properties == null || list(properties.keys()).stream()
+                    .anyMatch(it -> !properties.get(it).equals(this.properties.get(it)))) {
+                update(properties);
+                return true;
+            }
+            return false;
+        }
+
+        @Override
         public void setBundleLocation(final String location) {
             this.location = location;
         }
@@ -246,6 +281,21 @@ public abstract class DefaultConfigurationAdmin implements ConfigurationAdmin {
         @Override
         public long getChangeCount() {
             return changeCount.get();
+        }
+
+        @Override
+        public void addAttributes(final ConfigurationAttribute... attrs) {
+            ofNullable(attrs).ifPresent(values -> attributes.addAll(asList(attrs)));
+        }
+
+        @Override
+        public Set<ConfigurationAttribute> getAttributes() {
+            return attributes;
+        }
+
+        @Override
+        public void removeAttributes(ConfigurationAttribute... attrs) throws IOException {
+            ofNullable(attrs).ifPresent(values -> attributes.removeAll(asList(attrs)));
         }
 
         private Map<String, String> converter(final Dictionary<String, ?> properties) {
@@ -296,6 +346,11 @@ public abstract class DefaultConfigurationAdmin implements ConfigurationAdmin {
         @Override
         public int hashCode() {
             return hash;
+        }
+
+        @Override
+        public String toString() {
+            return "Key{factoryPid='" + factoryPid + "', pid='" + pid + "'}";
         }
     }
 }

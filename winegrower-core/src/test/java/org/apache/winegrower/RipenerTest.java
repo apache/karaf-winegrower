@@ -85,13 +85,13 @@ class RipenerTest {
     @Test
     @WithRipener
     void ensureFrameworkBundle(@Service final Ripener ripener) {
-        assertEquals(2, ripener.getRegistry().getBundles().size());
+        assertEquals(3, ripener.getRegistry().getBundles().size());
     }
 
     @Test
     @WithRipener(includeResources = @Entry(path = "org.apache.winegrower.test.simpleactivator"))
     void simpleActivator(@Service final Ripener ripener) {
-        assertEquals(3, ripener.getRegistry().getBundles().size());
+        assertEquals(4, ripener.getRegistry().getBundles().size());
 
         final BundleActivatorHandler activatorHandler = ripener.getRegistry().getBundles().values().stream()
                 .filter(it -> it.getActivator() != null)

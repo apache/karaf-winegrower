@@ -49,7 +49,7 @@ class FatJarTest {
         try (final JarFile files = new JarFile(output)) {
             entries = list(files.entries()).stream().map(JarEntry::getName).collect(toList());
         }
-        assertTrue(entries.size() > 500); // 503 when writing this test
+        assertTrue(entries.size() > 450); // 481 when writing this test
         // ensure junit and osgi-core are here by testing a few known classes
         assertTrue(entries.contains("org/junit/jupiter/api/AfterAll.class"));
         assertTrue(entries.contains("org/osgi/framework/FrameworkUtil.class"));

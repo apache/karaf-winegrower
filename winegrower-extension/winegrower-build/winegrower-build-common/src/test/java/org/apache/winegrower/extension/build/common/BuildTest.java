@@ -62,7 +62,7 @@ class BuildTest {
         assertEquals(11, entries.size());
         assertTrue(entries.contains("test-art-winegrower-distribution/bin/winegrower.sh"));
         assertTrue(entries.contains("test-art-winegrower-distribution/bin/setenv.sh"));
-        assertTrue(entries.contains("test-art-winegrower-distribution/lib/org.osgi.core-6.0.0.jar"));
+        assertTrue(entries.contains("test-art-winegrower-distribution/lib/osgi.core-7.0.0.jar"));
         assertTrue(entries.contains("test-art-winegrower-distribution/lib/junit-jupiter-api-5.3.1.jar"));
     }
 }

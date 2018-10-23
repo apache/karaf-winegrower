@@ -22,14 +22,14 @@ import org.osgi.framework.ServiceFactory;
 import org.osgi.framework.ServiceReference;
 
 public class ServiceReferenceImpl<T> implements ServiceReference<T> {
-    private final Dictionary<String, ?> properties;
+    private final Dictionary<String, Object> properties;
     private final Bundle bundle;
     private final Bundle[] usingBundles = new Bundle[0];
     private final Object reference;
     private final boolean usesFactory;
     private ServiceRegistrationImpl registration;
 
-    ServiceReferenceImpl(final Dictionary<String, ?> properties, final Bundle bundle, final Object reference) {
+    ServiceReferenceImpl(final Dictionary<String, Object> properties, final Bundle bundle, final Object reference) {
         this.properties = properties;
         this.bundle = bundle;
         this.usesFactory = ServiceFactory.class.isInstance(reference);
@@ -86,6 +86,11 @@ public class ServiceReferenceImpl<T> implements ServiceReference<T> {
             return 0;
         }
         return System.identityHashCode(this.reference) - System.identityHashCode(reference);
+    }
+
+    @Override
+    public Dictionary<String, Object> getProperties() {
+        return properties;
     }
 
     public boolean unget() {
