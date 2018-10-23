@@ -43,26 +43,35 @@ public class DefaultConfigurationAdmin implements ConfigurationAdmin {
     private final static String WINEGROWER_CONFIG_PATH = "winegrower.config.path";
     private final static String WINEGROWER_CONFIG_EXTENSION = ".cfg";
 
+    private final Map<String, String> providedConfiguration;
     private final Map<String, Configuration> configurations = new HashMap<>();
+
+    public DefaultConfigurationAdmin(final Map<String, String> providedConfiguration) {
+        this.providedConfiguration = providedConfiguration;
+    }
+
+    public Map<String, String> getProvidedConfiguration() {
+        return providedConfiguration;
+    }
 
     @Override
     public Configuration createFactoryConfiguration(final String pid) {
-        return new DefaultConfiguration(pid, null, null);
+        return new DefaultConfiguration(providedConfiguration, pid, null, null);
     }
 
     @Override
     public Configuration createFactoryConfiguration(final String pid, final String location) {
-        return new DefaultConfiguration(pid, null, location);
+        return new DefaultConfiguration(providedConfiguration, pid, null, location);
     }
 
     @Override
     public Configuration getConfiguration(final String pid, final String location) {
-        return configurations.computeIfAbsent(pid, p -> new DefaultConfiguration(null, p, location));
+        return configurations.computeIfAbsent(pid, p -> new DefaultConfiguration(providedConfiguration, null, p, location));
     }
 
     @Override
     public Configuration getConfiguration(final String pid) {
-        return configurations.computeIfAbsent(pid, p -> new DefaultConfiguration(null, p, null));
+        return configurations.computeIfAbsent(pid, p -> new DefaultConfiguration(providedConfiguration, null, p, null));
     }
 
     @Override
@@ -82,11 +91,14 @@ public class DefaultConfigurationAdmin implements ConfigurationAdmin {
         private final String pid;
         private final Map<String, String> defaultConfig = new HashMap<>();
         private final File defaultExternalConfigLocation;
+        private final Map<String, String> configRegistry;
         private String location;
         private final Hashtable<String, Object> properties;
         private final AtomicLong changeCount = new AtomicLong();
 
-        private DefaultConfiguration(final String factoryPid, final String pid, final String location) {
+        private DefaultConfiguration(final Map<String, String> configRegistry,
+                                     final String factoryPid, final String pid, final String location) {
+            this.configRegistry = configRegistry;
             this.factoryPid = factoryPid;
             this.pid = pid;
             this.location = location;
@@ -104,6 +116,8 @@ public class DefaultConfigurationAdmin implements ConfigurationAdmin {
         }
 
         private void loadConfig(final String pid) {
+            final String prefix = "winegrower.service." + pid + "."; // for "global" registries like system props
+
             // we first read the config from the classpath (lowest priority)
             try (final InputStream embedConfig = Thread.currentThread().getContextClassLoader()
                                                        .getResourceAsStream(pid + WINEGROWER_CONFIG_EXTENSION)) {
@@ -115,6 +129,11 @@ public class DefaultConfigurationAdmin implements ConfigurationAdmin {
             }
             properties.putAll(defaultConfig);
 
+            // then the default registry which is considered "in JVM" so less prioritized than external config
+            configRegistry.entrySet().stream()
+                          .filter(it -> it.getKey().startsWith(prefix))
+                          .forEach(entry -> properties.put(entry.getKey().substring(prefix.length()), entry.getValue()));
+
             // then from an external file
             if (defaultExternalConfigLocation.isFile()) {
                 try (final InputStream stream = new FileInputStream(defaultExternalConfigLocation)) {
@@ -125,7 +144,6 @@ public class DefaultConfigurationAdmin implements ConfigurationAdmin {
             }
 
             // and finally from system properties
-            final String prefix = "winegrower.service." + pid + ".";
             System.getProperties().stringPropertyNames().stream()
                   .filter(it -> it.startsWith(prefix))
                   .forEach(key -> properties.put(key.substring(prefix.length()), System.getProperty(key)));

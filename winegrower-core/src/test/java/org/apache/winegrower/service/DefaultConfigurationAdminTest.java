@@ -13,39 +13,41 @@
  */
 package org.apache.winegrower.service;
 
+import static java.util.Collections.emptyMap;
+
+import java.io.File;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.osgi.service.cm.Configuration;
 
-import java.io.File;
-
-public class DefaultConfigurationAdminTest {
+class DefaultConfigurationAdminTest {
 
   @Test
   @DisplayName("Should return value from system property")
-  public void systemPropertiesTest() throws Exception {
+  void systemPropertiesTest() {
     System.setProperty("winegrower.service.test.foo", "bar");
-    DefaultConfigurationAdmin configurationAdmin = new DefaultConfigurationAdmin();
+    DefaultConfigurationAdmin configurationAdmin = new DefaultConfigurationAdmin(emptyMap());
     Configuration configuration = configurationAdmin.getConfiguration("test");
     Assertions.assertEquals("bar", configuration.getProperties().get("foo"));
   }
 
   @Test
   @DisplayName("Should return value from cfg file in classpath")
-  public void externalConfigClasspathTest() throws Exception {
-    DefaultConfigurationAdmin configurationAdmin = new DefaultConfigurationAdmin();
+  void externalConfigClasspathTest() {
+    DefaultConfigurationAdmin configurationAdmin = new DefaultConfigurationAdmin(emptyMap());
     Configuration configuration = configurationAdmin.getConfiguration("external.test");
     Assertions.assertEquals("bar", configuration.getProperties().get("foo"));
   }
 
   @Test
   @DisplayName("Should return value from cfg file in winegrower.config.path location")
-  public void externalConfigPathTest() throws Exception {
+  void externalConfigPathTest() {
     File file = new File("src/test/resources");
     System.out.println(file.getAbsolutePath());
     System.setProperty("winegrower.config.path", "src/test/resources");
-    DefaultConfigurationAdmin configurationAdmin = new DefaultConfigurationAdmin();
+    DefaultConfigurationAdmin configurationAdmin = new DefaultConfigurationAdmin(emptyMap());
     Configuration configuration = configurationAdmin.getConfiguration("external.test");
     Assertions.assertEquals("bar", configuration.getProperties().get("foo"));
   }

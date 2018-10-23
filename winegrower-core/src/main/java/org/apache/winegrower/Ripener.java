@@ -38,6 +38,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Dictionary;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
@@ -201,7 +202,7 @@ public interface Ripener extends AutoCloseable {
             if (configurationAdminIterator.hasNext()) {
                 return configurationAdminIterator.next();
             }
-            return new DefaultConfigurationAdmin();
+            return new DefaultConfigurationAdmin(new HashMap<>());
         }
 
         public void loadConfiguration(final InputStream stream) throws IOException {
@@ -275,6 +276,15 @@ public interface Ripener extends AutoCloseable {
                     throw new IllegalArgumentException(e.getTargetException());
                 }
             });
+
+            if (DefaultConfigurationAdmin.class.isInstance(configurationAdmin)) {
+                final DefaultConfigurationAdmin dca = DefaultConfigurationAdmin.class.cast(configurationAdmin);
+                embedConfig.stringPropertyNames()
+                           .stream()
+                           .filter(it -> it.startsWith("winegrower.service."))
+                           .peek(matched::add)
+                           .forEach(key -> dca.getProvidedConfiguration().put(key, embedConfig.getProperty(key)));
+            }
 
             embedConfig.stringPropertyNames().stream().filter(it -> !matched.contains(it.toLowerCase(ROOT)))
                        .forEach(it -> LOGGER.warn("Didn't match configuration {}, did you mispell it?", it));

@@ -24,6 +24,8 @@ workDir:: where to create temporary files when a bundle needs it.
 
 === Package default configuration
 
-The configuration is takend from the agent by default but you can also embed some default values for your convenience.
+The configuration is taken from the agent by default but you can also embed some default values for your convenience.
 This is done providing a `winegrower.properties` in the agent classloader. It takes the same configuration as the agent.
+
+TIP: you can also pass `winegrower.service.*` properties in this file.
 
