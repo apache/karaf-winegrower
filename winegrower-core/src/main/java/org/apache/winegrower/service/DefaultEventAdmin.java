@@ -13,6 +13,8 @@
  */
 package org.apache.winegrower.service;
 
+import static java.lang.Thread.sleep;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.osgi.service.event.TopicPermission.SUBSCRIBE;
 
@@ -20,6 +22,7 @@ import java.io.Closeable;
 import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.osgi.framework.Bundle;
@@ -71,7 +74,12 @@ public class DefaultEventAdmin implements EventAdmin, Closeable {
     public void close() {
         executor.shutdown();
         try {
-            if (!executor.awaitTermination(1, MINUTES)) {
+            final int itWait = 250;
+            int max = (int) (MINUTES.toMillis(1) / itWait);
+            while (max-- > 0 && !executor.awaitTermination(itWait, MILLISECONDS)) {
+                sleep(itWait);
+            }
+            if (!executor.isTerminated()) {
                 executor.shutdownNow();
             }
         } catch (final InterruptedException e) {
@@ -85,7 +93,7 @@ public class DefaultEventAdmin implements EventAdmin, Closeable {
         private final String[] topics;
         private final Filter filter;
 
-        public EventHandlerInstance(final Bundle bundle,
+        EventHandlerInstance(final Bundle bundle,
                                     final EventHandler handler,
                                     final String[] topics,
                                     final String eventFilter) {
