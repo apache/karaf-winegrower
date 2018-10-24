@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Dictionary;
-import java.util.EventListener;
 import java.util.Hashtable;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
@@ -157,6 +156,27 @@ public class OSGiServices {
         }
 
         boolean isEventHandler = Stream.of(classes).anyMatch(it -> it.equals(EventHandler.class.getName()));
+        final boolean removeEventHandler = isEventHandler;
+        final ServiceRegistrationImpl<Object> registration = new ServiceRegistrationImpl<>(classes,
+                serviceProperties, new ServiceReferenceImpl<>(serviceProperties, from, service), reg -> {
+            final ServiceEvent event = new ServiceEvent(ServiceEvent.UNREGISTERING, reg.getReference());
+            getListeners(reg).forEach(listener -> listener.listener.serviceChanged(event));
+            synchronized (OSGiServices.this) {
+                services.remove(reg);
+            }
+
+            if (isConfigListener) {
+                synchronized (configurationListeners) {
+                    configurationListeners.remove(ConfigurationListener.class.cast(service));
+                }
+            }
+            if (removeEventHandler) {
+                synchronized (eventListeners) {
+                    eventListeners.removeIf(it -> it.getHandler() == service);
+                }
+            }
+        });
+
         if (isEventHandler) {
             final Object topics = properties.get(EventConstants.EVENT_TOPIC);
             final String[] topicsArray = String[].class.isInstance(topics) ?
@@ -172,7 +192,11 @@ public class OSGiServices {
                 synchronized (eventListeners) {
                     eventListeners.add(new DefaultEventAdmin.EventHandlerInstance(
                             from,
-                            EventHandler.class.cast(service),
+                            EventHandler.class.isInstance(service) ?
+                                    EventHandler.class.cast(service) :
+                                    new DefaultEventAdmin.EventHandlerFactory(
+                                            from, ServiceRegistration.class.cast(registration),
+                                            ServiceFactory.class.cast(service)),
                             Stream.of(topicsArray).anyMatch("*"::equals) ? null : topicsArray,
                             ofNullable(properties.get(EventConstants.EVENT_FILTER)).map(String::valueOf).orElse(null)));
                 }
@@ -207,26 +231,6 @@ public class OSGiServices {
             }
         }
 
-        final boolean removeEventHandler = isEventHandler;
-        final ServiceRegistrationImpl<Object> registration = new ServiceRegistrationImpl<>(classes,
-                serviceProperties, new ServiceReferenceImpl<>(serviceProperties, from, service), reg -> {
-            final ServiceEvent event = new ServiceEvent(ServiceEvent.UNREGISTERING, reg.getReference());
-            getListeners(reg).forEach(listener -> listener.listener.serviceChanged(event));
-            synchronized (OSGiServices.this) {
-                services.remove(reg);
-            }
-
-            if (isConfigListener) {
-                synchronized (configurationListeners) {
-                    configurationListeners.remove(ConfigurationListener.class.cast(service));
-                }
-            }
-            if (removeEventHandler) {
-                synchronized (eventListeners) {
-                    eventListeners.removeIf(it -> it.getHandler() == service);
-                }
-            }
-        });
         services.add(registration);
         final ServiceEvent event = new ServiceEvent(ServiceEvent.REGISTERED, registration.getReference());
         if (ManagedService.class.isInstance(service)) {

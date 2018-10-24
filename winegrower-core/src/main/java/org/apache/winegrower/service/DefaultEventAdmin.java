@@ -22,13 +22,14 @@ import java.io.Closeable;
 import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Filter;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.InvalidSyntaxException;
+import org.osgi.framework.ServiceFactory;
+import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventAdmin;
 import org.osgi.service.event.EventHandler;
@@ -84,6 +85,30 @@ public class DefaultEventAdmin implements EventAdmin, Closeable {
             }
         } catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
+        }
+    }
+
+    static class EventHandlerFactory implements EventHandler {
+        private final Bundle bundle;
+        private final ServiceRegistration<EventHandler> registration;
+        private final ServiceFactory<EventHandler> factory;
+
+        EventHandlerFactory(final Bundle bundle,
+                            final ServiceRegistration<EventHandler> registration,
+                            final ServiceFactory<EventHandler> factory) {
+            this.bundle = bundle;
+            this.registration = registration;
+            this.factory = factory;
+        }
+
+        @Override
+        public void handleEvent(final Event event) {
+            final EventHandler service = factory.getService(bundle, registration);
+            try {
+                service.handleEvent(event);
+            } finally {
+                factory.ungetService(bundle, registration, service);
+            }
         }
     }
 
