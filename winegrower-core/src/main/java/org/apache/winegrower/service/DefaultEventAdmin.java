@@ -46,7 +46,7 @@ public class DefaultEventAdmin implements EventAdmin, Closeable {
 
         final AtomicInteger counter = new AtomicInteger(1);
         this.executor = Executors.newFixedThreadPool(poolSize, r -> {
-            final Thread t = new Thread(DefaultEventAdmin.class.getName() + "-" + counter.getAndIncrement());
+            final Thread t = new Thread(r, DefaultEventAdmin.class.getName() + "-" + counter.getAndIncrement());
             if (t.isDaemon()) {
                 t.setDaemon(false);
             }
