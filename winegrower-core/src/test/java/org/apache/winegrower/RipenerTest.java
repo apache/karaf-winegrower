@@ -114,8 +114,8 @@ class RipenerTest {
     @Test
     @WithRipener(includeResources = @Entry(path = "org.apache.winegrower.test.simpleservice"))
     void simpleServiceRegistration(@Service final Ripener ripener) {
-        // config admin + myservice
-        assertEquals(2, ripener.getServices().getServices().size());
+        // config admin + event admin + myservice
+        assertEquals(3, ripener.getServices().getServices().size());
     }
 
     @Test
@@ -133,7 +133,7 @@ class RipenerTest {
     }
 
     private void validateTracker(final Ripener ripener) {
-        assertEquals(2, ripener.getServices().getServices().size());
+        assertEquals(3, ripener.getServices().getServices().size());
 
         final Map<String, BundleActivatorHandler> activatorHandler = ripener.getRegistry().getBundles().values().stream()
                 .filter(it -> it.getActivator() != null)

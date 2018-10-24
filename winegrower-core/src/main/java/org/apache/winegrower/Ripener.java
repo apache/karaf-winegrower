@@ -60,10 +60,13 @@ import org.apache.winegrower.scanner.manifest.ManifestContributor;
 import org.apache.winegrower.scanner.manifest.OSGIInfContributor;
 import org.apache.winegrower.service.BundleRegistry;
 import org.apache.winegrower.service.DefaultConfigurationAdmin;
+import org.apache.winegrower.service.DefaultEventAdmin;
 import org.apache.winegrower.service.OSGiServices;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationListener;
+import org.osgi.service.event.EventAdmin;
+import org.osgi.service.event.EventHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,6 +84,8 @@ public interface Ripener extends AutoCloseable {
     BundleRegistry getRegistry();
 
     ConfigurationAdmin getConfigurationAdmin();
+
+    EventAdmin getEventAdmin();
 
     @Override
     void close();
@@ -174,6 +179,7 @@ public interface Ripener extends AutoCloseable {
         private static final Logger LOGGER = LoggerFactory.getLogger(Ripener.class);
 
         private final ConfigurationAdmin configurationAdmin;
+        private final EventAdmin eventAdmin;
         private final OSGiServices services;
         private final BundleRegistry registry;
 
@@ -185,11 +191,14 @@ public interface Ripener extends AutoCloseable {
             this.configuration = configuration;
 
             final Collection<ConfigurationListener> configurationListeners = new ArrayList<>();
-            this.services = new OSGiServices(this, configurationListeners);
+            final Collection<DefaultEventAdmin.EventHandlerInstance> eventListeners = new ArrayList<>();
+            this.services = new OSGiServices(this, configurationListeners, eventListeners);
             this.registry = new BundleRegistry(services, configuration);
 
             this.configurationAdmin = loadConfigurationAdmin(configurationListeners);
+            this.eventAdmin = loadEventAdmin(eventListeners);
             registerBuiltInService(ConfigurationAdmin.class, this.configurationAdmin, new Hashtable<>());
+            registerBuiltInService(EventAdmin.class, this.eventAdmin, new Hashtable<>());
 
             try (final InputStream stream = Thread.currentThread().getContextClassLoader().getResourceAsStream("winegrower.properties")) {
                 loadConfiguration(stream);
@@ -199,6 +208,9 @@ public interface Ripener extends AutoCloseable {
         }
 
         public <T> void registerBuiltInService(final Class<T> type, final T impl, final Dictionary<String, Object> props) {
+            if (Boolean.getBoolean("winegrower.builtin.services." + type.getName() + ".skip")) {
+                return;
+            }
             this.services.registerService(new String[]{type.getName()}, impl, props, this.registry.getBundles().get(0L).getBundle());
         }
 
@@ -213,6 +225,16 @@ public interface Ripener extends AutoCloseable {
                     return (ServiceReference<ConfigurationAdmin>) services.getServices().iterator().next().getReference();
                 }
             };
+        }
+
+        private EventAdmin loadEventAdmin(final Collection<DefaultEventAdmin.EventHandlerInstance> listeners) {
+            final Iterator<EventAdmin> eventAdminIterator = ServiceLoader.load(EventAdmin.class).iterator();
+            if (eventAdminIterator.hasNext()) {
+                return eventAdminIterator.next();
+            }
+            return new DefaultEventAdmin(
+                    listeners,
+                    Integer.getInteger("winegrower.builtin.services." + EventAdmin.class.getName() + ".pool.core", Math.max(Runtime.getRuntime().availableProcessors(), 2)));
         }
 
         public void loadConfiguration(final InputStream stream) throws IOException {
@@ -357,6 +379,9 @@ public interface Ripener extends AutoCloseable {
                     LOGGER.warn("Can't delete work directory", e);
                 }
             }
+            if (DefaultEventAdmin.class.isInstance(eventAdmin)) {
+                DefaultEventAdmin.class.cast(eventAdmin).close();
+            }
         }
 
         @Override
@@ -372,6 +397,11 @@ public interface Ripener extends AutoCloseable {
         @Override
         public ConfigurationAdmin getConfigurationAdmin() {
             return configurationAdmin;
+        }
+
+        @Override
+        public EventAdmin getEventAdmin() {
+            return eventAdmin;
         }
 
         @Override // for try with resource syntax

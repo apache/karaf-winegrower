@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Dictionary;
+import java.util.EventListener;
 import java.util.Hashtable;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
@@ -42,6 +43,8 @@ import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ConfigurationListener;
 import org.osgi.service.cm.ManagedService;
+import org.osgi.service.event.EventConstants;
+import org.osgi.service.event.EventHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,11 +57,15 @@ public class OSGiServices {
     private final Collection<ServiceListenerDefinition> serviceListeners = new ArrayList<>();
     private final Collection<ServiceRegistrationImpl<?>> services = new ArrayList<>();
     private final Collection<ConfigurationListener> configurationListeners;
+    private final Collection<DefaultEventAdmin.EventHandlerInstance> eventListeners;
     private final Ripener framework;
 
-    public OSGiServices(final Ripener framework, final Collection<ConfigurationListener> configurationListeners) {
+    public OSGiServices(final Ripener framework,
+                        final Collection<ConfigurationListener> configurationListeners,
+                        final Collection<DefaultEventAdmin.EventHandlerInstance> eventListeners) {
         this.framework = framework;
         this.configurationListeners = configurationListeners;
+        this.eventListeners = eventListeners;
     }
 
     public <T> T inject(final T instance) {
@@ -142,8 +149,34 @@ public class OSGiServices {
             serviceProperties.put(Constants.SERVICE_SCOPE, Constants.SCOPE_SINGLETON);
         }
 
-        if (Stream.of(classes).anyMatch(it -> it.equals(ConfigurationListener.class.getName()))) {
-            configurationListeners.add(ConfigurationListener.class.cast(service));
+        final boolean isConfigListener = Stream.of(classes).anyMatch(it -> it.equals(ConfigurationListener.class.getName()));
+        if (isConfigListener) {
+            synchronized (configurationListeners) {
+                configurationListeners.add(ConfigurationListener.class.cast(service));
+            }
+        }
+
+        boolean isEventHandler = Stream.of(classes).anyMatch(it -> it.equals(EventHandler.class.getName()));
+        if (isEventHandler) {
+            final Object topics = properties.get(EventConstants.EVENT_TOPIC);
+            final String[] topicsArray = String[].class.isInstance(topics) ?
+                    String[].class.cast(topics) :
+                    (String.class.isInstance(topics) ? new String[]{ String.class.cast(topics)} :
+                    Collection.class.isInstance(properties) ?
+                            ((Collection<Object>) topics).stream().map(String::valueOf).toArray(String[]::new) :
+                            null);
+            if (topics == null) {
+                LOGGER.warn("No topic for {}", service);
+                isEventHandler = false;
+            } else {
+                synchronized (eventListeners) {
+                    eventListeners.add(new DefaultEventAdmin.EventHandlerInstance(
+                            from,
+                            EventHandler.class.cast(service),
+                            Stream.of(topicsArray).anyMatch("*"::equals) ? null : topicsArray,
+                            ofNullable(properties.get(EventConstants.EVENT_FILTER)).map(String::valueOf).orElse(null)));
+                }
+            }
         }
 
         final Object pid = serviceProperties.get(Constants.SERVICE_PID);
@@ -174,12 +207,24 @@ public class OSGiServices {
             }
         }
 
+        final boolean removeEventHandler = isEventHandler;
         final ServiceRegistrationImpl<Object> registration = new ServiceRegistrationImpl<>(classes,
                 serviceProperties, new ServiceReferenceImpl<>(serviceProperties, from, service), reg -> {
             final ServiceEvent event = new ServiceEvent(ServiceEvent.UNREGISTERING, reg.getReference());
             getListeners(reg).forEach(listener -> listener.listener.serviceChanged(event));
             synchronized (OSGiServices.this) {
                 services.remove(reg);
+            }
+
+            if (isConfigListener) {
+                synchronized (configurationListeners) {
+                    configurationListeners.remove(ConfigurationListener.class.cast(service));
+                }
+            }
+            if (removeEventHandler) {
+                synchronized (eventListeners) {
+                    eventListeners.removeIf(it -> it.getHandler() == service);
+                }
             }
         });
         services.add(registration);

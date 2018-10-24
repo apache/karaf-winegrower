@@ -46,7 +46,7 @@ class BundleImplTest {
     static void initBundle() throws IOException {
         final Manifest manifest = new Manifest(new ByteArrayInputStream(("Manifest-Version: 1.0\nBundle-Version: 1.0\nBundle-SymbolicName: test\n").getBytes(StandardCharsets.UTF_8)));
         final Ripener.Configuration configuration = new Ripener.Configuration();
-        final OSGiServices services = new OSGiServices(new Ripener.Impl(configuration), new ArrayList<>());
+        final OSGiServices services = new OSGiServices(new Ripener.Impl(configuration), new ArrayList<>(), new ArrayList<>());
         registry = new BundleRegistry(services, configuration);
         final BundleContextImpl context = new BundleContextImpl(manifest, services, () -> bundle, registry);
         final File file = new File(registry.getFramework().getParentFile(), "test-classes");
