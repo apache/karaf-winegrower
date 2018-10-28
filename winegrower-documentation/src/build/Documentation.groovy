@@ -79,6 +79,7 @@ def header = """
               <div class="dropdown-menu" aria-labelledby="navbarDropdown">
                 <a class="dropdown-item" href="@{relativePath}index.html">Home</a>
                 <div class="dropdown-divider"></div>
+                <a class="dropdown-item" href="@{relativePath}getting-started.html">Getting Started</a>
                 <a class="dropdown-item" href="@{relativePath}core/index.html">Core</a>
                 <div class="dropdown-divider"></div>
                 <a class="dropdown-item" href="@{relativePath}extension/index.html">Extensions</a>

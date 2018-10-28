@@ -14,7 +14,9 @@
 package org.apache.winegrower.scanner;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.list;
+import static java.util.Collections.singletonList;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -43,6 +45,7 @@ import org.apache.xbean.finder.AnnotationFinder;
 import org.apache.xbean.finder.ClassLoaders;
 import org.apache.xbean.finder.UrlSet;
 import org.apache.xbean.finder.archive.Archive;
+import org.apache.xbean.finder.archive.ClassesArchive;
 import org.apache.xbean.finder.util.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -112,6 +115,35 @@ public class StandaloneScanner {
         }
     }
 
+    public Collection<BundleDefinition> findEmbeddedClasses() {
+        // potentially other scripting languages
+        return scanGroovy();
+    }
+
+    private Collection<BundleDefinition> scanGroovy() {
+        if (loader == null || !loader.getClass().getName().equals("groovy.lang.GroovyClassLoader")) {
+            return emptyList();
+        }
+        try { // groovy - note that the classloader returns classes but not .class as resource so we fail to activate our contributors
+            final Class<?>[] loadedClasses = Class[].class.cast(
+                    loader.getClass().getMethod("getLoadedClasses").invoke(loader));
+            try {
+                final Archive archive = new ClassesArchive(loadedClasses);
+                final Manifest groovyClassesManifest = tryLoadManifest(archive, "EmbeddedGroovyClasses");
+                if (groovyClassesManifest == null) {
+                    return emptyList();
+                }
+                LOGGER.debug("EmbeddedGroovyClasses was scanned and is converted to a bundle");
+                return singletonList(new BundleDefinition(groovyClassesManifest, null, emptyList()));
+            } catch (final LinkageError e) {
+                LOGGER.debug("EmbeddedGroovyClasses is not scannable, maybe exclude it in framework configuration");
+                return emptyList();
+            }
+        } catch (final Exception e) {
+            return emptyList();
+        }
+    }
+
     public Collection<BundleDefinition> findPotentialOSGiBundles() {
         final KnownJarsFilter filter = new KnownJarsFilter(configuration);
         return urls.stream()
@@ -123,13 +155,9 @@ public class StandaloneScanner {
                   final Archive jarArchive = archive(loader, it.url);
                   // we scan per archive to be able to create bundle after
                   try {
-                      final AnnotationFinder archiveFinder = new AnnotationFinder(jarArchive, false);
-                      final ManifestCreator manifestCreator = new ManifestCreator(it.file.getName());
-                      configuration.getManifestContributors()
-                                   .forEach(c -> c.contribute(archiveFinder, manifestCreator));
-                      final Manifest manifest = manifestCreator.getManifest();
+                      final String name = it.file.getName();
+                      final Manifest manifest = tryLoadManifest(jarArchive, name);
                       if (manifest == null) {
-                          LOGGER.debug("{} was scanned for nothing, maybe adjust scanning exclusions", it.file);
                           return null;
                       }
                       LOGGER.debug("{} was scanned and is converted to a bundle", it.file);
@@ -154,6 +182,19 @@ public class StandaloneScanner {
                     providedManifests.entrySet().stream()
                         .map(it -> new BundleDefinition(it.getValue(), null, providedIndex.get(it.getKey()))))
                 .collect(toList());
+    }
+
+    private Manifest tryLoadManifest(final Archive archive, final String name) {
+        final AnnotationFinder archiveFinder = new AnnotationFinder(archive, false);
+        final ManifestCreator manifestCreator = new ManifestCreator(name);
+        configuration.getManifestContributors()
+                .forEach(c -> c.contribute(archiveFinder, manifestCreator));
+        final Manifest manifest = manifestCreator.getManifest();
+        if (manifest == null) {
+            LOGGER.debug("{} was scanned for nothing, maybe adjust scanning exclusions", name);
+            return null;
+        }
+        return manifest;
     }
 
     private boolean isIncluded(final File file) {

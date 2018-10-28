@@ -1,0 +1,32 @@
+= Getting Started
+
+To create an `Activator` and deploy it the easiest is to add `org.apache.winegrower:winegrower-core` in your `pom.xml`
+and decorate it with `@Header` and launch `Ripener` main:
+
+[source,java]
+----
+package application;
+
+import static org.osgi.framework.Constants.BUNDLE_ACTIVATOR;
+
+import org.osgi.annotation.bundle.Header;
+import org.osgi.framework.BundleActivator;
+import org.osgi.framework.BundleContext;
+
+@Header(name = BUNDLE_ACTIVATOR, value = "${@class}")
+public class GettingStartedActivator implements BundleActivator {
+    @Override
+    public void start(final BundleContext context) {
+        System.out.println("Hello Winegrower");
+    }
+
+    @Override
+    public void stop(final BundleContext context) {
+        System.out.println("Bye Winegrower");
+    }
+
+    public static void main(final String[] args) {
+        Ripener.main(args);
+    }
+}
+----

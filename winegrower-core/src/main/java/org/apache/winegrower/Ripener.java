@@ -338,7 +338,10 @@ public interface Ripener extends AutoCloseable {
                     LocalDateTime.ofInstant(Instant.ofEpochMilli(startTime), ZoneId.systemDefault()));
             final StandaloneScanner scanner = new StandaloneScanner(configuration, registry.getFramework());
             final AtomicLong bundleIdGenerator = new AtomicLong(1);
-            Stream.concat(scanner.findOSGiBundles().stream(), scanner.findPotentialOSGiBundles().stream())
+            Stream.concat(Stream.concat(
+                        scanner.findOSGiBundles().stream(),
+                        scanner.findPotentialOSGiBundles().stream()),
+                        scanner.findEmbeddedClasses().stream())
                     .sorted(this::compareBundles)
                     .map(it -> new OSGiBundleLifecycle(
                             it.getManifest(), it.getJar(),
