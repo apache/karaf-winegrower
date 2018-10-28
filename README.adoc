@@ -112,14 +112,14 @@ public class MyCommand implements Action {
 Then package it as a normal jar/exploded folder - not even a bundle - and add it
 in the previous classpath. You can now run "test:hello".
 
-Note that to shortcut the build phase you can use `@ImplicitActivator`
+Note that to shortcut the build phase you can use `@Header`
 which to define a `BundleActivator`.
 
 Here is an example:
 
 [source,java]
 ----
-@ImplicitActivator
+@Header(name= Constants.BUNDLE_ACTIVATOR, value = "${@class}")
 public class MyBundleActivator implements BundleActivator {
     // standard code
 }

@@ -13,11 +13,9 @@
  */
 package org.apache.winegrower.examples;
 
-import org.apache.winegrower.api.ImplicitActivator;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
-@ImplicitActivator
 public class Simple implements BundleActivator {
 
   public void start(BundleContext bundleContext) {

@@ -13,11 +13,13 @@
  */
 package org.apache.winegrower.test.implicitactivator;
 
-import org.apache.winegrower.api.ImplicitActivator;
+import static org.osgi.framework.Constants.BUNDLE_ACTIVATOR;
+
+import org.osgi.annotation.bundle.Header;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
-@ImplicitActivator
+@Header(name = BUNDLE_ACTIVATOR, value = "${@class}")
 public class ImplictActivator implements BundleActivator {
     public static boolean started;
 

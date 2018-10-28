@@ -22,7 +22,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.winegrower.api.ImplicitActivator;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
@@ -36,7 +35,6 @@ public class ExampleServlet extends HttpServlet {
     }
   }
 
-  @ImplicitActivator
   public static class Registrar implements BundleActivator {
 
     @Override

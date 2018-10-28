@@ -54,7 +54,7 @@ import java.util.stream.StreamSupport;
 
 import org.apache.winegrower.deployer.OSGiBundleLifecycle;
 import org.apache.winegrower.scanner.StandaloneScanner;
-import org.apache.winegrower.scanner.manifest.ActivatorManifestContributor;
+import org.apache.winegrower.scanner.manifest.HeaderManifestContributor;
 import org.apache.winegrower.scanner.manifest.KarafCommandManifestContributor;
 import org.apache.winegrower.scanner.manifest.ManifestContributor;
 import org.apache.winegrower.scanner.manifest.OSGIInfContributor;
@@ -66,7 +66,6 @@ import org.osgi.framework.ServiceReference;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationListener;
 import org.osgi.service.event.EventAdmin;
-import org.osgi.service.event.EventHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,7 +104,7 @@ public interface Ripener extends AutoCloseable {
         private Collection<String> ignoredBundles = emptyList();
         private Collection<ManifestContributor> manifestContributors = Stream.concat(
                 // built-in
-                Stream.of(new KarafCommandManifestContributor(), new ActivatorManifestContributor(), new OSGIInfContributor()),
+                Stream.of(new KarafCommandManifestContributor(), new HeaderManifestContributor(), new OSGIInfContributor()),
                 // extensions
                 StreamSupport.stream(ServiceLoader.load(ManifestContributor.class).spliterator(), false)
         ).collect(toList());

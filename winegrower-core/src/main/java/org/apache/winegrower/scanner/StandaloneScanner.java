@@ -123,7 +123,7 @@ public class StandaloneScanner {
                   final Archive jarArchive = archive(loader, it.url);
                   // we scan per archive to be able to create bundle after
                   try {
-                      final AnnotationFinder archiveFinder = new AnnotationFinder(jarArchive);
+                      final AnnotationFinder archiveFinder = new AnnotationFinder(jarArchive, false);
                       final ManifestCreator manifestCreator = new ManifestCreator(it.file.getName());
                       configuration.getManifestContributors()
                                    .forEach(c -> c.contribute(archiveFinder, manifestCreator));

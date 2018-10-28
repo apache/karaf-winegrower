@@ -33,6 +33,7 @@ import org.apache.winegrower.service.BundleActivatorHandler;
 import org.apache.winegrower.test.WithRipener;
 import org.apache.winegrower.test.WithRipener.Entry;
 import org.apache.winegrower.test.WithRipener.Service;
+import org.apache.winegrower.test.implicitactivator.ImplictActivator;
 import org.apache.winegrower.test.simpleactivator.MyActivator;
 import org.junit.jupiter.api.Test;
 import org.osgi.framework.Bundle;
@@ -85,13 +86,31 @@ class RipenerTest {
     @Test
     @WithRipener
     void ensureFrameworkBundle(@Service final Ripener ripener) {
-        assertEquals(3, ripener.getRegistry().getBundles().size());
+        assertEquals(4, ripener.getRegistry().getBundles().size());
+    }
+
+    @Test
+    @WithRipener(includeResources = @Entry(path = "org.apache.winegrower.test.implicitactivator"))
+    void implicitActivator(@Service final Ripener ripener) {
+        assertEquals(5, ripener.getRegistry().getBundles().size());
+
+        final BundleActivatorHandler activatorHandler = ripener.getRegistry().getBundles().values().stream()
+                .filter(it -> it.getActivator() != null)
+                .findFirst()
+                .orElseThrow(IllegalStateException::new)
+                .getActivator();
+        assertNotNull(activatorHandler);
+        final BundleActivator activator = activatorHandler.getActivator();
+        assertNotNull(activator);
+        assertTrue(ImplictActivator.class.isInstance(activator));
+        assertTrue(ImplictActivator.started);
+        ripener.stop();
     }
 
     @Test
     @WithRipener(includeResources = @Entry(path = "org.apache.winegrower.test.simpleactivator"))
     void simpleActivator(@Service final Ripener ripener) {
-        assertEquals(4, ripener.getRegistry().getBundles().size());
+        assertEquals(5, ripener.getRegistry().getBundles().size());
 
         final BundleActivatorHandler activatorHandler = ripener.getRegistry().getBundles().values().stream()
                 .filter(it -> it.getActivator() != null)

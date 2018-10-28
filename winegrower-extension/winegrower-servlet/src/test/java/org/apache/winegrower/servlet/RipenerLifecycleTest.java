@@ -38,7 +38,6 @@ import org.apache.meecrowave.Meecrowave;
 import org.apache.meecrowave.junit5.MeecrowaveConfig;
 import org.apache.meecrowave.testing.ConfigurationInject;
 import org.apache.winegrower.Ripener;
-import org.apache.winegrower.api.ImplicitActivator;
 import org.apache.winegrower.api.InjectedService;
 import org.junit.jupiter.api.Test;
 import org.osgi.framework.BundleActivator;
@@ -84,7 +83,6 @@ class RipenerLifecycleTest {
             }
         }
 
-        @ImplicitActivator
         public static class Registrar implements BundleActivator {
 
             @Override

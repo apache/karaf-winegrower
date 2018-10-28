@@ -97,13 +97,13 @@ class BundleImplTest {
     @Test
     void getResource() {
         assertNotNull(bundle.getResource("org"));
-        assertNull(bundle.getResource("javax"));
+        assertNull(bundle.getResource("javax/enterprise"));
     }
 
     @Test
     void getResources() throws IOException {
         assertTrue(bundle.getResources("org").hasMoreElements());
-        assertFalse(bundle.getResources("javax").hasMoreElements());
+        assertFalse(bundle.getResources("javax/enterprise").hasMoreElements());
     }
 
     @Test
