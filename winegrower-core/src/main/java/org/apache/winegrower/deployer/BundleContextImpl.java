@@ -19,13 +19,13 @@ import static java.util.stream.Collectors.toList;
 
 import java.io.File;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Dictionary;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
 import java.util.jar.Manifest;
 import java.util.stream.Stream;
@@ -54,9 +54,9 @@ public class BundleContextImpl implements BundleContext {
     private final OSGiServices services;
     private final Supplier<Bundle> bundleSupplier;
     private final BundleRegistry registry;
-    private final Collection<BundleListener> bundleListeners = new ArrayList<>();
-    private final Collection<FrameworkListener> frameworkListeners = new ArrayList<>();
-    private final Map<ServiceReference<?>, Object> serviceInstances = new HashMap<>();
+    private final Collection<BundleListener> bundleListeners = new CopyOnWriteArrayList<>();
+    private final Collection<FrameworkListener> frameworkListeners = new CopyOnWriteArrayList<>();
+    private final Map<ServiceReference<?>, Object> serviceInstances = new ConcurrentHashMap<>();
 
     BundleContextImpl(final Manifest manifest, final OSGiServices services, final Supplier<Bundle> bundleSupplier,
                       final BundleRegistry registry) {
