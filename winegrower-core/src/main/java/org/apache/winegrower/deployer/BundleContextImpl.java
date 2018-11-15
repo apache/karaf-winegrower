@@ -232,7 +232,15 @@ public class BundleContextImpl implements BundleContext {
     public <S> S getService(final ServiceReference<S> reference) {
         final ServiceReferenceImpl ref = ServiceReferenceImpl.class.cast(reference);
         if (Constants.SCOPE_BUNDLE.equals(ref.getProperty(Constants.SERVICE_SCOPE))) {
-            return (S) serviceInstances.computeIfAbsent(ref, r -> ref.getReference());
+            Object value = serviceInstances.get(ref);
+            if (value == null) {
+                value = ref.getReference();
+                final Object existing = serviceInstances.putIfAbsent(ref, value);
+                if (existing != null) {
+                    value = existing;
+                }
+            }
+            return (S) value;
         }
         return (S) ref.getReference();
     }
