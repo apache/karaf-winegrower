@@ -75,8 +75,8 @@ public class WinegrowerAgent {
 
         final URLClassLoader loader = new WinegrowerAgentClassLoader(
                 isolatedLibs,
-                toValues(extractConfig(agentArgs, "ignoredParentClasses")).collect(toList()),
-                toValues(extractConfig(agentArgs, "ignoredParentResources")).collect(toList()));
+                toValues(extractConfig(agentArgs, "ignoredParentClasses=")).collect(toList()),
+                toValues(extractConfig(agentArgs, "ignoredParentResources=")).collect(toList()));
         final Thread thread = Thread.currentThread();
         final ClassLoader contextualLoader = thread.getContextClassLoader();
         thread.setContextClassLoader(loader);
