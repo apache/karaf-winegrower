@@ -70,10 +70,15 @@ public class WinegrowerAgent {
             .orElseGet(Collections::emptyList);
 
         final URLClassLoader loader = new WinegrowerAgentClassLoader(isolatedLibs);
+        final Thread thread = Thread.currentThread();
+        final ClassLoader contextualLoader = thread.getContextClassLoader();
+        thread.setContextClassLoader(loader);
         try {
             doStart(agentArgs, instrumentation);
         } catch (final Throwable e) {
             throw new IllegalStateException(e);
+        } finally {
+            thread.setContextClassLoader(contextualLoader);
         }
     }
 
