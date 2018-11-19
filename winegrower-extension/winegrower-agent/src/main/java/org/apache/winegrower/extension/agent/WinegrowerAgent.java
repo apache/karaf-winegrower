@@ -76,6 +76,10 @@ public class WinegrowerAgent {
         try {
             doStart(agentArgs, instrumentation);
         } catch (final Throwable e) {
+            final Integer exitStatus = Integer.getInteger("winegrower.agent.exitStatusOnError", -1);
+            if (exitStatus > 0) {
+                System.exit(exitStatus);
+            }
             throw new IllegalStateException(e);
         } finally {
             thread.setContextClassLoader(contextualLoader);
