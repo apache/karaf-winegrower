@@ -14,6 +14,8 @@
 package org.apache.winegrower.extension.agent;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.enumeration;
+import static java.util.Collections.list;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 
@@ -23,9 +25,11 @@ import java.lang.instrument.Instrumentation;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Dictionary;
+import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
@@ -69,7 +73,10 @@ public class WinegrowerAgent {
                 }).collect(toList()))
             .orElseGet(Collections::emptyList);
 
-        final URLClassLoader loader = new WinegrowerAgentClassLoader(isolatedLibs);
+        final URLClassLoader loader = new WinegrowerAgentClassLoader(
+                isolatedLibs,
+                toValues(extractConfig(agentArgs, "ignoredParentClasses")).collect(toList()),
+                toValues(extractConfig(agentArgs, "ignoredParentResources")).collect(toList()));
         final Thread thread = Thread.currentThread();
         final ClassLoader contextualLoader = thread.getContextClassLoader();
         thread.setContextClassLoader(loader);
@@ -87,12 +94,19 @@ public class WinegrowerAgent {
     }
 
     private static Stream<File> toLibStream(final String paths) {
-        return Stream.of(paths.split(","))
+        return toValues(paths)
                      .map(File::new)
                      .filter(File::exists)
                      .flatMap(it -> it.isDirectory() ?
                              ofNullable(it.listFiles()).map(Stream::of).orElseGet(Stream::empty) : Stream.of(it))
                      .filter(it -> it.getName().endsWith(".zip") || it.getName().endsWith(".jar"));
+    }
+
+    private static Stream<String> toValues(final String csv) {
+        return ofNullable(csv)
+                .map(v -> v.split(","))
+                .map(v -> Stream.of(v).map(String::trim).filter(it -> !it.isEmpty()))
+                .orElseGet(Stream::empty);
     }
 
     private static void doStart(final String agentArgs, final Instrumentation instrumentation) throws Throwable {
@@ -250,8 +264,51 @@ public class WinegrowerAgent {
     }
 
     private static class WinegrowerAgentClassLoader extends URLClassLoader {
-        private WinegrowerAgentClassLoader(final Collection<URL> urls) {
+        private final Collection<String> ignoredParentClasses;
+        private final Collection<String> ignoredParentResources;
+
+        private WinegrowerAgentClassLoader(final Collection<URL> urls,
+                                           final Collection<String> ignoredParentClasses,
+                                           final Collection<String> ignoredParentResources) {
             super(urls.toArray(new URL[0]), Thread.currentThread().getContextClassLoader());
+            this.ignoredParentClasses = ignoredParentClasses;
+            this.ignoredParentResources = ignoredParentResources;
+        }
+
+        @Override
+        protected Class<?> loadClass(final String name, final boolean resolve) throws ClassNotFoundException {
+            if (name != null && ignoredParentClasses.stream().anyMatch(name::startsWith)) {
+                synchronized (getClassLoadingLock(name)) {
+                    Class<?> clazz = findLoadedClass(name);
+                    if (clazz == null) {
+                        clazz = findClass(name);
+                    }
+                    if (resolve) {
+                        resolveClass(clazz);
+                    }
+                    return clazz;
+                }
+            }
+            return super.loadClass(name, resolve);
+        }
+
+        @Override
+        public URL getResource(final String name) {
+            if (name != null && ignoredParentResources.stream().anyMatch(name::startsWith)) {
+                return findResource(name);
+            }
+            return super.getResource(name);
+        }
+
+        @Override
+        public Enumeration<URL> getResources(final String name) throws IOException {
+            final Enumeration<URL> resources = super.getResources(name);
+            if (name != null && ignoredParentResources.stream().anyMatch(name::startsWith)) {
+                final List<URL> list = new ArrayList<>(list(resources));
+                list.removeAll(list(getParent().getResources(name)));
+                return enumeration(list);
+            }
+            return resources;
         }
     }
 }
