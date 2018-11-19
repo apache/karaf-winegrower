@@ -123,11 +123,8 @@ public class WinegrowerAgent {
 
         final Object services = ripenerImplClass.getMethod("getServices").invoke(ripener);
         final Object bundleRegistry = ripenerImplClass.getMethod("getRegistry").invoke(ripener);
-        final Object bundle0 = Map.class.cast(bundleRegistry
-                .getClass()
-                .getMethod("getBundles")
-                .invoke(bundleRegistry))
-                .get(0L);
+        final Object bundleLifecycle0 = Map.class.cast(bundleRegistry.getClass().getMethod("getBundles").invoke(bundleRegistry)).get(0L);
+        final Object bundle0 = bundleLifecycle0.getClass().getMethod("getBundle").invoke(bundleLifecycle0);
         services.getClass().getMethod("registerService", String[].class, Object.class, Dictionary.class, bundleClass)
                 .invoke(services, new String[]{Instrumentation.class.getName()}, instrumentation, new Hashtable<>(), bundle0);
     }
