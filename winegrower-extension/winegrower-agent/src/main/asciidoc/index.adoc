@@ -48,6 +48,9 @@ deploy the following plugin using the JAX-RS distribution using this JVM configu
 
 The configuration is the one needed for JAX-RS whiteboard and is propagated to the `Ripener` instance started by the java agent.
 
+Also note that you can pass `isolatedlibs` option as well for libraries added - as for `libs` but not appended to the system loader.
+This enables to start the ripener with more libraries but not leak them in the main application.
+
 == Configuration keys
 
 Note: see link:../../index.html[core] configuration for more details on how to use these configuration entries.

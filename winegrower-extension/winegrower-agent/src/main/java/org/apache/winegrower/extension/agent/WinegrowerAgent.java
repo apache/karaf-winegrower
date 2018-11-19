@@ -21,7 +21,10 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.lang.reflect.InvocationTargetException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.List;
@@ -46,13 +49,7 @@ public class WinegrowerAgent {
         }
 
         ofNullable(extractConfig(agentArgs, "libs="))
-            .ifPresent(value -> Stream.of(value.split(","))
-                  .map(File::new)
-                  .filter(File::exists)
-                  .flatMap(it -> it.isDirectory() ?
-                          ofNullable(it.listFiles()).map(Stream::of).orElseGet(Stream::empty) :
-                          Stream.of(it))
-                  .filter(it -> it.getName().endsWith(".zip") || it.getName().endsWith(".jar"))
+            .ifPresent(value -> toLibStream(value)
                   .forEach(lib -> {
                       try {
                           instrumentation.appendToSystemClassLoaderSearch(new JarFile(lib));
@@ -61,11 +58,32 @@ public class WinegrowerAgent {
                       }
                   }));
 
+        final Collection<URL> isolatedLibs = ofNullable(extractConfig(agentArgs, "isolatedlibs="))
+            .map(value -> toLibStream(value)
+                .map(lib -> {
+                    try {
+                          return lib.toURI().toURL();
+                    } catch (final IOException e) {
+                         throw new IllegalArgumentException(e);
+                    }
+                }).collect(toList()))
+            .orElseGet(Collections::emptyList);
+
+        final URLClassLoader loader = new WinegrowerAgentClassLoader(isolatedLibs);
         try {
             doStart(agentArgs, instrumentation);
         } catch (final Throwable e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    private static Stream<File> toLibStream(final String paths) {
+        return Stream.of(paths.split(","))
+                     .map(File::new)
+                     .filter(File::exists)
+                     .flatMap(it -> it.isDirectory() ?
+                             ofNullable(it.listFiles()).map(Stream::of).orElseGet(Stream::empty) : Stream.of(it))
+                     .filter(it -> it.getName().endsWith(".zip") || it.getName().endsWith(".jar"));
     }
 
     private static void doStart(final String agentArgs, final Instrumentation instrumentation) throws Throwable {
@@ -78,15 +96,25 @@ public class WinegrowerAgent {
                                                .newInstance(createConfiguration(ripenerConfigurationClass, agentArgs));
         doCall(ripener, "start", new Class<?>[0], new Object[0]);
         System.setProperty("wingrower.agent.started", "true");
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+        final Thread stopThread = new Thread(() -> {
             try {
                 doCall(ripener, "stop", new Class<?>[0], new Object[0]);
             } catch (final Throwable throwable) {
                 if (DEBUG) {
                     throwable.printStackTrace();
                 } // else: not that important
+            } finally {
+                if (WinegrowerAgentClassLoader.class.isInstance(loader)) {
+                    try {
+                        WinegrowerAgentClassLoader.class.cast(loader).close();
+                    } catch (final IOException e) {
+                        // no-op
+                    }
+                }
             }
-        }, WinegrowerAgent.class.getName() + "-shutdown"));
+        }, WinegrowerAgent.class.getName() + "-shutdown");
+        stopThread.setContextClassLoader(loader);
+        Runtime.getRuntime().addShutdownHook(stopThread);
 
         final Object services = ripenerImplClass.getMethod("getServices").invoke(ripener);
         final Object bundleRegistry = ripenerImplClass.getMethod("getRegistry").invoke(ripener);
@@ -213,5 +241,11 @@ public class WinegrowerAgent {
 
     private static void print(final String string) {
         System.out.println("[winegrower-agent:debug] " + string);
+    }
+
+    private static class WinegrowerAgentClassLoader extends URLClassLoader {
+        private WinegrowerAgentClassLoader(final Collection<URL> urls) {
+            super(urls.toArray(new URL[0]), Thread.currentThread().getContextClassLoader());
+        }
     }
 }
