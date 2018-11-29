@@ -16,6 +16,7 @@ package org.apache.winegrower.extension.agent;
 import static java.util.Arrays.asList;
 import static java.util.Collections.enumeration;
 import static java.util.Collections.list;
+import static java.util.Comparator.comparing;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 
@@ -99,6 +100,7 @@ public class WinegrowerAgent {
                      .filter(File::exists)
                      .flatMap(it -> it.isDirectory() ?
                              ofNullable(it.listFiles()).map(Stream::of).orElseGet(Stream::empty) : Stream.of(it))
+                     .sorted(comparing(File::getName))
                      .filter(it -> it.getName().endsWith(".zip") || it.getName().endsWith(".jar"));
     }
 
