@@ -117,6 +117,15 @@ public class WinegrowerAgent {
 
         final Object ripener = ripenerImplClass.getConstructor(ripenerConfigurationClass)
                                                .newInstance(createConfiguration(ripenerConfigurationClass, agentArgs));
+
+        // before start - avoids reload/refresh
+        final Object services = ripenerImplClass.getMethod("getServices").invoke(ripener);
+        final Object bundleRegistry = ripenerImplClass.getMethod("getRegistry").invoke(ripener);
+        final Object bundleLifecycle0 = Map.class.cast(bundleRegistry.getClass().getMethod("getBundles").invoke(bundleRegistry)).get(0L);
+        final Object bundle0 = bundleLifecycle0.getClass().getMethod("getBundle").invoke(bundleLifecycle0);
+        services.getClass().getMethod("registerService", String[].class, Object.class, Dictionary.class, bundleClass)
+                .invoke(services, new String[]{Instrumentation.class.getName()}, instrumentation, new Hashtable<>(), bundle0);
+
         doCall(ripener, "start", new Class<?>[0], new Object[0]);
         System.setProperty("wingrower.agent.started", "true");
         final Thread stopThread = new Thread(() -> {
@@ -138,13 +147,6 @@ public class WinegrowerAgent {
         }, WinegrowerAgent.class.getName() + "-shutdown");
         stopThread.setContextClassLoader(loader);
         Runtime.getRuntime().addShutdownHook(stopThread);
-
-        final Object services = ripenerImplClass.getMethod("getServices").invoke(ripener);
-        final Object bundleRegistry = ripenerImplClass.getMethod("getRegistry").invoke(ripener);
-        final Object bundleLifecycle0 = Map.class.cast(bundleRegistry.getClass().getMethod("getBundles").invoke(bundleRegistry)).get(0L);
-        final Object bundle0 = bundleLifecycle0.getClass().getMethod("getBundle").invoke(bundleLifecycle0);
-        services.getClass().getMethod("registerService", String[].class, Object.class, Dictionary.class, bundleClass)
-                .invoke(services, new String[]{Instrumentation.class.getName()}, instrumentation, new Hashtable<>(), bundle0);
     }
 
     private static void doCall(final Object instance, final String mtd, final Class<?>[] paramTypes, final Object[] args) {
