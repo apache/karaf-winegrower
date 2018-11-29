@@ -45,7 +45,7 @@ public class WinegrowerAgent {
     }
 
     public static void agentmain(final String agentArgs, final Instrumentation instrumentation) {
-        if (Boolean.getBoolean("wingrower.agent.started")) {
+        if (Boolean.getBoolean("winegrower.agent.started")) {
             return;
         }
         if (DEBUG) {
@@ -66,7 +66,7 @@ public class WinegrowerAgent {
             .map(value -> toLibStream(value)
                 .map(lib -> {
                     try {
-                          return lib.toURI().toURL();
+                        return lib.toURI().toURL();
                     } catch (final IOException e) {
                          throw new IllegalArgumentException(e);
                     }
@@ -127,7 +127,7 @@ public class WinegrowerAgent {
                 .invoke(services, new String[]{Instrumentation.class.getName()}, instrumentation, new Hashtable<>(), bundle0);
 
         doCall(ripener, "start", new Class<?>[0], new Object[0]);
-        System.setProperty("wingrower.agent.started", "true");
+        System.setProperty("winegrower.agent.started", "true");
         final Thread stopThread = new Thread(() -> {
             try {
                 doCall(ripener, "stop", new Class<?>[0], new Object[0]);
