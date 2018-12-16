@@ -17,26 +17,26 @@ jobs:
   include:
     # PR profile
     - stage: pullrequest_build
-      script: mvn clean install
+      script: mvn clean install -B
       jdk: oraclejdk8
 
     # master profile
     - stage: master_build
       env:
       - STEP=Build Oracle 8 JVM
-      script: mvn clean install
+      script: mvn clean install -B
       jdk: oraclejdk8
 
     - stage: master_build
       env:
       - STEP=Build OpenJDK 8 JVM
-      script: mvn clean install
+      script: mvn clean install -B
       jdk: openjdk8
 
     - stage: master_build
       env:
       - STEP=Build OpenJDK 11 JVM
-      script: mvn clean install
+      script: mvn clean install -B
       jdk: openjdk11
 
     - stage: master_build
@@ -48,7 +48,7 @@ jobs:
     - stage: master_build
       env:
       - STEP=Sonatype Audit
-      script: travis_wait 50 mvn install -DskipTests ossindex:audit
+      script: travis_wait 50 mvn install -DskipTests -B ossindex:audit
       jdk: oraclejdk8
 
 stages:
