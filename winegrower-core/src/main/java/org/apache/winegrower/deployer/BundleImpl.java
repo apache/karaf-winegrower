@@ -165,7 +165,7 @@ public class BundleImpl implements Bundle {
 
     @Override
     public String getLocation() {
-        return includedResources != null ? null : file.getAbsolutePath();
+        return includedResources != null || file == null ? "" : file.getAbsolutePath();
     }
 
     @Override

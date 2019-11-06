@@ -41,17 +41,25 @@ import org.osgi.framework.wiring.BundleWiring;
 class BundleImplTest {
     private static BundleImpl bundle;
     private static BundleRegistry registry;
+    private static Manifest manifest;
+    private static Ripener.Configuration configuration;
+    private static BundleContextImpl context;
 
     @BeforeAll
     static void initBundle() throws IOException {
-        final Manifest manifest = new Manifest(new ByteArrayInputStream(("Manifest-Version: 1.0\nBundle-Version: 1.0\nBundle-SymbolicName: test\n").getBytes(StandardCharsets.UTF_8)));
-        final Ripener.Configuration configuration = new Ripener.Configuration();
+        manifest = new Manifest(new ByteArrayInputStream(("Manifest-Version: 1.0\nBundle-Version: 1.0\nBundle-SymbolicName: test\n").getBytes(StandardCharsets.UTF_8)));
+        configuration = new Ripener.Configuration();
         final OSGiServices services = new OSGiServices(new Ripener.Impl(configuration), new ArrayList<>(), new ArrayList<>());
         registry = new BundleRegistry(services, configuration);
-        final BundleContextImpl context = new BundleContextImpl(manifest, services, () -> bundle, registry);
+        context = new BundleContextImpl(manifest, services, () -> bundle, registry);
         final File file = new File(registry.getFramework().getParentFile(), "test-classes");
         bundle = new BundleImpl(manifest, file, context, configuration, 1, null);
         registry.getBundles().put(bundle.getBundleId(), new OSGiBundleLifecycle(manifest, file, services, registry, configuration, 1, null));
+    }
+
+    @Test
+    void noEmptyLocation() {
+        assertNotNull(new BundleImpl(manifest, null, context, configuration, 1, null).getLocation());
     }
 
     @Test

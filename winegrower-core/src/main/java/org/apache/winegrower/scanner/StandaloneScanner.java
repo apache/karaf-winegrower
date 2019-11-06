@@ -182,6 +182,7 @@ public class StandaloneScanner {
                     urls.stream()
                         .map(Files::toFile)
                         .filter(this::isIncluded)
+                        .filter(file -> !providedManifests.containsKey(file.getName())) // don't duplicate it
                         .filter(it -> this.configuration.getIgnoredBundles().stream().noneMatch(ex -> it.getName().startsWith(ex)))
                         .map(this::toDefinition)
                         .filter(Objects::nonNull),
