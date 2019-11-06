@@ -35,11 +35,24 @@ public abstract class BaseClasspathMojo extends AbstractMojo {
     @Parameter(property = "winegrower.excludeArtifacts")
     private Collection<String> excludeArtifacts;
 
+    @Parameter(defaultValue = "${project.build.outputDirectory}")
+    private File classes;
+
+    @Parameter(defaultValue = "${project.build.finalName}.${project.packaging}")
+    private String projectArtifactName;
+
     @Parameter(defaultValue = "${project.build.directory}/${project.build.finalName}.${project.packaging}", property = "winegrower.buildArtifact")
     private File buildArtifact;
 
     @Parameter(defaultValue = "false", property = "winegrower.skipIfNoActivator")
     protected boolean skipIfNoActivator;
+
+    public String getProjectArtifactName() {
+        if (projectArtifactName.endsWith(".bundle")) {
+            return projectArtifactName.substring(0, projectArtifactName.length() - "bundle".length()) + "jar";
+        }
+        return projectArtifactName;
+    }
 
     protected Collection<File> collectJars() {
         return Stream.concat(
@@ -48,9 +61,17 @@ public abstract class BaseClasspathMojo extends AbstractMojo {
                         .filter(it -> excludeArtifacts == null ||
                                 (!excludeArtifacts.contains(it.getArtifactId()) && !excludeArtifacts.contains(it.getGroupId() + ':' + it.getArtifactId())))
                         .map(Artifact::getFile),
-                    Stream.of(buildArtifact))
+                    Stream.of(buildArtifact.exists() ? buildArtifact : classes)
+                        .map(this::fixBundleExtension))
                 .filter(Objects::nonNull)
                 .filter(File::exists)
                 .collect(toList());
+    }
+
+    private File fixBundleExtension(final File file) {
+        if (!file.exists() && file.getName().endsWith(".bundle")) {
+            return new File(file.getParent(), file.getName().substring(0, file.getName().length() - "bundle".length()) + "jar");
+        }
+        return file;
     }
 }

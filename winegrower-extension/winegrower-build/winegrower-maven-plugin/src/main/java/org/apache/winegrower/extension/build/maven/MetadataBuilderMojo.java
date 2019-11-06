@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.jar.JarInputStream;
@@ -44,21 +45,25 @@ public class MetadataBuilderMojo extends BaseClasspathMojo {
         final MetadataBuilder metadataBuilder = new MetadataBuilder(skipIfNoActivator);
         final Set<String> alreadyAdded = new HashSet<>();
         collectJars().forEach(jar -> {
-            try (final JarInputStream inputStream = new JarInputStream(new BufferedInputStream(new FileInputStream(jar)))) {
-                metadataBuilder.onJar(jar.getName(), inputStream);
+            if (jar.isDirectory()) {
+                metadataBuilder.visitFolder(getProjectArtifactName(), jar.toPath(), new SimpleFileVisitor<Path>() {});
+            } else {
+                try (final JarInputStream inputStream = new JarInputStream(new BufferedInputStream(new FileInputStream(jar)))) {
+                    metadataBuilder.onJar(jar.getName(), inputStream.getManifest());
 
-                ZipEntry nextEntry;
-                while ((nextEntry = inputStream.getNextEntry()) != null) {
-                    final String name = nextEntry.getName();
-                    if (!alreadyAdded.add(name)) {
-                        continue;
+                    ZipEntry nextEntry;
+                    while ((nextEntry = inputStream.getNextEntry()) != null) {
+                        final String name = nextEntry.getName();
+                        if (!alreadyAdded.add(name)) {
+                            continue;
+                        }
+                        metadataBuilder.onFile(name);
                     }
-                    metadataBuilder.onFile(name);
+                } catch (final IOException e) {
+                    throw new IllegalStateException(e);
                 }
-            } catch (final IOException e) {
-                throw new IllegalStateException(e);
+                metadataBuilder.afterJar();
             }
-            metadataBuilder.afterJar();
         });
 
         metadataBuilder.getMetadata().forEach((key, value) -> {

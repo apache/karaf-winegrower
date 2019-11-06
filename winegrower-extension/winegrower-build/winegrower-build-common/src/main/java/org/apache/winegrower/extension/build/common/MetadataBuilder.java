@@ -15,13 +15,19 @@ package org.apache.winegrower.extension.build.common;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
 
 public class MetadataBuilder {
@@ -44,8 +50,7 @@ public class MetadataBuilder {
         return meta;
     }
 
-    public void onJar(final String jarName, final JarInputStream jarInputStream) {
-        final Manifest manifest = jarInputStream.getManifest();
+    public void onJar(final String jarName, final Manifest manifest) {
         if (skipIfNoActivator && (manifest == null || manifest.getMainAttributes().getValue("Bundle-Activator") == null)) {
             return;
         }
@@ -75,5 +80,53 @@ public class MetadataBuilder {
         index.put(currentJar, String.join(",", files));
         currentJar = null;
         files = null;
+    }
+
+    public void visitFolder(final String projectArtifactName, final Path root, final FileVisitor<Path> visitor) {
+        final Path manifest = root.resolve("META-INF/MANIFEST.MF");
+        if (Files.exists(manifest)) {
+            try (final InputStream stream = Files.newInputStream(manifest)) {
+                onJar(projectArtifactName, new Manifest(stream));
+            } catch (final IOException e) {
+                throw new IllegalStateException(e);
+            }
+        } else {
+            onJar(projectArtifactName, null);
+        }
+        try {
+            Files.walkFileTree(root, new SimpleFileVisitor<Path>() {
+                @Override
+                public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException {
+                    if ("META-INF/MANIFEST.MF".equals(root.relativize(file).toString())) {
+                        return FileVisitResult.CONTINUE;
+                    }
+                    onVisit(file);
+                    return visitor.visitFile(file, attrs);
+                }
+
+                @Override
+                public FileVisitResult postVisitDirectory(final Path dir, final IOException exc) throws IOException {
+                    onVisit(dir);
+                    return visitor.postVisitDirectory(dir, exc);
+                }
+
+                @Override
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                    return visitor.preVisitDirectory(dir, attrs);
+                }
+
+                @Override
+                public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+                    return visitor.visitFileFailed(file, exc);
+                }
+
+                private void onVisit(final Path path) {
+                    onFile(root.relativize(path).toString());
+                }
+            });
+            afterJar();
+        } catch (final IOException e) {
+            throw new IllegalStateException(e);
+        }
     }
 }

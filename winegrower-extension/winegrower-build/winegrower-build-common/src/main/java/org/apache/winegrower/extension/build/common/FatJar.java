@@ -21,6 +21,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -47,29 +52,55 @@ public class FatJar implements Runnable {
             byte[] buffer = new byte[8192];
             final Set<String> alreadyAdded = new HashSet<>();
             configuration.jars.forEach(shadedJar -> {
-                try (final JarInputStream inputStream = new JarInputStream(new BufferedInputStream(new FileInputStream(shadedJar)))) {
-                    metadataBuilder.onJar(shadedJar.getName(), inputStream);
+                if (shadedJar.isDirectory()) {
+                    final Path root = shadedJar.toPath();
+                    metadataBuilder.visitFolder(configuration.defaultArtifactName, root, new SimpleFileVisitor<Path>() {
 
-                    ZipEntry nextEntry;
-                    while ((nextEntry = inputStream.getNextEntry()) != null) {
-                        final String name = nextEntry.getName();
-                        if (!alreadyAdded.add(name)) {
-                            continue;
+                        @Override
+                        public FileVisitResult preVisitDirectory(final Path dir, final BasicFileAttributes attrs) throws IOException {
+                            outputStream.putNextEntry(new JarEntry(toPath(dir) + '/'));
+                            outputStream.closeEntry();
+                            return super.preVisitDirectory(dir, attrs);
                         }
-                        metadataBuilder.onFile(name);
-                        outputStream.putNextEntry(nextEntry);
-                        int count;
-                        while ((count = inputStream.read(buffer, 0, buffer.length)) >= 0) {
-                            if (count > 0) {
-                                outputStream.write(buffer, 0, count);
+
+                        @Override
+                        public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException {
+                            outputStream.putNextEntry(new JarEntry(toPath(file)));
+                            Files.copy(file, outputStream);
+                            outputStream.closeEntry();
+                            return super.visitFile(file, attrs);
+                        }
+
+                        private String toPath(final Path file) {
+                            return root.resolve(file).toString().replace("\\", "/");
+                        }
+
+                    });
+                } else {
+                    try (final JarInputStream inputStream = new JarInputStream(new BufferedInputStream(new FileInputStream(shadedJar)))) {
+                        metadataBuilder.onJar(shadedJar.getName(), inputStream.getManifest());
+
+                        ZipEntry nextEntry;
+                        while ((nextEntry = inputStream.getNextEntry()) != null) {
+                            final String name = nextEntry.getName();
+                            if (!alreadyAdded.add(name)) {
+                                continue;
                             }
+                            metadataBuilder.onFile(name);
+                            outputStream.putNextEntry(nextEntry);
+                            int count;
+                            while ((count = inputStream.read(buffer, 0, buffer.length)) >= 0) {
+                                if (count > 0) {
+                                    outputStream.write(buffer, 0, count);
+                                }
+                            }
+                            outputStream.closeEntry();
                         }
-                        outputStream.closeEntry();
+                    } catch (final IOException e) {
+                        throw new IllegalStateException(e);
                     }
-                } catch (final IOException e) {
-                    throw new IllegalStateException(e);
+                    metadataBuilder.afterJar();
                 }
-                metadataBuilder.afterJar();
             });
 
             outputStream.putNextEntry(new JarEntry("WINEGROWER-INF/"));
@@ -93,12 +124,14 @@ public class FatJar implements Runnable {
         private final Collection<File> jars;
         private final File output;
         private final boolean skipIfNoActivator;
+        private final String defaultArtifactName;
 
         public Configuration(final Collection<File> jars, final File output,
-                             final boolean skipIfNoActivator) {
+                             final boolean skipIfNoActivator, final String defaultArtifactName) {
             this.jars = jars;
             this.output = output;
             this.skipIfNoActivator = skipIfNoActivator;
+            this.defaultArtifactName = defaultArtifactName;
         }
     }
 }

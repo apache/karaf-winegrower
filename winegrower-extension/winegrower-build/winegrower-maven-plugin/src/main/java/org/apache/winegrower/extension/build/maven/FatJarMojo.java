@@ -39,7 +39,7 @@ public class FatJarMojo extends BaseClasspathMojo {
 
     @Override
     public void execute() {
-        new FatJar(new FatJar.Configuration(collectJars(), output, skipIfNoActivator)).run();
+        new FatJar(new FatJar.Configuration(collectJars(), output, skipIfNoActivator, getProjectArtifactName())).run();
         if (attach) {
             helper.attachArtifact(project, output, classifier);
         }
