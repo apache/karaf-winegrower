@@ -445,6 +445,11 @@ public interface Ripener extends AutoCloseable {
         }
     }
 
+    static Ripener create(final Configuration configuration) {
+        // we can plug a SPI later on here if needed
+        return new Impl(configuration);
+    }
+
     static void main(final String[] args) {
         final CountDownLatch latch = new CountDownLatch(1);
         final Configuration configuration = new Configuration();
