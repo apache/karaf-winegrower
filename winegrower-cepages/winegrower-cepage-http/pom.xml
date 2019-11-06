@@ -53,7 +53,7 @@
       <groupId>org.eclipse.jetty.aggregate</groupId>
       <artifactId>jetty-all</artifactId>
       <classifier>uber</classifier>
-      <version>9.4.11.v20180605</version>
+      <version>9.4.22.v20191022</version>
       <exclusions>
         <exclusion>
           <groupId>org.ow2.asm</groupId>
