@@ -42,7 +42,8 @@ class FatJarTest {
         }
         new FatJar(new FatJar.Configuration(
                 asList(junitApi, osgiCore),
-                output
+                output,
+                false
         )).run();
         assertTrue(output.exists());
         final List<String> entries;

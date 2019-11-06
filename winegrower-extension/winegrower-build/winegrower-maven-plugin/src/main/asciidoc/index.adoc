@@ -79,6 +79,8 @@ mvn winegrower:fatjar
 |classifier|String|winegrower.classifier|fatjar|The classifier to use if the produced artifact is attached.
 |includeScopes|Collection<String>|winegrower.includeScopes|provided,compile,runtime|The scopes included in the produced artifact.
 |output|File|winegrower.output|${project.build.directory}/${project.artifactId}-fatjar.jar|Where the fatjar is produced.
+|excludeArtifacts|String|winegrower.excludeArtifacts|-|either artifactId or groupId:artifactId of the artifacts to ignore.
+|skipIfNoActivator|boolean|winegrower.skipIfNoActivator|false|Should artifacts without an activator be skipped in the indexation.
 |===
 
 == Create a distribution
@@ -141,6 +143,8 @@ mvn winegrower:metadata
 |includeScopes|Collection<String>|winegrower.includeScopes|provided,compile,runtime|The scopes included in the produced artifact.
 |output|File|winegrower.metadata.output|${project.build.outputDirectory}|Where to dump metadata.
 |namingPattern|String|winegrower.metadata.namingPattern|WINEGROWER-INF/%s.properties|Naming pattern for each metadata - relative to output directory.
+|excludeArtifacts|String|winegrower.excludeArtifacts|-|either artifactId or groupId:artifactId of the artifacts to ignore.
+|skipIfNoActivator|boolean|winegrower.skipIfNoActivator|false|Should artifacts without an activator be skipped in the indexation.
 |===
 
 == From Winegrower no-manifest deployment to OSGi deployments

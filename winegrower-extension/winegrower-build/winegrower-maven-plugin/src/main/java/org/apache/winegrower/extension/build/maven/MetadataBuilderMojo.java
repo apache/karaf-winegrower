@@ -41,7 +41,7 @@ public class MetadataBuilderMojo extends BaseClasspathMojo {
 
     @Override
     public void execute() {
-        final MetadataBuilder metadataBuilder = new MetadataBuilder();
+        final MetadataBuilder metadataBuilder = new MetadataBuilder(skipIfNoActivator);
         final Set<String> alreadyAdded = new HashSet<>();
         collectJars().forEach(jar -> {
             try (final JarInputStream inputStream = new JarInputStream(new BufferedInputStream(new FileInputStream(jar)))) {

@@ -25,11 +25,17 @@ import java.util.jar.JarInputStream;
 import java.util.jar.Manifest;
 
 public class MetadataBuilder {
+    private final boolean skipIfNoActivator;
+
     private final Properties manifests = new Properties();
     private final Properties index = new Properties();
 
     private String currentJar;
     private List<String> files;
+
+    public MetadataBuilder(final boolean skipIfNoActivator) {
+        this.skipIfNoActivator = skipIfNoActivator;
+    }
 
     public Map<String, Properties> getMetadata() {
         final HashMap<String, Properties> meta = new HashMap<>();
@@ -40,6 +46,9 @@ public class MetadataBuilder {
 
     public void onJar(final String jarName, final JarInputStream jarInputStream) {
         final Manifest manifest = jarInputStream.getManifest();
+        if (skipIfNoActivator && (manifest == null || manifest.getMainAttributes().getValue("Bundle-Activator") == null)) {
+            return;
+        }
         if (manifest != null) {
             try (final ByteArrayOutputStream manifestStream = new ByteArrayOutputStream()) {
                 manifest.write(manifestStream);
@@ -54,10 +63,15 @@ public class MetadataBuilder {
     }
 
     public void onFile(final String name) {
-        files.add(name);
+        if (files != null) {
+            files.add(name);
+        }
     }
 
     public void afterJar() {
+        if (files == null) {
+            return;
+        }
         index.put(currentJar, String.join(",", files));
         currentJar = null;
         files = null;

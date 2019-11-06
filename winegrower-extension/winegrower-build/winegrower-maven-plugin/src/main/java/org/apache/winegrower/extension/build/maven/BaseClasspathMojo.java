@@ -32,13 +32,21 @@ public abstract class BaseClasspathMojo extends AbstractMojo {
     @Parameter(defaultValue = "provided,compile,runtime", property = "winegrower.includeScopes")
     private Collection<String> includeScopes;
 
+    @Parameter(property = "winegrower.excludeArtifacts")
+    private Collection<String> excludeArtifacts;
+
     @Parameter(defaultValue = "${project.build.directory}/${project.build.finalName}.${project.packaging}", property = "winegrower.buildArtifact")
     private File buildArtifact;
+
+    @Parameter(defaultValue = "false", property = "winegrower.skipIfNoActivator")
+    protected boolean skipIfNoActivator;
 
     protected Collection<File> collectJars() {
         return Stream.concat(
                     project.getArtifacts().stream()
                         .filter(it -> includeScopes.contains(it.getScope()))
+                        .filter(it -> excludeArtifacts == null ||
+                                (!excludeArtifacts.contains(it.getArtifactId()) && !excludeArtifacts.contains(it.getGroupId() + ':' + it.getArtifactId())))
                         .map(Artifact::getFile),
                     Stream.of(buildArtifact))
                 .filter(Objects::nonNull)
