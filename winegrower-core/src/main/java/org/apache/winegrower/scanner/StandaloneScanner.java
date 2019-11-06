@@ -65,13 +65,7 @@ public class StandaloneScanner {
         this.configuration = configuration;
         this.frameworkJar = frameworkJar;
         this.loader = Thread.currentThread().getContextClassLoader();
-        try {
-            this.urls = new UrlSet(ClassLoaders.findUrls(loader))
-                    .excludeJvm()
-                    .getUrls();
-        } catch (final IOException e) {
-            throw new IllegalStateException(e);
-        }
+        this.urls = findUrls();
 
         try { // fatjar plugin
             providedManifests = list(this.loader.getResources("WINEGROWER-INF/manifests.properties")).stream()
@@ -112,6 +106,18 @@ public class StandaloneScanner {
                     .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
         } catch (final IOException e) {
             throw new IllegalArgumentException(e);
+        }
+    }
+
+    private List<URL> findUrls() {
+        if (loader == null || System.getProperty("java.home") == null /*graalvm*/ ||
+                Boolean.getBoolean("winegrower.scanner.standalone.skipUrlsScanning")) {
+            return emptyList();
+        }
+        try {
+            return new UrlSet(ClassLoaders.findUrls(loader)).excludeJvm().getUrls();
+        } catch (final IOException e) {
+            throw new IllegalStateException(e);
         }
     }
 

@@ -13,7 +13,7 @@
  */
 package org.apache.winegrower.service;
 
-import static org.apache.xbean.finder.util.Files.toFile;
+import static java.util.Optional.ofNullable;
 
 import java.io.File;
 import java.util.HashMap;
@@ -22,6 +22,7 @@ import java.util.jar.Manifest;
 
 import org.apache.winegrower.Ripener;
 import org.apache.winegrower.deployer.OSGiBundleLifecycle;
+import org.apache.xbean.finder.util.Files;
 
 public class BundleRegistry {
     private final Map<Long, OSGiBundleLifecycle> bundles = new HashMap<>();
@@ -29,10 +30,12 @@ public class BundleRegistry {
 
     public BundleRegistry(final OSGiServices services, final Ripener.Configuration configuration) {
         final String resource = getClass().getName().replace('.', '/') + ".class";
-        final File file = toFile(Thread.currentThread().getContextClassLoader().getResource(resource));
-        this.framework = file.getName().endsWith(".class") ?
-                new File(file.getAbsolutePath().replace(File.separatorChar, '/').substring(0, file.getAbsolutePath().length() - resource.length())):
-                file.getAbsoluteFile();
+        this.framework = ofNullable(Thread.currentThread().getContextClassLoader().getResource(resource))
+                .map(Files::toFile)
+                .map(file -> file.getName().endsWith(".class") ?
+                        new File(file.getAbsolutePath().replace(File.separatorChar, '/').substring(0, file.getAbsolutePath().length() - resource.length())):
+                        file.getAbsoluteFile())
+                .orElse(null);
 
         // ensure we have the framework bundle simulated
         final Manifest frameworkManifest = new Manifest();
