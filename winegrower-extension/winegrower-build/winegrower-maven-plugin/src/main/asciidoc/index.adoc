@@ -121,6 +121,28 @@ Then once the distributino unzipped you can start using:
 |workDir|File|winegrower.workDir|${project.build.directory}/${project.artifactId}-distribution|Where the distribution is built during the build.
 |===
 
+== Generate Winegrower metadata
+
+When you build a Fatjar, Winegrower uses metadata to respect the jar bundle modularity.
+It can be neat to generate these metadata without generating a fatjar - for GraalVM for example.
+To do that, you can use `metadata` mojo.
+
+[source,sh]
+----
+mvn winegrower:metadata
+----
+
+=== Configuration
+
+[cols="e,m,m,m,a",headers]
+|===
+|Name|Type|Property|Default|Description
+|buildArtifact|File|winegrower.buildArtifact|${project.build.directory}/${project.build.finalName}.${project.packaging}.|Path of the project artifact if any.
+|includeScopes|Collection<String>|winegrower.includeScopes|provided,compile,runtime|The scopes included in the produced artifact.
+|output|File|winegrower.metadata.output|${project.build.outputDirectory}|Where to dump metadata.
+|namingPattern|String|winegrower.metadata.namingPattern|WINEGROWER-INF/%s.properties|Naming pattern for each metadata - relative to output directory.
+|===
+
 == From Winegrower no-manifest deployment to OSGi deployments
 
 Winegrower supports some custom API not requiring a full OSGi packaging

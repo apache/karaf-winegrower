@@ -14,25 +14,19 @@
 package org.apache.winegrower.extension.build.common;
 
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.joining;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Properties;
 import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 import java.util.jar.JarOutputStream;
-import java.util.jar.Manifest;
 import java.util.zip.ZipEntry;
 
 public class FatJar implements Runnable {
@@ -49,21 +43,12 @@ public class FatJar implements Runnable {
 
         try (final JarOutputStream outputStream = new JarOutputStream(
                 new BufferedOutputStream(new FileOutputStream(configuration.output)))) {
-            final Properties manifests = new Properties();
-            final Properties index = new Properties();
+            final MetadataBuilder metadataBuilder = new MetadataBuilder();
             byte[] buffer = new byte[8192];
             final Set<String> alreadyAdded = new HashSet<>();
             configuration.jars.forEach(shadedJar -> {
-                final Collection<String> files = new ArrayList<>();
                 try (final JarInputStream inputStream = new JarInputStream(new BufferedInputStream(new FileInputStream(shadedJar)))) {
-                    final Manifest manifest = inputStream.getManifest();
-                    if (manifest != null) {
-                        try (final ByteArrayOutputStream manifestStream = new ByteArrayOutputStream()) {
-                            manifest.write(manifestStream);
-                            manifestStream.flush();
-                            manifests.put(shadedJar.getName(), new String(manifestStream.toByteArray(), StandardCharsets.UTF_8));
-                        }
-                    }
+                    metadataBuilder.onJar(shadedJar.getName(), inputStream);
 
                     ZipEntry nextEntry;
                     while ((nextEntry = inputStream.getNextEntry()) != null) {
@@ -71,7 +56,7 @@ public class FatJar implements Runnable {
                         if (!alreadyAdded.add(name)) {
                             continue;
                         }
-                        files.add(name);
+                        metadataBuilder.onFile(name);
                         outputStream.putNextEntry(nextEntry);
                         int count;
                         while ((count = inputStream.read(buffer, 0, buffer.length)) >= 0) {
@@ -84,19 +69,21 @@ public class FatJar implements Runnable {
                 } catch (final IOException e) {
                     throw new IllegalStateException(e);
                 }
-                index.put(shadedJar.getName(), files.stream().collect(joining(",")));
+                metadataBuilder.afterJar();
             });
 
             outputStream.putNextEntry(new JarEntry("WINEGROWER-INF/"));
             outputStream.closeEntry();
 
-            outputStream.putNextEntry(new JarEntry("WINEGROWER-INF/index.properties"));
-            index.store(outputStream, "index");
-            outputStream.closeEntry();
-
-            outputStream.putNextEntry(new JarEntry("WINEGROWER-INF/manifests.properties"));
-            manifests.store(outputStream, "manifests");
-            outputStream.closeEntry();
+            metadataBuilder.getMetadata().forEach((key, value) -> {
+                try {
+                    outputStream.putNextEntry(new JarEntry("WINEGROWER-INF/" + key + ".properties"));
+                    value.store(outputStream, "index");
+                    outputStream.closeEntry();
+                } catch (final IOException ioe) {
+                    throw new IllegalStateException(ioe);
+                }
+            });
         } catch (final IOException e) {
             throw new IllegalStateException(e);
         }
