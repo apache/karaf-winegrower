@@ -412,10 +412,12 @@ public interface Ripener extends AutoCloseable {
         }
 
         private int compareBundles(final StandaloneScanner.BundleDefinition bundle1, final StandaloneScanner.BundleDefinition bundle2) {
-            final int index1 = matchPriorities(bundle1.getJar().getName());
-            final int index2 = matchPriorities(bundle2.getJar().getName());
+            final String id1 = getBundleId(bundle1);
+            final String id2 = getBundleId(bundle2);
+            final int index1 = matchPriorities(id1);
+            final int index2 = matchPriorities(id2);
             if (index1 == index2) {
-                return bundle1.getJar().getName().compareTo(bundle2.getJar().getName());
+                return id1.compareTo(id2);
             }
             if (index1 == -1) {
                 return 1;
@@ -424,6 +426,14 @@ public interface Ripener extends AutoCloseable {
                 return -1;
             }
             return index1 - index2;
+        }
+
+        private String getBundleId(final StandaloneScanner.BundleDefinition bundle) {
+            return ofNullable(bundle.getJar()).map(File::getName)
+                    .orElseGet(() -> Stream.of("Bundle-SymbolicName", "Bundle-Name")
+                            .map(k -> bundle.getManifest().getMainAttributes().getValue(k))
+                            .findFirst()
+                            .orElseGet(() -> Long.toString(System.identityHashCode(bundle))));
         }
 
         private int matchPriorities(final String name) {
