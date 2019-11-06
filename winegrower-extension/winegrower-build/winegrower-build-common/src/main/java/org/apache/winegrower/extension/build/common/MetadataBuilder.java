@@ -28,10 +28,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.jar.Attributes;
 import java.util.jar.Manifest;
+import java.util.stream.Stream;
 
 public class MetadataBuilder {
-    private final boolean skipIfNoActivator;
+    private final boolean autoFiltering;
 
     private final Properties manifests = new Properties();
     private final Properties index = new Properties();
@@ -39,8 +41,8 @@ public class MetadataBuilder {
     private String currentJar;
     private List<String> files;
 
-    public MetadataBuilder(final boolean skipIfNoActivator) {
-        this.skipIfNoActivator = skipIfNoActivator;
+    public MetadataBuilder(final boolean autoFiltering) {
+        this.autoFiltering = autoFiltering;
     }
 
     public Map<String, Properties> getMetadata() {
@@ -51,7 +53,7 @@ public class MetadataBuilder {
     }
 
     public void onJar(final String jarName, final Manifest manifest) {
-        if (skipIfNoActivator && (manifest == null || manifest.getMainAttributes().getValue("Bundle-Activator") == null)) {
+        if (autoFiltering && (manifest == null || !isOsgi(manifest.getMainAttributes()))) {
             return;
         }
         if (manifest != null) {
@@ -65,6 +67,11 @@ public class MetadataBuilder {
         }
         this.currentJar = jarName;
         this.files = new ArrayList<>();
+    }
+
+    private boolean isOsgi(final Attributes mainAttributes) {
+        return mainAttributes != null && Stream.of("Bundle-Activator", "Service-Component", "Bundle-Blueprint")
+                    .anyMatch(it -> mainAttributes.getValue(it) != null);
     }
 
     public void onFile(final String name) {

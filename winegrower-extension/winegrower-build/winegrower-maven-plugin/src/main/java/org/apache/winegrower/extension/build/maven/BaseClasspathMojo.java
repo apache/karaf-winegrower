@@ -32,6 +32,9 @@ public abstract class BaseClasspathMojo extends AbstractMojo {
     @Parameter(defaultValue = "provided,compile,runtime", property = "winegrower.includeScopes")
     private Collection<String> includeScopes;
 
+    @Parameter(property = "winegrower.includeArtifacts")
+    private Collection<String> includeArtifacts;
+
     @Parameter(property = "winegrower.excludeArtifacts")
     private Collection<String> excludeArtifacts;
 
@@ -44,8 +47,8 @@ public abstract class BaseClasspathMojo extends AbstractMojo {
     @Parameter(defaultValue = "${project.build.directory}/${project.build.finalName}.${project.packaging}", property = "winegrower.buildArtifact")
     private File buildArtifact;
 
-    @Parameter(defaultValue = "false", property = "winegrower.skipIfNoActivator")
-    protected boolean skipIfNoActivator;
+    @Parameter(defaultValue = "false", property = "winegrower.autoFiltering")
+    protected boolean autoFiltering;
 
     public String getProjectArtifactName() {
         if (projectArtifactName.endsWith(".bundle")) {
@@ -58,14 +61,24 @@ public abstract class BaseClasspathMojo extends AbstractMojo {
         return Stream.concat(
                     project.getArtifacts().stream()
                         .filter(it -> includeScopes.contains(it.getScope()))
-                        .filter(it -> excludeArtifacts == null ||
-                                (!excludeArtifacts.contains(it.getArtifactId()) && !excludeArtifacts.contains(it.getGroupId() + ':' + it.getArtifactId())))
+                        .filter(it -> isIncluded(it) || !isExcluded(it))
                         .map(Artifact::getFile),
                     Stream.of(buildArtifact.exists() ? buildArtifact : classes)
                         .map(this::fixBundleExtension))
                 .filter(Objects::nonNull)
                 .filter(File::exists)
                 .collect(toList());
+    }
+
+    private boolean isIncluded(final Artifact it) {
+        return includeArtifacts == null ||
+                includeArtifacts.contains(it.getArtifactId()) ||
+                includeArtifacts.contains(it.getGroupId() + ':' + it.getArtifactId());
+    }
+
+    private boolean isExcluded(final Artifact it) {
+        return excludeArtifacts != null &&
+                (excludeArtifacts.contains(it.getArtifactId()) || excludeArtifacts.contains(it.getGroupId() + ':' + it.getArtifactId()));
     }
 
     private File fixBundleExtension(final File file) {

@@ -42,7 +42,7 @@ public class MetadataBuilderMojo extends BaseClasspathMojo {
 
     @Override
     public void execute() {
-        final MetadataBuilder metadataBuilder = new MetadataBuilder(skipIfNoActivator);
+        final MetadataBuilder metadataBuilder = new MetadataBuilder(autoFiltering);
         final Set<String> alreadyAdded = new HashSet<>();
         collectJars().forEach(jar -> {
             if (jar.isDirectory()) {

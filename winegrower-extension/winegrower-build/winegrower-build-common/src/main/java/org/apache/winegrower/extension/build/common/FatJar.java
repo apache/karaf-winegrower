@@ -48,7 +48,7 @@ public class FatJar implements Runnable {
 
         try (final JarOutputStream outputStream = new JarOutputStream(
                 new BufferedOutputStream(new FileOutputStream(configuration.output)))) {
-            final MetadataBuilder metadataBuilder = new MetadataBuilder(configuration.skipIfNoActivator);
+            final MetadataBuilder metadataBuilder = new MetadataBuilder(configuration.autoFiltering);
             byte[] buffer = new byte[8192];
             final Set<String> alreadyAdded = new HashSet<>();
             configuration.jars.forEach(shadedJar -> {
@@ -123,14 +123,14 @@ public class FatJar implements Runnable {
     public static class Configuration {
         private final Collection<File> jars;
         private final File output;
-        private final boolean skipIfNoActivator;
+        private final boolean autoFiltering;
         private final String defaultArtifactName;
 
         public Configuration(final Collection<File> jars, final File output,
-                             final boolean skipIfNoActivator, final String defaultArtifactName) {
+                             final boolean autoFiltering, final String defaultArtifactName) {
             this.jars = jars;
             this.output = output;
-            this.skipIfNoActivator = skipIfNoActivator;
+            this.autoFiltering = autoFiltering;
             this.defaultArtifactName = defaultArtifactName;
         }
     }
