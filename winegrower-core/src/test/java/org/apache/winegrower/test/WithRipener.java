@@ -227,7 +227,7 @@ public @interface WithRipener {
         @Override
         public boolean supportsParameter(final ParameterContext parameterContext, final ExtensionContext extensionContext)
                 throws ParameterResolutionException {
-            return supports(parameterContext.getParameter().getType());
+            return supports(parameterContext.getParameter().getType()) || parameterContext.getParameter().isAnnotationPresent(Service.class);
         }
 
         @Override
@@ -241,7 +241,8 @@ public @interface WithRipener {
         }
 
         private <T> T findInjection(final ExtensionContext extensionContext, final Class<T> type) {
-            return extensionContext.getStore(NAMESPACE).get(type, type);
+            return ofNullable(extensionContext.getStore(NAMESPACE).get(type, type))
+                    .orElseGet(() -> findInjection(extensionContext, Ripener.class).getServices().findService(type).orElse(null));
         }
 
         private static class Context implements AutoCloseable {

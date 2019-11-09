@@ -22,8 +22,8 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Dictionary;
+import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
@@ -48,8 +48,13 @@ import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceObjects;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
+import org.osgi.framework.hooks.service.FindHook;
+import org.slf4j.LoggerFactory;
 
 public class BundleContextImpl implements BundleContext {
+    private static final ServiceReference<?>[] EMPTY_REFS = new ServiceReference<?>[0];
+    private static final Bundle[] EMPTY_BUNDLES = new Bundle[0];
+
     private final Manifest manifest;
     private final OSGiServices services;
     private final Supplier<Bundle> bundleSupplier;
@@ -108,17 +113,28 @@ public class BundleContextImpl implements BundleContext {
 
     @Override
     public Bundle getBundle(final long id) {
-        return ofNullable(registry.getBundles().get(id)).map(OSGiBundleLifecycle::getBundle).orElse(null);
+        return ofNullable(registry.getBundles().get(id))
+                .map(OSGiBundleLifecycle::getBundle)
+                .map(bundle -> {
+                    final List<Bundle> bundles = Stream.of(bundle).collect(toList());
+                    invokeBundleFinHooks(bundles);
+                    return bundles.isEmpty() ? null : bundle;
+                })
+                .orElse(null);
     }
 
     @Override
     public Bundle[] getBundles() {
-        return registry.getBundles().values().stream().map(OSGiBundleLifecycle::getBundle).toArray(Bundle[]::new);
+        final List<Bundle> bundles = registry.getBundles().values().stream()
+                .map(OSGiBundleLifecycle::getBundle)
+                .collect(toList());
+        invokeBundleFinHooks(bundles);
+        return bundles.toArray(EMPTY_BUNDLES);
     }
 
     @Override
     public void addServiceListener(final ServiceListener listener, final String filter) {
-        services.addListener(listener, filter == null ? null : createFilter(filter));
+        services.addListener(listener, filter == null ? null : createFilter(filter), this);
     }
 
     @Override
@@ -173,39 +189,12 @@ public class BundleContextImpl implements BundleContext {
 
     @Override
     public ServiceReference<?>[] getServiceReferences(final String clazz, final String filter) {
-        final Filter predicate = filter == null ? null : createFilter(filter);
-        final Bundle bundle = getBundle();
-        final Class<?> expected;
-        try {
-            expected = clazz == null ? Object.class : bundle.loadClass(clazz);
-        } catch (final ClassNotFoundException e) {
-            return new ServiceReference<?>[0];
-        }
-        return services.getServices().stream()
-                .filter(it -> Stream.of(ServiceRegistrationImpl.class.cast(it).getClasses())
-                        .map(name -> {
-                            try {
-                                return bundle.loadClass(name);
-                            } catch (final NoClassDefFoundError | ClassNotFoundException e) {
-                                return null;
-                            }
-                        })
-                        .filter(Objects::nonNull)
-                        .anyMatch(expected::isAssignableFrom))
-                .filter(it -> predicate == null || predicate.match(it.getReference()))
-                .map(it -> ServiceRegistrationImpl.class.cast(it).getReference())
-                .toArray(ServiceReference[]::new);
+        return doGetReferences(clazz, filter, true);
     }
 
     @Override
     public ServiceReference<?>[] getAllServiceReferences(final String clazz, final String filter) {
-        final Filter predicate = filter == null ? null : createFilter(filter);
-        return services.getServices().stream()
-                .map(ServiceRegistrationImpl.class::cast)
-                .filter(it -> it.getClasses() != null && asList(it.getClasses()).contains(clazz))
-                .filter(it -> predicate == null || predicate.match(it.getReference()))
-                .map(ServiceRegistration::getReference)
-                .toArray(ServiceReference[]::new);
+        return doGetReferences(clazz, filter, false);
     }
 
     @Override
@@ -221,10 +210,8 @@ public class BundleContextImpl implements BundleContext {
 
     @Override
     public <S> Collection<ServiceReference<S>> getServiceReferences(final Class<S> clazz, final String filter) {
-        final Filter predicate = filter == null ? null : createFilter(filter);
-        return Arrays.stream(getAllServiceReferences(clazz.getName(), filter))
-                .map(it ->(ServiceReference<S>) it)
-                .filter(it -> predicate == null || predicate.match(it))
+        return Arrays.stream(doGetReferences(clazz.getName(), filter, true))
+                .map(it -> (ServiceReference<S>) it)
                 .collect(toList());
     }
 
@@ -276,5 +263,54 @@ public class BundleContextImpl implements BundleContext {
     @Override
     public Bundle getBundle(final String location) {
         return bundleSupplier.get();
+    }
+
+    private ServiceReference<?>[] doGetReferences(final String clazz, final String filter, final boolean checkAssignable) {
+        final Filter predicate = filter == null ? null : createFilter(filter);
+        final List<ServiceReference> references = services.getServices().stream()
+                .map(ServiceRegistrationImpl.class::cast)
+                .filter(it -> it.getClasses() != null && asList(it.getClasses()).contains(clazz))
+                .filter(it -> predicate == null || predicate.match(it.getReference()))
+                .map(ServiceRegistration::getReference)
+                .collect(toList());
+        invokeServiceFindHooks(clazz, filter, checkAssignable, references);
+        return references.toArray(EMPTY_REFS);
+    }
+
+    private void invokeServiceFindHooks(final String clazz, final String filter,
+                                        final boolean checkAssignable, final List<ServiceReference> references) {
+        final Collection<ServiceReference<FindHook>> findHooks = services.getHooks().getServiceFindHooks();
+        if (!references.isEmpty() && !findHooks.isEmpty()) {
+            findHooks.forEach(hook -> {
+                final FindHook fh = getService(hook);
+                if (fh != null) {
+                    try {
+                        fh.find(getBundle().getBundleContext(), clazz, filter, !checkAssignable, Collection.class.cast(references));
+                    } catch (final Throwable th) {
+                        LoggerFactory.getLogger(BundleContextImpl.class).warn("Can't call '{}'", hook, th);
+                    } finally {
+                        ungetService(hook);
+                    }
+                }
+            });
+        }
+    }
+
+    private void invokeBundleFinHooks(final List<Bundle> bundles) {
+        final Collection<ServiceReference<org.osgi.framework.hooks.bundle.FindHook>> findHooks = services.getHooks().getBundleFindHooks();
+        if (!bundles.isEmpty() && !findHooks.isEmpty()) {
+            findHooks.forEach(hook -> {
+                final org.osgi.framework.hooks.bundle.FindHook fh = getService(hook);
+                if (fh != null) {
+                    try {
+                        fh.find(getBundle().getBundleContext(), bundles);
+                    } catch (final Throwable th) {
+                        LoggerFactory.getLogger(BundleContextImpl.class).warn("Can't call '{}'", hook, th);
+                    } finally {
+                        ungetService(hook);
+                    }
+                }
+            });
+        }
     }
 }

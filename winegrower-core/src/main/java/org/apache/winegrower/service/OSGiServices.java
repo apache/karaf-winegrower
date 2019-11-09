@@ -16,6 +16,7 @@ package org.apache.winegrower.service;
 import static java.util.Arrays.asList;
 import static java.util.Collections.list;
 import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 
 import java.io.IOException;
@@ -23,20 +24,28 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Dictionary;
 import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
 import org.apache.winegrower.Ripener;
 import org.apache.winegrower.api.InjectedService;
+import org.apache.winegrower.deployer.BundleContextImpl;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.Filter;
 import org.osgi.framework.PrototypeServiceFactory;
 import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceFactory;
 import org.osgi.framework.ServiceListener;
+import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
+import org.osgi.framework.hooks.service.EventListenerHook;
+import org.osgi.framework.hooks.service.FindHook;
+import org.osgi.framework.hooks.service.ListenerHook;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.cm.ConfigurationException;
@@ -55,6 +64,7 @@ public class OSGiServices {
 
     private final Collection<ServiceListenerDefinition> serviceListeners = new ArrayList<>();
     private final Collection<ServiceRegistrationImpl<?>> services = new ArrayList<>();
+    private final Hooks hooks = new Hooks();
     private final Collection<ConfigurationListener> configurationListeners;
     private final Collection<DefaultEventAdmin.EventHandlerInstance> eventListeners;
     private final Ripener framework;
@@ -65,6 +75,10 @@ public class OSGiServices {
         this.framework = framework;
         this.configurationListeners = configurationListeners;
         this.eventListeners = eventListeners;
+    }
+
+    public Hooks getHooks() {
+        return hooks;
     }
 
     public <T> T inject(final T instance) {
@@ -117,8 +131,9 @@ public class OSGiServices {
                 .map(reg -> (T) ServiceReferenceImpl.class.cast(reg.getReference()).getReference());
     }
 
-    public synchronized void addListener(final ServiceListener listener, final Filter filter) {
-        serviceListeners.add(new ServiceListenerDefinition(listener, filter));
+    public synchronized void addListener(final ServiceListener listener, final Filter filter,
+                                         final BundleContext context) {
+        serviceListeners.add(new ServiceListenerDefinition(listener, filter, context));
     }
 
     public synchronized void removeListener(final ServiceListener listener) {
@@ -157,10 +172,14 @@ public class OSGiServices {
 
         boolean isEventHandler = Stream.of(classes).anyMatch(it -> it.equals(EventHandler.class.getName()));
         final boolean removeEventHandler = isEventHandler;
+        final boolean serviceFindHook = Stream.of(classes).anyMatch(it -> it.equals(FindHook.class.getName()));
+        final boolean bundleFindHook = Stream.of(classes).anyMatch(it -> it.equals(org.osgi.framework.hooks.bundle.FindHook.class.getName()));
+        final boolean eventListenerHook = Stream.of(classes).anyMatch(it -> it.equals(EventListenerHook.class.getName()));
+        final ServiceReferenceImpl<Object> ref = new ServiceReferenceImpl<>(serviceProperties, from, service);
         final ServiceRegistrationImpl<Object> registration = new ServiceRegistrationImpl<>(classes,
-                serviceProperties, new ServiceReferenceImpl<>(serviceProperties, from, service), reg -> {
+                serviceProperties, ref, reg -> {
             final ServiceEvent event = new ServiceEvent(ServiceEvent.UNREGISTERING, reg.getReference());
-            getListeners(reg).forEach(listener -> listener.listener.serviceChanged(event));
+            fireEvent(reg, event);
             synchronized (OSGiServices.this) {
                 services.remove(reg);
             }
@@ -175,6 +194,15 @@ public class OSGiServices {
                     eventListeners.removeIf(it -> it.getHandler() == service);
                 }
             }
+            if (serviceFindHook) {
+                hooks.getServiceFindHooks().remove(ref);
+            }
+            if (bundleFindHook) {
+                hooks.getBundleFindHooks().remove(ref);
+            }
+            if (eventListenerHook) {
+                hooks.getEventListenerHooks().remove(ref);
+            }
         });
 
         if (isEventHandler) {
@@ -187,7 +215,6 @@ public class OSGiServices {
                             null);
             if (topics == null) {
                 LOGGER.warn("No topic for {}", service);
-                isEventHandler = false;
             } else {
                 synchronized (eventListeners) {
                     eventListeners.add(new DefaultEventAdmin.EventHandlerInstance(
@@ -232,7 +259,8 @@ public class OSGiServices {
         }
 
         services.add(registration);
-        final ServiceEvent event = new ServiceEvent(ServiceEvent.REGISTERED, registration.getReference());
+
+        final ServiceEvent event = new ServiceEvent(ServiceEvent.REGISTERED, ref);
         if (ManagedService.class.isInstance(service)) {
             try {
                 ManagedService.class.cast(service).updated(serviceProperties);
@@ -240,11 +268,45 @@ public class OSGiServices {
                 throw new IllegalStateException(e);
             }
         }
-        getListeners(registration).forEach(listener -> listener.listener.serviceChanged(event));
+        fireEvent(registration, event);
+
+        if (serviceFindHook) {
+            hooks.getServiceFindHooks().add(ServiceReference.class.cast(ref));
+        }
+        if (bundleFindHook) {
+            hooks.getBundleFindHooks().add(ServiceReference.class.cast(ref));
+        }
+        if (eventListenerHook) {
+            hooks.getEventListenerHooks().add(ServiceReference.class.cast(ref));
+        }
+
         return registration;
     }
 
-    private Collection<ServiceListenerDefinition> getListeners(final ServiceRegistration<?> reg) {
+    private void fireEvent(final ServiceRegistration<?> reg, final ServiceEvent event) {
+        final List<ServiceListenerDefinition> listeners = getListeners(reg);
+        final Collection<ServiceReference<EventListenerHook>> eventListenerHooks = hooks.getEventListenerHooks();
+        if (!eventListenerHooks.isEmpty() && !listeners.isEmpty()) {
+            eventListenerHooks.forEach(hook -> {
+                final BundleContext bundleContext = hook.getBundle().getBundleContext();
+                final EventListenerHook instance = bundleContext.getService(hook);
+                if (instance != null) {
+                    try {
+                        final Map<BundleContext, ? extends Collection<ListenerHook.ListenerInfo>> listenerInfo = listeners.stream()
+                                .collect(groupingBy(ServiceListenerDefinition::getBundleContext, toList()));
+                        instance.event(event, (Map<BundleContext, Collection<ListenerHook.ListenerInfo>>) listenerInfo);
+                    } catch (final Throwable th) {
+                        LoggerFactory.getLogger(BundleContextImpl.class).warn("Can't call '{}'", hook, th);
+                    } finally {
+                        bundleContext.ungetService(hook);
+                    }
+                }
+            });
+        }
+        listeners.forEach(listener -> listener.listener.serviceChanged(event));
+    }
+
+    private List<ServiceListenerDefinition> getListeners(final ServiceRegistration<?> reg) {
         return serviceListeners.stream()
                 .filter(it -> it.filter == null || it.filter.match(reg.getReference()))
                 .collect(toList());
@@ -254,18 +316,36 @@ public class OSGiServices {
         return new ArrayList<>(services);
     }
 
-    private static class ServiceListenerDefinition {
+    private static class ServiceListenerDefinition implements ListenerHook.ListenerInfo {
         private final ServiceListener listener;
         private final Filter filter;
+        private final BundleContext context;
 
-        private ServiceListenerDefinition(final ServiceListener listener, final Filter filter) {
+        private ServiceListenerDefinition(final ServiceListener listener, final Filter filter,
+                                          final BundleContext context) {
             this.listener = listener;
             this.filter = filter;
+            this.context = context;
         }
 
         @Override
         public String toString() {
             return "ServiceListenerDefinition{listener=" + listener + ", filter=" + filter + '}';
+        }
+
+        @Override
+        public BundleContext getBundleContext() {
+            return context;
+        }
+
+        @Override
+        public String getFilter() {
+            return filter.toString();
+        }
+
+        @Override
+        public boolean isRemoved() {
+            return false;
         }
     }
 }
