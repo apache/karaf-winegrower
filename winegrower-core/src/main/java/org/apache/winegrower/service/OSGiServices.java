@@ -13,7 +13,6 @@
  */
 package org.apache.winegrower.service;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.list;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.groupingBy;
@@ -53,6 +52,7 @@ import org.osgi.service.cm.ConfigurationListener;
 import org.osgi.service.cm.ManagedService;
 import org.osgi.service.event.EventConstants;
 import org.osgi.service.event.EventHandler;
+import org.osgi.util.tracker.ServiceTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -125,10 +125,15 @@ public class OSGiServices {
     }
 
     public <T> Optional<T> findService(final Class<T> type) {
-        return services.stream()
-                .filter(it -> asList(it.getClasses()).contains(type.getName()))
-                .findFirst()
-                .map(reg -> (T) ServiceReferenceImpl.class.cast(reg.getReference()).getReference());
+        final Bundle bundle = framework.getRegistry().getBundles().get(0L).getBundle();
+        final ServiceTracker<T, T> tracker = new ServiceTracker<>(bundle.getBundleContext(), type, null);
+        tracker.open();
+        try {
+            return ofNullable(tracker.waitForService(0L));
+        } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(e);
+        }
     }
 
     public synchronized void addListener(final ServiceListener listener, final Filter filter,

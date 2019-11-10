@@ -24,9 +24,7 @@ import org.apache.winegrower.test.WithRipener.Service;
 import org.apache.winegrower.test.hook.SimpleService;
 import org.junit.jupiter.api.Test;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;
-import org.osgi.util.tracker.ServiceTrackerCustomizer;
 
 class HookTest {
     @Test
@@ -39,23 +37,7 @@ class HookTest {
                 .map(BundleImpl::getBundleContext)
                 .orElseThrow(IllegalStateException::new);
         final ServiceTracker<SimpleService, SimpleService> tracker = new ServiceTracker<>(
-                bundleContext, SimpleService.class,
-                new ServiceTrackerCustomizer<SimpleService, SimpleService>() {
-                    @Override
-                    public SimpleService addingService(final ServiceReference<SimpleService> serviceReference) {
-                        return serviceReference.getBundle().getBundleContext().getService(serviceReference);
-                    }
-
-                    @Override
-                    public void modifiedService(final ServiceReference<SimpleService> serviceReference, final SimpleService simpleService) {
-                        // no-op
-                    }
-
-                    @Override
-                    public void removedService(final ServiceReference<SimpleService> serviceReference, final SimpleService simpleService) {
-                        // no-op
-                    }
-                });
+                bundleContext, SimpleService.class, null);
         tracker.open();
         tracker.waitForService(5000L);
         assertEquals("I am the replacement", tracker.getService().get());
