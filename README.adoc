@@ -1,6 +1,6 @@
 = Apache Winegrower
 
-Apache Winegrower is a ligthweight and powerful application framework.
+Apache Winegrower is a lightweight and powerful application framework.
 
 It brings the powerful OSGi model without all the issue and help of bundle classloaders.
 Winegrower fully supports the activator and service model but use an unique classloader.
@@ -88,7 +88,7 @@ It's also cloud ready and provides tooling to provision your applications on clo
 </project>
 ----
 
-You can now start Karaf with:
+You can now start Winegrower with:
 
 [source,sh]
 ----
