@@ -207,8 +207,8 @@
   </distributionManagement>
 
   <scm>
-    <developerConnection>scm:git:https://github.com/jbonofre/winegrower.git</developerConnection>
-    <connection>scm:git:https://github.com/jbonofre/winegrower.git</connection>
-    <url>https://github.com/jbonofre/winegrower</url>
+    <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/karaf-winegrower</developerConnection>
+    <connection>scm:git:https://gitbox.apache.org/repos/asf/karaf-winegrower</connection>
+    <url>https://github.com/apache/karaf-winegrower</url>
   </scm>
 </project>
