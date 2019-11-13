@@ -269,12 +269,35 @@ public class BundleContextImpl implements BundleContext {
         final Filter predicate = filter == null ? null : createFilter(filter);
         final List<ServiceReference> references = services.getServices().stream()
                 .map(ServiceRegistrationImpl.class::cast)
-                .filter(it -> it.getClasses() != null && asList(it.getClasses()).contains(clazz))
                 .filter(it -> predicate == null || predicate.match(it.getReference()))
+                .filter(it -> clazz == null || Object.class.getName().equals(clazz) ||
+                        (it.getClasses() != null && matches(clazz, it)))
                 .map(ServiceRegistration::getReference)
                 .collect(toList());
         invokeServiceFindHooks(clazz, filter, checkAssignable, references);
         return references.toArray(EMPTY_REFS);
+    }
+
+    private boolean matches(final String clazz, final ServiceRegistrationImpl reg) {
+        return asList(reg.getClasses()).contains(clazz) || deepMatches(clazz, reg);
+    }
+
+    private boolean deepMatches(final String clazz, final ServiceRegistrationImpl reg) {
+        final Class<?> expected;
+        try {
+            expected = Thread.currentThread().getContextClassLoader().loadClass(clazz);
+        } catch (final ClassNotFoundException e) {
+            return false;
+        }
+        return Stream.of(reg.getClasses())
+                .flatMap(it -> {
+                    try {
+                        return Stream.of(reg.getReference().getBundle().loadClass(it));
+                    } catch (final ClassNotFoundException e) {
+                        return Stream.empty();
+                    }
+                })
+                .anyMatch(expected::isAssignableFrom);
     }
 
     private void invokeServiceFindHooks(final String clazz, final String filter,

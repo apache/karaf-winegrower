@@ -29,7 +29,7 @@ public class RegisterHooks implements BundleActivator {
     public void start(final BundleContext context) {
         // in practise we would get all services to replace existing one too,
         // here we control what we want to replace (replaced=true) so let's keep it simple for tests
-        final ServiceReplacer replacer = new ServiceReplacer(context.getBundle().getBundleId());
+        final ServiceReplacer replacer = new ServiceReplacer();
         context.addServiceListener(replacer);
         context.registerService(
                 new String[] { FindHook.class.getName(), EventListenerHook.class.getName() },

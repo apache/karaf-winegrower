@@ -27,12 +27,6 @@ import org.osgi.framework.hooks.service.FindHook;
 import org.osgi.framework.hooks.service.ListenerHook;
 
 public class ServiceReplacer implements FindHook, EventListenerHook, ServiceListener {
-    private final long bundleId;
-
-    public ServiceReplacer(final long bundleId) {
-        this.bundleId = bundleId;
-    }
-
     @Override // replaced services are not forward to listeners except the bundle owning the replacer and #0 (optional for the test)
     public void event(final ServiceEvent event, final Map<BundleContext, Collection<ListenerHook.ListenerInfo>> listeners) {
         if (event.getServiceReference().getProperty("replaced") != null) {
