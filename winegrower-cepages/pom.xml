@@ -36,8 +36,8 @@
   <packaging>pom</packaging>
 
   <properties>
-    <karaf.version>4.2.1</karaf.version>
-    <cxf.version>3.2.6</cxf.version>
+    <karaf.version>4.2.7</karaf.version>
+    <cxf.version>3.3.4</cxf.version>
   </properties>
 
   <modules>
