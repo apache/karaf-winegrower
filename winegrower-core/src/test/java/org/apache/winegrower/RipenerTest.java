@@ -86,13 +86,13 @@ class RipenerTest {
     @Test
     @WithRipener
     void ensureFrameworkBundle(@Service final Ripener ripener) {
-        assertEquals(4, ripener.getRegistry().getBundles().size());
+        assertEquals(10, ripener.getRegistry().getBundles().size());
     }
 
     @Test
     @WithRipener(includeResources = @Entry(path = "org.apache.winegrower.test.implicitactivator"))
     void implicitActivator(@Service final Ripener ripener) {
-        assertEquals(5, ripener.getRegistry().getBundles().size());
+        assertEquals(11, ripener.getRegistry().getBundles().size());
 
         final BundleActivatorHandler activatorHandler = ripener.getRegistry().getBundles().values().stream()
                 .filter(it -> it.getActivator() != null)
@@ -110,7 +110,8 @@ class RipenerTest {
     @Test
     @WithRipener(includeResources = @Entry(path = "org.apache.winegrower.test.simpleactivator"))
     void simpleActivator(@Service final Ripener ripener) {
-        assertEquals(5, ripener.getRegistry().getBundles().size());
+        final Map<Long, OSGiBundleLifecycle> bundles = ripener.getRegistry().getBundles();
+        assertEquals(11 /*includes junit5 with v >= 5.6*/, bundles.size());
 
         final BundleActivatorHandler activatorHandler = ripener.getRegistry().getBundles().values().stream()
                 .filter(it -> it.getActivator() != null)

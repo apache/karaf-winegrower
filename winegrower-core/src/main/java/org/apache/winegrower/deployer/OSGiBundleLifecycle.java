@@ -37,7 +37,7 @@ public class OSGiBundleLifecycle {
                                final BundleRegistry registry, final Ripener.Configuration configuration,
                                final long id, final Collection<String> includedResources) {
         this.context = new BundleContextImpl(manifest, services, this::getBundle, registry);
-        this.bundle = new BundleImpl(manifest, file, context, configuration, id, includedResources);
+        this.bundle = new BundleImpl(manifest, file, context, configuration, id, includedResources, registry);
     }
 
     public BundleActivatorHandler getActivator() {

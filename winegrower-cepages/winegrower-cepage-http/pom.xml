@@ -91,5 +91,4 @@
       <version>${karaf.version}</version>
     </dependency>
   </dependencies>
-
 </project>

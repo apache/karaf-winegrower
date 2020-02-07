@@ -53,13 +53,13 @@ class BundleImplTest {
         registry = new BundleRegistry(services, configuration);
         context = new BundleContextImpl(manifest, services, () -> bundle, registry);
         final File file = new File(registry.getFramework().getParentFile(), "test-classes");
-        bundle = new BundleImpl(manifest, file, context, configuration, 1, null);
+        bundle = new BundleImpl(manifest, file, context, configuration, 1, null, null);
         registry.getBundles().put(bundle.getBundleId(), new OSGiBundleLifecycle(manifest, file, services, registry, configuration, 1, null));
     }
 
     @Test
     void noEmptyLocation() {
-        assertNotNull(new BundleImpl(manifest, null, context, configuration, 1, null).getLocation());
+        assertNotNull(new BundleImpl(manifest, null, context, configuration, 1, null, null).getLocation());
     }
 
     @Test

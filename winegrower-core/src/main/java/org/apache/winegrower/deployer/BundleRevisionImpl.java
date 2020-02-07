@@ -28,11 +28,9 @@ import org.osgi.resource.Requirement;
 
 public class BundleRevisionImpl implements BundleRevision {
     private final BundleImpl bundle;
-    private final BundleWiringImpl wiring;
 
-    BundleRevisionImpl(final BundleImpl bundle, final BundleWiringImpl bundleWiring) {
+    BundleRevisionImpl(final BundleImpl bundle) {
         this.bundle = bundle;
-        this.wiring = bundleWiring;
     }
 
     @Override
@@ -62,7 +60,7 @@ public class BundleRevisionImpl implements BundleRevision {
 
     @Override
     public BundleWiring getWiring() {
-        return wiring;
+        return bundle.adapt(BundleWiring.class);
     }
 
     @Override
