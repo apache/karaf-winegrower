@@ -40,7 +40,7 @@
     <junit.version>5.5.2</junit.version>
     <osgi.version>7.0.0</osgi.version>
     <slf4j.version>1.7.28</slf4j.version>
-    <xbean.version>4.15</xbean.version>
+    <xbean.version>4.16</xbean.version>
 
     <surefire.log.level>INFO</surefire.log.level>
 
