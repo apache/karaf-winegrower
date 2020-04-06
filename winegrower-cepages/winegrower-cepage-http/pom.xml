@@ -35,14 +35,14 @@
   <packaging>pom</packaging>
 
   <properties>
-    <pax-web.version>7.2.3</pax-web.version>
+    <pax-web.version>7.2.14</pax-web.version>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>javax.servlet-api</artifactId>
-      <version>3.0.1</version>
+      <version>3.1.0</version>
     </dependency>
     <dependency> <!-- todo: use tomcat ? -->
       <groupId>org.ops4j.pax.web</groupId>
