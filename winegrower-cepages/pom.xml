@@ -37,7 +37,7 @@
 
   <properties>
     <karaf.version>4.2.8</karaf.version>
-    <cxf.version>3.3.6</cxf.version>
+    <cxf.version>3.4.0</cxf.version>
   </properties>
 
   <modules>
