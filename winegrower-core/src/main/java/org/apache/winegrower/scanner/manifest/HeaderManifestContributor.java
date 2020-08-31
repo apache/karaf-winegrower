@@ -14,10 +14,10 @@
 package org.apache.winegrower.scanner.manifest;
 
 import static java.util.stream.Collectors.toMap;
-import static org.apache.xbean.asm7.ClassReader.SKIP_CODE;
-import static org.apache.xbean.asm7.ClassReader.SKIP_DEBUG;
-import static org.apache.xbean.asm7.ClassReader.SKIP_FRAMES;
-import static org.apache.xbean.asm7.Opcodes.ASM7;
+import static org.apache.xbean.asm8.ClassReader.SKIP_CODE;
+import static org.apache.xbean.asm8.ClassReader.SKIP_DEBUG;
+import static org.apache.xbean.asm8.ClassReader.SKIP_FRAMES;
+import static org.apache.xbean.asm8.Opcodes.ASM8;
 
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
@@ -31,9 +31,9 @@ import java.util.function.Supplier;
 import java.util.jar.Manifest;
 import java.util.stream.Stream;
 
-import org.apache.xbean.asm7.AnnotationVisitor;
-import org.apache.xbean.asm7.ClassReader;
-import org.apache.xbean.asm7.ClassVisitor;
+import org.apache.xbean.asm8.AnnotationVisitor;
+import org.apache.xbean.asm8.ClassReader;
+import org.apache.xbean.asm8.ClassVisitor;
 import org.apache.xbean.finder.AnnotationFinder;
 
 public class HeaderManifestContributor implements ManifestContributor {
@@ -80,7 +80,7 @@ public class HeaderManifestContributor implements ManifestContributor {
         try (final InputStream stream = loader.getResourceAsStream(clazz.getName().replace('.', '/') + ".class")) {
             final ClassReader reader = new ClassReader(stream);
             final Collection<KeyValue> headers = new ArrayList<>();
-            final Supplier<AnnotationVisitor> newHeaderVisitor = () -> new AnnotationVisitor(ASM7) {
+            final Supplier<AnnotationVisitor> newHeaderVisitor = () -> new AnnotationVisitor(ASM8) {
                 private final KeyValue header = new KeyValue();
 
                 @Override
@@ -103,7 +103,7 @@ public class HeaderManifestContributor implements ManifestContributor {
                 }
             };
 
-            reader.accept(new ClassVisitor(ASM7) {
+            reader.accept(new ClassVisitor(ASM8) {
                 @Override
                 public AnnotationVisitor visitAnnotation(final String descriptor, final boolean visible) {
                     switch (descriptor) {
@@ -140,7 +140,7 @@ public class HeaderManifestContributor implements ManifestContributor {
         private final Supplier<AnnotationVisitor> visitor;
 
         private PluralAnnotationVisitor(final String singular, final Supplier<AnnotationVisitor> nestedVisitor) {
-            super(ASM7);
+            super(ASM8);
             this.visitor = nestedVisitor;
             this.singular = singular;
         }
@@ -149,7 +149,7 @@ public class HeaderManifestContributor implements ManifestContributor {
         public AnnotationVisitor visitArray(final String name) {
             switch (name) {
                 case "value":
-                    return new AnnotationVisitor(ASM7) {
+                    return new AnnotationVisitor(ASM8) {
                         @Override
                         public AnnotationVisitor visitAnnotation(final String name, final String descriptor) {
                             if (singular.equals(descriptor)) {
