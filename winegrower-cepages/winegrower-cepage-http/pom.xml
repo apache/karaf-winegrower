@@ -35,7 +35,7 @@
   <packaging>pom</packaging>
 
   <properties>
-    <pax-web.version>7.2.14</pax-web.version>
+    <pax-web.version>7.3.8</pax-web.version>
   </properties>
 
   <dependencies>
@@ -53,7 +53,7 @@
       <groupId>org.eclipse.jetty.aggregate</groupId>
       <artifactId>jetty-all</artifactId>
       <classifier>uber</classifier>
-      <version>9.4.22.v20191022</version>
+      <version>9.4.30.v20200611</version>
       <exclusions>
         <exclusion>
           <groupId>org.ow2.asm</groupId>
