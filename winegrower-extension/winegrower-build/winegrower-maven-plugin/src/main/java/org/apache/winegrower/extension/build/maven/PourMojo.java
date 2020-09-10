@@ -127,9 +127,11 @@ public class PourMojo extends AbstractMojo {
                 throw new IllegalArgumentException(e);
             }
         }).collect(toList());
-        final boolean excludeParentClasses = jars.stream()
+        final boolean excludeOsgi = jars.stream()
              .anyMatch(it -> it.getName().startsWith("org.osgi.") || it.getName().startsWith("osgi."));
-        if (excludeParentClasses) {
+        final boolean hasWinegrower = jars.stream()
+             .anyMatch(it -> it.getName().startsWith("winegrower-core"));
+        if (excludeOsgi) {
             // add build-common
             final File buildCommon = Files.toFile(parent.getResource("org/apache/winegrower/extension/build/common/Run.class"));
             try {
@@ -140,15 +142,14 @@ public class PourMojo extends AbstractMojo {
         }
         return urls.isEmpty() ? parent : new URLClassLoader(
                 urls.toArray(new URL[0]),
-                !excludeParentClasses ? parent : new ClassLoader(parent) {
+                !excludeOsgi || !hasWinegrower ? parent : new ClassLoader(parent) {
                     @Override
                     protected Class<?> loadClass(final String name, final boolean resolve) throws ClassNotFoundException {
                         if (name.startsWith("org.")) {
                             final String sub = name.substring("org.".length());
                             if (sub.startsWith("osgi.")) {
                                 throw new ClassNotFoundException(name);
-                            }
-                            if (sub.startsWith("apache.")) {
+                            } else if (sub.startsWith("apache.")) {
                                 final String apache = sub.substring("apache.".length());
                                 if (apache.startsWith("winegrower.")) {
                                     throw new ClassNotFoundException(name);
