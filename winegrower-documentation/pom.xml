@@ -28,7 +28,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>winegrower-documentation</artifactId>
-  <name>Apache Winegrower :: Extension :: CDI</name>
+  <name>Apache Winegrower :: Documentation</name>
 
   <properties>
     <documentation.theme.url>scm:git:https://github.com/apache/karaf-decanter.git</documentation.theme.url>
