@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        java: [ '1.8', '11.0.4' ]
+        java: [ '11.0.4' ]
     steps:
     - name: Clone
       uses: actions/checkout@v1
