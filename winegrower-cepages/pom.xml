@@ -45,6 +45,7 @@
     <module>winegrower-cepage-http</module>
     <module>winegrower-cepage-cxf-rs</module>
     <module>winegrower-cepage-jaxrs</module>
+    <module>winegrower-cepage-osgi-cdi</module>
   </modules>
 
   <build>

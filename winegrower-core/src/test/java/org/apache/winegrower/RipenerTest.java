@@ -110,7 +110,8 @@ class RipenerTest {
     @Test
     @WithRipener(includeResources = @Entry(path = "org.apache.winegrower.test.simpleactivator"))
     void simpleActivator(@Service final Ripener ripener) {
-        assertEquals(11, ripener.getRegistry().getBundles().size());
+        final Map<Long, OSGiBundleLifecycle> bundles = ripener.getRegistry().getBundles();
+        assertEquals(11 /*includes junit5 with v >= 5.6*/, bundles.size());
 
         final BundleActivatorHandler activatorHandler = ripener.getRegistry().getBundles().values().stream()
                 .filter(it -> it.getActivator() != null)

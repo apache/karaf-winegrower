@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Dictionary;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
@@ -44,15 +45,19 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 
 import org.apache.winegrower.Ripener;
+import org.apache.winegrower.service.BundleRegistry;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleListener;
 import org.osgi.framework.Constants;
 import org.osgi.framework.Filter;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.Version;
+import org.osgi.framework.wiring.BundleRevision;
 import org.osgi.framework.wiring.BundleWiring;
 
 public class BundleImpl implements Bundle {
@@ -65,46 +70,86 @@ public class BundleImpl implements Bundle {
     private final Dictionary<String, String> headers;
     private final File dataFileBase;
     private final Collection<String> includedResources;
+    private final List<BundleRequirementImpl> requirements;
+    private final List<BundleCapabilityImpl> capabilities;
+    private final BundleRegistry registry;
+
+    private volatile BundleRevision bundleRevision;
+    private volatile BundleWiring bundleWiring;
+
     private int state = Bundle.UNINSTALLED;
 
     BundleImpl(final Manifest manifest, final File file, final BundleContextImpl context,
                final Ripener.Configuration configuration, final long id,
-               final Collection<String> includedResources) {
+               final Collection<String> includedResources, final BundleRegistry registry) {
         this.file = file;
         this.dataFileBase = new File(configuration.getWorkDir(),
                 file == null ? Long.toString(System.identityHashCode(manifest)) : file.getName());
         this.context = context;
         this.id = id;
+        this.registry = registry;
         this.loader = Thread.currentThread().getContextClassLoader();
         this.includedResources = includedResources;
         this.version = ofNullable(manifest.getMainAttributes().getValue(Constants.BUNDLE_VERSION))
-            .map(Version::new)
-            .orElse(Version.emptyVersion);
+                .map(Version::new)
+                .orElse(Version.emptyVersion);
         this.symbolicName = manifest.getMainAttributes().getValue(Constants.BUNDLE_SYMBOLICNAME);
         this.headers = manifest.getMainAttributes().entrySet().stream()
-            .collect(Collector.of(
-                    Hashtable::new,
-                    (t, e) -> t.put(Attributes.Name.class.cast(e.getKey()).toString(), e.getValue().toString()),
-                    (t1, t2) -> {
-                        t1.putAll(t2);
-                        return t1;
-                    }));
+                .collect(Collector.of(
+                        Hashtable::new,
+                        (t, e) -> t.put(Attributes.Name.class.cast(e.getKey()).toString(), e.getValue().toString()),
+                        (t1, t2) -> {
+                            t1.putAll(t2);
+                            return t1;
+                        }));
+
+        final List<HeaderClause> requireClauses = Headers.parse(headers.get(Constants.REQUIRE_CAPABILITY));
+        Headers.coerceCapabilityClauses(requireClauses);
+        requirements = requireClauses.stream()
+                .flatMap(clause -> {
+                    final String filterStr = clause.directives.get(Constants.FILTER_DIRECTIVE);
+                    try {
+                        final Filter filter = filterStr == null ? null : FrameworkUtil.createFilter(filterStr);
+                        return clause.paths.stream()
+                                .map(path -> new BundleRequirementImpl(
+                                        adapt(BundleRevision.class), path, clause.directives, clause.attributes, filter));
+                    } catch (final InvalidSyntaxException e) {
+                        throw new IllegalArgumentException(e);
+                    }
+                })
+                .collect(toList());
+
+        final List<HeaderClause> provideClauses = Headers.parse(headers.get(Constants.PROVIDE_CAPABILITY));
+        Headers.coerceCapabilityClauses(provideClauses);
+        capabilities = provideClauses.stream()
+                .flatMap(clause -> clause.paths.stream()
+                        .map(path -> new BundleCapabilityImpl(
+                                adapt(BundleRevision.class), path, clause.directives, clause.attributes)))
+                .collect(toList());
     }
 
     ClassLoader getLoader() {
         return loader;
     }
 
+    List<BundleRequirementImpl> getRequirements() {
+        return requirements;
+    }
+
+    List<BundleCapabilityImpl> getCapabilities() {
+        return capabilities;
+    }
+
     private Stream<BundleListener> allBundleListeners() {
         return context.getRegistry().getBundles().values().stream()
-                      .flatMap(it -> BundleContextImpl.class.cast(it.getBundle().getBundleContext()).getBundleListeners().stream());
+                .flatMap(it -> BundleContextImpl.class.cast(it.getBundle().getBundleContext()).getBundleListeners().stream());
     }
 
     void onStart() {
         start();
         final BundleEvent event = new BundleEvent(BundleEvent.STARTED, this);
         allBundleListeners()
-               .forEach(listener -> listener.bundleChanged(event));
+                .forEach(listener -> listener.bundleChanged(event));
     }
 
     void onStop() {
@@ -266,9 +311,9 @@ public class BundleImpl implements Bundle {
         if (includedResources != null) {
             if (!recurse) {
                 return enumeration(includedResources.stream()
-                    .filter(it -> doFilterEntry(filter, prefix, it))
-                    .map(loader::getResource)
-                    .collect(toList()));
+                        .filter(it -> doFilterEntry(filter, prefix, it))
+                        .map(loader::getResource)
+                        .collect(toList()));
             }
         }
 
@@ -309,8 +354,8 @@ public class BundleImpl implements Bundle {
         } else {
             try (final JarFile jar = new JarFile(file)) {
                 return enumeration(list(jar.entries()).stream().filter(it -> it.getName().startsWith(prefix))
-                                                      .map(ZipEntry::getName).filter(name -> !name.endsWith("/")) // folders
-                                                      .filter(name -> doFilterEntry(filter, prefix, name)).map(name -> {
+                        .map(ZipEntry::getName).filter(name -> !name.endsWith("/")) // folders
+                        .filter(name -> doFilterEntry(filter, prefix, name)).map(name -> {
                             try {
                                 return new URL("jar", null, file.toURI().toURL().toExternalForm() + "!/" + name);
                             } catch (final MalformedURLException e) {
@@ -354,7 +399,24 @@ public class BundleImpl implements Bundle {
     @Override
     public <A> A adapt(final Class<A> type) {
         if (BundleWiring.class == type) {
-            return type.cast(new BundleWiringImpl(this));
+            if (bundleWiring == null) {
+                synchronized (this) {
+                    if (bundleWiring == null) {
+                        bundleWiring = new BundleWiringImpl(this, registry);
+                    }
+                }
+            }
+            return type.cast(bundleWiring);
+        }
+        if (BundleRevision.class == type) {
+            if (bundleRevision == null) {
+                synchronized (this) {
+                    if (bundleRevision == null) {
+                        bundleRevision = new BundleRevisionImpl(this);
+                    }
+                }
+            }
+            return type.cast(bundleRevision);
         }
         return null;
     }
@@ -374,5 +436,265 @@ public class BundleImpl implements Bundle {
     @Override
     public String toString() {
         return "BundleImpl{file=" + file + ", id=" + id + '}';
+    }
+
+    public static class HeaderClause {
+        public final List<String> paths;
+        public final Map<String, String> directives;
+        public final Map<String, Object> attributes;
+        public final Map<String, String> types;
+
+        public HeaderClause(
+                final List<String> paths, final Map<String, String> dirs, final Map<String, Object> attrs,
+                final Map<String, String> types) {
+            this.paths = paths;
+            this.directives = dirs;
+            this.attributes = attrs;
+            this.types = types;
+        }
+    }
+
+    // taken from felix
+    private static class Headers {
+        private static final char EOF = (char) -1;
+        private static final int CLAUSE_START = 0;
+        private static final int PARAMETER_START = 1;
+        private static final int KEY = 2;
+        private static final int DIRECTIVE_OR_TYPEDATTRIBUTE = 4;
+        private static final int ARGUMENT = 8;
+        private static final int VALUE = 16;
+
+        private static List<HeaderClause> parse(final String header) {
+            final List<HeaderClause> clauses = new ArrayList<>();
+            if (header == null) {
+                return clauses;
+            }
+            HeaderClause clause = null;
+            String key = null;
+            Map targetMap = null;
+            int state = CLAUSE_START;
+            int currentPosition = 0;
+            int startPosition = 0;
+            int length = header.length();
+            boolean quoted = false;
+            boolean escaped = false;
+
+            char currentChar;
+            do {
+                currentChar = currentPosition >= length ? EOF : header.charAt(currentPosition);
+                switch (state) {
+                    case CLAUSE_START:
+                        clause = new HeaderClause(new ArrayList<>(), new HashMap<>(), new HashMap<>(), new HashMap<>());
+                        clauses.add(clause);
+                        // not needed to be called but "logically" needed: state = PARAMETER_START;
+                    case PARAMETER_START:
+                        startPosition = currentPosition;
+                        state = KEY;
+                    case KEY:
+                        switch (currentChar) {
+                            case ':':
+                            case '=':
+                                key = header.substring(startPosition, currentPosition).trim();
+                                startPosition = currentPosition + 1;
+                                targetMap = clause.attributes;
+                                state = currentChar == ':' ? DIRECTIVE_OR_TYPEDATTRIBUTE : ARGUMENT;
+                                break;
+                            case EOF:
+                            case ',':
+                            case ';':
+                                clause.paths.add(header.substring(startPosition, currentPosition).trim());
+                                state = currentChar == ',' ? CLAUSE_START : PARAMETER_START;
+                                break;
+                            default:
+                                break;
+                        }
+                        currentPosition++;
+                        break;
+                    case DIRECTIVE_OR_TYPEDATTRIBUTE:
+                        if (currentChar == '=') {
+                            if (startPosition != currentPosition) {
+                                clause.types.put(key, header.substring(startPosition, currentPosition).trim());
+                            } else {
+                                targetMap = clause.directives;
+                            }
+                            state = ARGUMENT;
+                            startPosition = currentPosition + 1;
+                        }
+                        currentPosition++;
+                        break;
+                    case ARGUMENT:
+                        if (currentChar == '\"') {
+                            quoted = true;
+                            currentPosition++;
+                        } else {
+                            quoted = false;
+                        }
+                        if (!Character.isWhitespace(currentChar)) {
+                            state = VALUE;
+                        } else {
+                            currentPosition++;
+                        }
+                        break;
+                    case VALUE:
+                        if (escaped) {
+                            escaped = false;
+                        } else {
+                            if (currentChar == '\\') {
+                                escaped = true;
+                            } else if (quoted && currentChar == '\"') {
+                                quoted = false;
+                            } else if (!quoted) {
+                                String value;
+                                switch (currentChar) {
+                                    case EOF:
+                                    case ';':
+                                    case ',':
+                                        value = header.substring(startPosition, currentPosition).trim();
+                                        if (value.startsWith("\"") && value.endsWith("\"")) {
+                                            value = value.substring(1, value.length() - 1);
+                                        }
+                                        if (targetMap.put(key, value) != null) {
+                                            throw new IllegalArgumentException(
+                                                    "Duplicate '" + key + "' in: " + header);
+                                        }
+                                        state = currentChar == ';' ? PARAMETER_START : CLAUSE_START;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+                        }
+                        currentPosition++;
+                        break;
+                    default:
+                        break;
+                }
+            } while (currentChar != EOF);
+
+            if (state > PARAMETER_START) {
+                throw new IllegalArgumentException("Unable to parse header: " + header);
+            }
+            return clauses;
+        }
+
+        public static List<String> parseDelimitedString(String value, String delim, boolean trim) {
+            if (value == null) {
+                value = "";
+            }
+
+            List<String> list = new ArrayList<String>();
+
+            int CHAR = 1;
+            int DELIMITER = 2;
+            int STARTQUOTE = 4;
+            int ENDQUOTE = 8;
+
+            StringBuilder sb = new StringBuilder();
+
+            int expecting = (CHAR | DELIMITER | STARTQUOTE);
+
+            boolean isEscaped = false;
+            for (int i = 0; i < value.length(); i++) {
+                char c = value.charAt(i);
+
+                boolean isDelimiter = (delim.indexOf(c) >= 0);
+
+                if (!isEscaped && (c == '\\')) {
+                    isEscaped = true;
+                    continue;
+                }
+
+                if (isEscaped) {
+                    sb.append(c);
+                } else if (isDelimiter && ((expecting & DELIMITER) > 0)) {
+                    if (trim) {
+                        list.add(sb.toString().trim());
+                    } else {
+                        list.add(sb.toString());
+                    }
+                    sb.delete(0, sb.length());
+                    expecting = (CHAR | DELIMITER | STARTQUOTE);
+                } else if ((c == '"') && ((expecting & STARTQUOTE) > 0)) {
+                    sb.append(c);
+                    expecting = CHAR | ENDQUOTE;
+                } else if ((c == '"') && ((expecting & ENDQUOTE) > 0)) {
+                    sb.append(c);
+                    expecting = (CHAR | STARTQUOTE | DELIMITER);
+                } else if ((expecting & CHAR) > 0) {
+                    sb.append(c);
+                } else {
+                    throw new IllegalArgumentException("Invalid delimited string: " + value);
+                }
+
+                isEscaped = false;
+            }
+
+            if (sb.length() > 0) {
+                if (trim) {
+                    list.add(sb.toString().trim());
+                } else {
+                    list.add(sb.toString());
+                }
+            }
+
+            return list;
+        }
+
+        private static void coerceCapabilityClauses(final List<HeaderClause> clauses) {
+            clauses.forEach(clause -> clause.types.forEach((key, type) -> {
+                if (!type.equals("String")) {
+                    if (type.equals("Double")) {
+                        clause.attributes.put(
+                                key,
+                                new Double(clause.attributes.get(key).toString().trim()));
+                    } else if (type.equals("Version")) {
+                        clause.attributes.put(
+                                key,
+                                new Version(clause.attributes.get(key).toString().trim()));
+                    } else if (type.equals("Long")) {
+                        clause.attributes.put(
+                                key,
+                                Long.valueOf(clause.attributes.get(key).toString().trim()));
+                    } else if (type.startsWith("List")) {
+                        final int startIdx = type.indexOf('<');
+                        final int endIdx = type.indexOf('>');
+                        if ((startIdx > 0 && endIdx <= startIdx) || (startIdx < 0 && endIdx > 0)) {
+                            throw new IllegalArgumentException("Invalid Provide-Capability attribute list type for '"
+                                    + key + "' : " + type);
+                        }
+
+                        final String listType;
+                        if (endIdx > startIdx) {
+                            listType = type.substring(startIdx + 1, endIdx).trim();
+                        } else {
+                            listType = "String";
+                        }
+
+                        final List<String> tokens = parseDelimitedString(
+                                clause.attributes.get(key).toString(), ",", false);
+                        clause.attributes.put(key, tokens.stream()
+                                .map(token -> {
+                                    switch (listType) {
+                                        case "String":
+                                            return token;
+                                        case "Double":
+                                            return Double.valueOf(token.trim());
+                                        case "Version":
+                                            return new Version(token.trim());
+                                        case "Long":
+                                            return Long.valueOf(token.trim());
+                                        default:
+                                            throw new IllegalArgumentException(
+                                                    "Unknown Provide-Capability attribute list type for '"
+                                                            + key + "' : " + type);
+                                    }
+                                }).collect(toList()));
+                    } else {
+                        throw new IllegalArgumentException("Unknown Provide-Capability attribute type for '" +
+                                key + "' : " + type);
+                    }
+                }
+            }));
+        }
     }
 }

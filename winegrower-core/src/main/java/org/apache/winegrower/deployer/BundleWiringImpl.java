@@ -21,7 +21,10 @@ import java.net.URL;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
+import org.apache.winegrower.service.BundleRegistry;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.wiring.BundleCapability;
 import org.osgi.framework.wiring.BundleRequirement;
@@ -34,11 +37,11 @@ import org.osgi.resource.Wire;
 
 public class BundleWiringImpl implements BundleWiring {
     private final BundleImpl bundle;
-    private final BundleRevision revision;
+    private final BundleRegistry registry;
 
-    BundleWiringImpl(final BundleImpl bundle) {
+    BundleWiringImpl(final BundleImpl bundle, final BundleRegistry registry) {
         this.bundle = bundle;
-        this.revision = new BundleRevisionImpl(bundle, this);
+        this.registry = registry;
     }
 
     @Override
@@ -53,12 +56,22 @@ public class BundleWiringImpl implements BundleWiring {
 
     @Override
     public List<BundleCapability> getCapabilities(final String namespace) {
-        return emptyList();
+        return bundle.getCapabilities().stream()
+                .filter(c -> Objects.equals(c.getNamespace(), namespace))
+                .map(capability -> new BundleCapabilityImpl(
+                        bundle.adapt(BundleRevision.class), capability.getNamespace(),
+                        capability.getDirectives(), capability.getAttributes()))
+                .collect(toList());
     }
 
     @Override
     public List<BundleRequirement> getRequirements(final String namespace) {
-        return emptyList();
+        return bundle.getRequirements().stream()
+                .filter(r -> Objects.equals(r.getNamespace(), namespace))
+                .map(requirement -> new BundleRequirementImpl(
+                        bundle.adapt(BundleRevision.class), requirement.getNamespace(),
+                        requirement.getDirectives(), requirement.getAttributes(), requirement.getFilter()))
+                .collect(toList());
     }
 
     @Override
@@ -68,12 +81,15 @@ public class BundleWiringImpl implements BundleWiring {
 
     @Override
     public List<BundleWire> getRequiredWires(final String namespace) {
-        return emptyList();
+        return bundle.getRequirements().stream()
+                .map(requirement -> toWire(requirement, registry.getBundles()))
+                .filter(Objects::nonNull)
+                .collect(toList());
     }
 
     @Override
     public BundleRevision getRevision() {
-        return revision;
+        return bundle.adapt(BundleRevision.class);
     }
 
     @Override
@@ -125,11 +141,28 @@ public class BundleWiringImpl implements BundleWiring {
 
     @Override
     public BundleRevision getResource() {
-        return revision;
+        return bundle.adapt(BundleRevision.class);
     }
 
     @Override
     public Bundle getBundle() {
         return bundle;
+    }
+
+    private BundleWire toWire(final BundleRequirementImpl requirement, final Map<Long, OSGiBundleLifecycle> bundles) {
+        return bundles.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .filter(e -> e.getValue().getBundle().getCapabilities().stream()
+                        .anyMatch(requirement::matches))
+                .findFirst()
+                .map(e -> e.getValue().getBundle())
+                .map(bundle -> new BundleWireImpl(
+                        this.bundle.adapt(BundleRevision.class), bundle.adapt(BundleRevision.class),
+                        this.bundle.adapt(BundleWiring.class), bundle.adapt(BundleWiring.class), requirement,
+                        bundle.getCapabilities().stream()
+                                .filter(requirement::matches).findFirst()
+                                .orElseThrow(() -> new IllegalArgumentException(
+                                        "Missing capability " + requirement + " in " + bundle))))
+                .orElse(null);
     }
 }
