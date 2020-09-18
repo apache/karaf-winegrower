@@ -28,11 +28,11 @@
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>winegrower-documentation</artifactId>
-  <name>Apache Winegrower :: Extension :: CDI</name>
+  <name>Apache Winegrower :: Documentation</name>
 
   <properties>
     <documentation.theme.url>scm:git:https://github.com/apache/karaf-decanter.git</documentation.theme.url>
-    <groovy.version>2.5.3</groovy.version>
+    <groovy.version>3.0.5</groovy.version>
   </properties>
 
   <build>
@@ -52,7 +52,7 @@
               <checkoutDirectory>${project.basedir}/.asciidoctor/theme</checkoutDirectory>
               <connectionUrl>${documentation.theme.url}</connectionUrl>
               <developerConnectionUrl>${documentation.theme.url}</developerConnectionUrl>
-              <tagBase>decanter-2.1.0</tagBase>
+              <tagBase>decanter-2.5.0</tagBase>
               <skipCheckoutIfExists>true</skipCheckoutIfExists>
             </configuration>
           </execution>
@@ -86,12 +86,12 @@
           <dependency>
             <groupId>org.asciidoctor</groupId>
             <artifactId>asciidoctorj</artifactId>
-            <version>1.5.7</version>
+            <version>2.4.0</version>
           </dependency>
           <dependency>
             <groupId>org.eclipse.jgit</groupId>
             <artifactId>org.eclipse.jgit</artifactId>
-            <version>4.9.2.201712150930-r</version>
+            <version>5.8.1.202007141445-r</version>
           </dependency>
         </dependencies>
       </plugin>

@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        java: [ '1.8', '11.0.4' ]
+        java: [ '11.0.4' ]
     steps:
     - name: Clone
       uses: actions/checkout@v1
@@ -62,7 +62,7 @@ jobs:
     - name: Set up JDK
       uses: actions/setup-java@v1
       with:
-        java-version: '1.8'
+        java-version: '11.0.4'
     - name: Build
       run: mvn install -DskipTests ossindex:audit
     - name: Remove Snapshots Before Caching
