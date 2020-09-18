@@ -13,9 +13,12 @@
  */
 package org.apache.winegrower.examples;
 
+import org.osgi.annotation.bundle.Header;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.Constants;
 
+@Header(name = Constants.BUNDLE_ACTIVATOR, value = "${@class}")
 public class Simple implements BundleActivator {
 
   public void start(BundleContext bundleContext) {
