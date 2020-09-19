@@ -13,17 +13,21 @@
  */
 package org.apache.winegrower.examples;
 
+import org.osgi.annotation.bundle.Header;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 
+import static org.osgi.framework.Constants.BUNDLE_ACTIVATOR;
+
+@Header(name = BUNDLE_ACTIVATOR, value = "${@class}")
 public class Simple implements BundleActivator {
 
-  public void start(BundleContext bundleContext) {
-    System.out.println("Starting simple winegrower application");
-  }
+    public void start(BundleContext bundleContext) {
+        System.out.println("Starting simple winegrower application");
+    }
 
-  public void stop(BundleContext bundleContext) {
-    System.out.println("Stopping simple winegrower application");
-  }
+    public void stop(BundleContext bundleContext) {
+        System.out.println("Stopping simple winegrower application");
+    }
 
 }
