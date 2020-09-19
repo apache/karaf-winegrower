@@ -40,6 +40,7 @@ import java.util.jar.Manifest;
 import java.util.stream.Stream;
 
 import org.apache.winegrower.Ripener;
+import org.apache.winegrower.scanner.manifest.ManifestContributor;
 import org.apache.winegrower.scanner.manifest.ManifestCreator;
 import org.apache.xbean.finder.AnnotationFinder;
 import org.apache.xbean.finder.ClassLoaders;
@@ -192,7 +193,7 @@ public class StandaloneScanner {
     }
 
     private Manifest tryLoadManifest(final Archive archive, final String name) {
-        final AnnotationFinder archiveFinder = new AnnotationFinder(archive, false);
+        final AnnotationFinder archiveFinder = new ManifestContributor.WinegrowerAnnotationFinder(archive, false);
         final ManifestCreator manifestCreator = new ManifestCreator(name);
         configuration.getManifestContributors()
                 .forEach(c -> c.contribute(archiveFinder, manifestCreator));

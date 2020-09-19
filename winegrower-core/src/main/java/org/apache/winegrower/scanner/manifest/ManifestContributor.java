@@ -13,11 +13,34 @@
  */
 package org.apache.winegrower.scanner.manifest;
 
+import org.apache.xbean.finder.AnnotationFinder;
+import org.apache.xbean.finder.archive.Archive;
+
+import java.util.List;
 import java.util.function.Supplier;
 import java.util.jar.Manifest;
 
-import org.apache.xbean.finder.AnnotationFinder;
+import static java.util.stream.Collectors.toList;
 
 public interface ManifestContributor {
     void contribute(final AnnotationFinder finder, final Supplier<Manifest> manifest);
+
+    class WinegrowerAnnotationFinder extends AnnotationFinder {
+        public WinegrowerAnnotationFinder(final Archive archive, final boolean checkRuntimeAnnotation) {
+            super(archive, checkRuntimeAnnotation);
+        }
+
+        // todo: port over xbean
+        public List<Class<?>> findAnnotatedClasses(final String annotation) {
+            return this.getAnnotationInfos(annotation).stream()
+                    .map(it -> {
+                        try {
+                            return AnnotationFinder.ClassInfo.class.cast(it).get();
+                        } catch (final ClassNotFoundException var8) {
+                            // skip
+                            return null;
+                        }
+                    }).collect(toList());
+        }
+    }
 }

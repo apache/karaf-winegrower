@@ -13,14 +13,12 @@
  */
 package org.apache.winegrower.scanner.manifest;
 
-import static java.util.stream.Collectors.toMap;
-import static org.apache.xbean.asm8.ClassReader.SKIP_CODE;
-import static org.apache.xbean.asm8.ClassReader.SKIP_DEBUG;
-import static org.apache.xbean.asm8.ClassReader.SKIP_FRAMES;
-import static org.apache.xbean.asm8.Opcodes.ASM8;
+import org.apache.xbean.asm8.AnnotationVisitor;
+import org.apache.xbean.asm8.ClassReader;
+import org.apache.xbean.asm8.ClassVisitor;
+import org.apache.xbean.finder.AnnotationFinder;
 
 import java.io.InputStream;
-import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -31,10 +29,11 @@ import java.util.function.Supplier;
 import java.util.jar.Manifest;
 import java.util.stream.Stream;
 
-import org.apache.xbean.asm8.AnnotationVisitor;
-import org.apache.xbean.asm8.ClassReader;
-import org.apache.xbean.asm8.ClassVisitor;
-import org.apache.xbean.finder.AnnotationFinder;
+import static java.util.stream.Collectors.toMap;
+import static org.apache.xbean.asm8.ClassReader.SKIP_CODE;
+import static org.apache.xbean.asm8.ClassReader.SKIP_DEBUG;
+import static org.apache.xbean.asm8.ClassReader.SKIP_FRAMES;
+import static org.apache.xbean.asm8.Opcodes.ASM8;
 
 public class HeaderManifestContributor implements ManifestContributor {
 
@@ -44,13 +43,9 @@ public class HeaderManifestContributor implements ManifestContributor {
         final List<Class<?>> headerClasses;
         final List<Class<?>> headersClasses;
         try {
-            final Class<? extends Annotation> headerAnnotation = (Class<? extends Annotation>)
-                    loader.loadClass("org.osgi.annotation.bundle.Header");
-            final Class<? extends Annotation> headersAnnotation = (Class<? extends Annotation>)
-                    loader.loadClass("org.osgi.annotation.bundle.Headers");
-
-            headerClasses = finder.findAnnotatedClasses(headerAnnotation);
-            headersClasses = finder.findAnnotatedClasses(headersAnnotation);
+            final WinegrowerAnnotationFinder waf = WinegrowerAnnotationFinder.class.cast(finder); // temp, see impl
+            headerClasses = waf.findAnnotatedClasses("org.osgi.annotation.bundle.Header");
+            headersClasses = waf.findAnnotatedClasses("org.osgi.annotation.bundle.Headers");
             if (headerClasses.isEmpty() && headersClasses.isEmpty()) { // reuse the finder to ensure it exists
                 return;
             }
