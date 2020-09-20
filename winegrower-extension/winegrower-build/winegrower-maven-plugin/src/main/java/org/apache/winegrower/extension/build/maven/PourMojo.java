@@ -90,7 +90,7 @@ public class PourMojo extends AbstractMojo {
                         new CountDownLatch(1).await();
                     } catch (final InterruptedException e) {
                         Thread.currentThread()
-                              .interrupt();
+                                .interrupt();
                     }
                 }
             };
@@ -114,12 +114,12 @@ public class PourMojo extends AbstractMojo {
 
     private ClassLoader createClassLoader(final ClassLoader parent) {
         final List<File> jars = Stream.concat(project.getArtifacts().stream()
-            .filter(a -> !((dependencyScopes == null && !(Artifact.SCOPE_COMPILE.equals(
-                a.getScope()) || Artifact.SCOPE_RUNTIME.equals(
-                a.getScope()))) || (dependencyScopes != null && !dependencyScopes.contains(
-                a.getScope()))))
-            .map(Artifact::getFile), Stream.of(project.getBuild().getOutputDirectory()).map(File::new).filter(File::exists))
-            .collect(toList());
+                .filter(a -> !((dependencyScopes == null && !(Artifact.SCOPE_COMPILE.equals(
+                        a.getScope()) || Artifact.SCOPE_RUNTIME.equals(
+                        a.getScope()))) || (dependencyScopes != null && !dependencyScopes.contains(
+                        a.getScope()))))
+                .map(Artifact::getFile), Stream.of(project.getBuild().getOutputDirectory()).map(File::new).filter(File::exists))
+                .collect(toList());
         final List<URL> urls = jars.stream().map(file -> {
             try {
                 return file.toURI().toURL();
@@ -128,9 +128,9 @@ public class PourMojo extends AbstractMojo {
             }
         }).collect(toList());
         final boolean excludeOsgi = jars.stream()
-             .anyMatch(it -> it.getName().startsWith("org.osgi.") || it.getName().startsWith("osgi."));
+                .anyMatch(it -> it.getName().startsWith("org.osgi.") || it.getName().startsWith("osgi."));
         final boolean hasWinegrower = jars.stream()
-             .anyMatch(it -> it.getName().startsWith("winegrower-core"));
+                .anyMatch(it -> it.getName().startsWith("winegrower-core"));
         if (excludeOsgi) {
             // add build-common
             final File buildCommon = Files.toFile(parent.getResource("org/apache/winegrower/extension/build/common/Run.class"));
@@ -163,11 +163,11 @@ public class PourMojo extends AbstractMojo {
                     }
                 }) {
 
-                    @Override
-                    public boolean equals(final Object obj) {
-                        return super.equals(obj) || parent.equals(obj);
-                    }
-                };
+            @Override
+            public boolean equals(final Object obj) {
+                return super.equals(obj) || parent.equals(obj);
+            }
+        };
     }
 
     private Object createConfiguration(final Class<?> configClass)
@@ -176,6 +176,8 @@ public class PourMojo extends AbstractMojo {
         ofNullable(workDir)
                 .ifPresent(value -> doCall(configuration, "setWorkDir", new Class<?>[]{File.class}, new Object[]{value}));
         ofNullable(prioritizedBundles)
+                .filter(it -> !it.isEmpty())
+                .map(it -> it.stream().filter(v -> !"empty".equals(v)).collect(toList()))
                 .ifPresent(value -> doCall(configuration, "setPrioritizedBundles", new Class<?>[]{List.class}, new Object[]{value}));
         ofNullable(ignoredBundles)
                 .ifPresent(value -> doCall(configuration, "setIgnoredBundles", new Class<?>[]{Collection.class}, new Object[]{value}));
@@ -184,27 +186,29 @@ public class PourMojo extends AbstractMojo {
         ofNullable(scanningExcludes)
                 .ifPresent(value -> doCall(configuration, "setScanningExcludes", new Class<?>[]{Collection.class}, new Object[]{value}));
         ofNullable(manifestContributors)
+                .filter(it -> !it.isEmpty())
                 .ifPresent(contributors -> {
                     try {
                         final Class<?> type = Thread.currentThread().getContextClassLoader().loadClass(
                                 "org.apache.winegrower.scanner.manifest.ManifestContributor");
                         final Collection<?> value = contributors.stream()
-                                                                .map(clazz -> {
-                                                                    try {
-                                                                        return Thread.currentThread()
-                                                                                     .getContextClassLoader()
-                                                                                     .loadClass(clazz)
-                                                                                     .getConstructor()
-                                                                                     .newInstance();
-                                                                    } catch (final InstantiationException | NoSuchMethodException | IllegalAccessException | ClassNotFoundException e) {
-                                                                        throw new IllegalArgumentException(e);
-                                                                    } catch (final InvocationTargetException e) {
-                                                                        throw new IllegalArgumentException(
-                                                                                e.getTargetException());
-                                                                    }
-                                                                })
-                                                                .map(type::cast)
-                                                                .collect(toList());
+                                .filter(it -> !"empty".equals(it))
+                                .map(clazz -> {
+                                    try {
+                                        return Thread.currentThread()
+                                                .getContextClassLoader()
+                                                .loadClass(clazz)
+                                                .getConstructor()
+                                                .newInstance();
+                                    } catch (final InstantiationException | NoSuchMethodException | IllegalAccessException | ClassNotFoundException e) {
+                                        throw new IllegalArgumentException(e);
+                                    } catch (final InvocationTargetException e) {
+                                        throw new IllegalArgumentException(
+                                                e.getTargetException());
+                                    }
+                                })
+                                .map(type::cast)
+                                .collect(toList());
                         doCall(configuration, "setManifestContributors", new Class<?>[]{Collection.class}, new Object[]{value});
                     } catch (final ClassNotFoundException e) {
                         throw new IllegalArgumentException(e);
@@ -216,7 +220,7 @@ public class PourMojo extends AbstractMojo {
                 .ifPresent(filter -> {
                     try {
                         final Predicate<String> predicate = (Predicate<String>) Thread.currentThread()
-                                                                                      .getContextClassLoader().loadClass(filter).getConstructor().newInstance();
+                                .getContextClassLoader().loadClass(filter).getConstructor().newInstance();
                         doCall(configuration, "setJarFilter", new Class<?>[]{Predicate.class}, new Object[]{predicate});
                     } catch (final InstantiationException | NoSuchMethodException | IllegalAccessException | ClassNotFoundException e) {
                         throw new IllegalArgumentException(e);
