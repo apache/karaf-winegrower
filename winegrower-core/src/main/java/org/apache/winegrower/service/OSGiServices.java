@@ -136,13 +136,17 @@ public class OSGiServices {
         }
     }
 
-    public synchronized void addListener(final ServiceListener listener, final Filter filter,
+    public void addListener(final ServiceListener listener, final Filter filter,
                                          final BundleContext context) {
-        serviceListeners.add(new ServiceListenerDefinition(listener, filter, context));
+        synchronized (serviceListeners) {
+            serviceListeners.add(new ServiceListenerDefinition(listener, filter, context));
+        }
     }
 
-    public synchronized void removeListener(final ServiceListener listener) {
-        serviceListeners.removeIf(d -> d.listener == listener);
+    public void removeListener(final ServiceListener listener) {
+        synchronized (serviceListeners) {
+            serviceListeners.removeIf(d -> d.listener == listener);
+        }
     }
 
     public ServiceRegistration<?> registerService(final String[] classes, final Object service,
