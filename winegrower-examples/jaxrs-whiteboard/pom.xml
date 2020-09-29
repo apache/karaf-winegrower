@@ -45,7 +45,7 @@
     </dependency>
     <dependency>
       <groupId>org.apache.winegrower.cepages</groupId>
-      <artifactId>jaxrs</artifactId>
+      <artifactId>winegrower-cepage-jaxrs</artifactId>
       <version>${project.version}</version>
       <type>pom</type>
     </dependency>
