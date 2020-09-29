@@ -102,7 +102,7 @@ public @interface WithRipener {
             thread.setContextClassLoader(loader);
 
             final Ripener.Configuration configuration = new Ripener.Configuration();
-            configuration.setScanningExcludes(singletonList("test-classes"));
+            configuration.setScanningExcludes(asList("common-java5-" /* surefire, yes... */, "test-classes"));
             setConfiguration(configuration, config);
 
             final Ripener ripener = new Ripener.Impl(configuration).start();

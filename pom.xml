@@ -37,10 +37,11 @@
   <name>Apache Winegrower</name>
 
   <properties>
-    <junit.version>5.6.2</junit.version>
+    <junit.version>5.7.0</junit.version>
     <osgi.version>7.0.0</osgi.version>
     <slf4j.version>1.7.30</slf4j.version>
-    <xbean.version>4.17</xbean.version>
+    <xbean.version>4.18</xbean.version>
+    <aries-cdi.version>1.1.0</aries-cdi.version>
 
     <surefire.log.level>INFO</surefire.log.level>
 
@@ -137,8 +138,9 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>3.0.0-M3</version>
+        <version>3.0.0-M5</version>
         <configuration>
+          <trimStackTrace>false</trimStackTrace>
           <systemPropertyVariables>
             <org.slf4j.simpleLogger.defaultLogLevel>${surefire.log.level}</org.slf4j.simpleLogger.defaultLogLevel>
             <org.slf4j.simpleLogger.logFile>System.out</org.slf4j.simpleLogger.logFile>

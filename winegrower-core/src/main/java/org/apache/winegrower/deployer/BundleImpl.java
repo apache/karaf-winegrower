@@ -13,10 +13,23 @@
  */
 package org.apache.winegrower.deployer;
 
-import static java.util.Collections.enumeration;
-import static java.util.Collections.list;
-import static java.util.Optional.ofNullable;
-import static java.util.stream.Collectors.toList;
+import org.apache.winegrower.Ripener;
+import org.apache.winegrower.service.BundleRegistry;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleEvent;
+import org.osgi.framework.BundleListener;
+import org.osgi.framework.Constants;
+import org.osgi.framework.Filter;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.InvalidSyntaxException;
+import org.osgi.framework.ServiceReference;
+import org.osgi.framework.ServiceRegistration;
+import org.osgi.framework.Version;
+import org.osgi.framework.dto.ServiceReferenceDTO;
+import org.osgi.framework.wiring.BundleRevision;
+import org.osgi.framework.wiring.BundleRevisions;
+import org.osgi.framework.wiring.BundleWiring;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,21 +57,13 @@ import java.util.stream.Collector;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 
-import org.apache.winegrower.Ripener;
-import org.apache.winegrower.service.BundleRegistry;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.BundleEvent;
-import org.osgi.framework.BundleListener;
-import org.osgi.framework.Constants;
-import org.osgi.framework.Filter;
-import org.osgi.framework.FrameworkUtil;
-import org.osgi.framework.InvalidSyntaxException;
-import org.osgi.framework.ServiceReference;
-import org.osgi.framework.ServiceRegistration;
-import org.osgi.framework.Version;
-import org.osgi.framework.wiring.BundleRevision;
-import org.osgi.framework.wiring.BundleWiring;
+import static java.util.Collections.enumeration;
+import static java.util.Collections.list;
+import static java.util.Collections.singletonList;
+import static java.util.Optional.ofNullable;
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 
 public class BundleImpl implements Bundle {
     private final File file;
@@ -417,6 +422,37 @@ public class BundleImpl implements Bundle {
                 }
             }
             return type.cast(bundleRevision);
+        }
+        if (BundleRevisions.class == type) {
+            return type.cast(new BundleRevisions() {
+                @Override
+                public Bundle getBundle() {
+                    return BundleImpl.this;
+                }
+
+                @Override
+                public List<BundleRevision> getRevisions() {
+                    return singletonList(bundleRevision);
+                }
+            });
+        }
+        if (BundleContext.class == type) {
+            return type.cast(context);
+        }
+        if (ServiceReferenceDTO[].class == type) {
+            return type.cast(Stream.of(getRegisteredServices())
+                    .map(s -> {
+                        final ServiceReferenceDTO dto = new ServiceReferenceDTO();
+                        dto.bundle = getBundleId();
+                        dto.id = Long.class.cast(s.getProperty(Constants.SERVICE_ID));
+                        dto.properties = list(s.getProperties().keys()).stream()
+                                .collect(toMap(identity(), s::getProperty));
+                        dto.usingBundles = ofNullable(s.getUsingBundles())
+                                .map(bundles -> Stream.of(bundles).mapToLong(Bundle::getBundleId).toArray())
+                                .orElseGet(() -> new long[0]);
+                        return dto;
+                    })
+                    .toArray(ServiceReferenceDTO[]::new));
         }
         return null;
     }

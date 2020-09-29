@@ -82,6 +82,7 @@ public class BundleWiringImpl implements BundleWiring {
     @Override
     public List<BundleWire> getRequiredWires(final String namespace) {
         return bundle.getRequirements().stream()
+                .filter(it -> Objects.equals(it.getNamespace(), namespace))
                 .map(requirement -> toWire(requirement, registry.getBundles()))
                 .filter(Objects::nonNull)
                 .collect(toList());

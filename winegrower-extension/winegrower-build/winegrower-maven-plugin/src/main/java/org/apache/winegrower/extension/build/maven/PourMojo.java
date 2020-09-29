@@ -13,9 +13,13 @@
  */
 package org.apache.winegrower.extension.build.maven;
 
-import static java.util.Optional.ofNullable;
-import static java.util.stream.Collectors.toList;
-import static org.apache.maven.plugins.annotations.ResolutionScope.RUNTIME_PLUS_SYSTEM;
+import org.apache.maven.artifact.Artifact;
+import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.project.MavenProject;
+import org.apache.xbean.finder.util.Files;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,13 +35,9 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import org.apache.maven.artifact.Artifact;
-import org.apache.maven.plugin.AbstractMojo;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugins.annotations.Mojo;
-import org.apache.maven.plugins.annotations.Parameter;
-import org.apache.maven.project.MavenProject;
-import org.apache.xbean.finder.util.Files;
+import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.toList;
+import static org.apache.maven.plugins.annotations.ResolutionScope.RUNTIME_PLUS_SYSTEM;
 
 @Mojo(name = "pour", requiresDependencyResolution = RUNTIME_PLUS_SYSTEM)
 public class PourMojo extends AbstractMojo {
@@ -140,29 +140,9 @@ public class PourMojo extends AbstractMojo {
                 throw new IllegalArgumentException(e);
             }
         }
-        return urls.isEmpty() ? parent : new URLClassLoader(
-                urls.toArray(new URL[0]),
-                !excludeOsgi || !hasWinegrower ? parent : new ClassLoader(parent) {
-                    @Override
-                    protected Class<?> loadClass(final String name, final boolean resolve) throws ClassNotFoundException {
-                        if (name.startsWith("org.")) {
-                            final String sub = name.substring("org.".length());
-                            if (sub.startsWith("osgi.")) {
-                                throw new ClassNotFoundException(name);
-                            } else if (sub.startsWith("apache.")) {
-                                final String apache = sub.substring("apache.".length());
-                                if (apache.startsWith("winegrower.")) {
-                                    throw new ClassNotFoundException(name);
-                                }
-                                if (apache.startsWith("xbean.")) {
-                                    throw new ClassNotFoundException(name);
-                                }
-                            }
-                        }
-                        return super.loadClass(name, resolve);
-                    }
-                }) {
-
+        final ClassLoader workaroundMaven = new WorkAroundMavenClassLoader(parent);
+        final ClassLoader parentLoader = !excludeOsgi || !hasWinegrower ? workaroundMaven : new IgnoreWinegrowerckClassLoader(workaroundMaven);
+        return urls.isEmpty() ? workaroundMaven : new URLClassLoader(urls.toArray(new URL[0]), parentLoader) {
             @Override
             public boolean equals(final Object obj) {
                 return super.equals(obj) || parent.equals(obj);
@@ -245,6 +225,48 @@ public class PourMojo extends AbstractMojo {
                 throw RuntimeException.class.cast(ex);
             }
             throw new IllegalStateException(ex);
+        }
+    }
+
+    private static class WorkAroundMavenClassLoader extends ClassLoader {
+        private WorkAroundMavenClassLoader(final ClassLoader parent) {
+            super(parent);
+        }
+
+        @Override
+        public Class<?> loadClass(final String name, final boolean resolve) throws ClassNotFoundException {
+            if (name.startsWith("javax.")) {
+                final String sub = name.substring("javax.".length());
+                if (sub.startsWith("enterprise.") || sub.startsWith("decorator.")) { // maven has an outdated cdi-api
+                    throw new ClassNotFoundException(name);
+                }
+            }
+            return getParent().loadClass(name);
+        }
+    }
+
+    private static class IgnoreWinegrowerckClassLoader extends ClassLoader {
+        private IgnoreWinegrowerckClassLoader(final ClassLoader workaroundMaven) {
+            super(workaroundMaven);
+        }
+
+        @Override
+        protected Class<?> loadClass(final String name, final boolean resolve) throws ClassNotFoundException {
+            if (name.startsWith("org.")) {
+                final String sub = name.substring("org.".length());
+                if (sub.startsWith("osgi.")) {
+                    throw new ClassNotFoundException(name);
+                } else if (sub.startsWith("apache.")) {
+                    final String apache = sub.substring("apache.".length());
+                    if (apache.startsWith("winegrower.")) {
+                        throw new ClassNotFoundException(name);
+                    }
+                    if (apache.startsWith("xbean.")) {
+                        throw new ClassNotFoundException(name);
+                    }
+                }
+            }
+            return super.loadClass(name, resolve);
         }
     }
 }

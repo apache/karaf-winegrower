@@ -93,9 +93,12 @@ public class ServiceReferenceImpl<T> implements ServiceReference<T> {
         return properties;
     }
 
-    public boolean unget() {
+    public boolean unget(final Object instance) {
         if (usesFactory) {
-            throw new UnsupportedOperationException();
+            if (instance == null) {
+                return false;
+            }
+            ServiceFactory.class.cast(reference).ungetService(bundle, registration, instance);
         }
         return true;
     }

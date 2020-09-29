@@ -30,7 +30,7 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>jaxrs</artifactId>
+  <artifactId>winegrower-cepage-jaxrs</artifactId>
   <name>Apache Winegrower :: Cepages :: JAXRS</name>
   <packaging>pom</packaging>
 
