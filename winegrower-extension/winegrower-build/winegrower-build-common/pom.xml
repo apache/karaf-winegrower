@@ -61,7 +61,7 @@
       <version>${xbean.version}</version>
       <exclusions>
         <exclusion>
-          <groupId>*</groupId>
+          <groupId>org.ow2.asm</groupId>
           <artifactId>*</artifactId>
         </exclusion>
       </exclusions>
