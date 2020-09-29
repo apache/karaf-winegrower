@@ -124,6 +124,7 @@ public interface Ripener extends AutoCloseable {
                 "org.apache.aries.blueprint.core",
                 "org.apache.aries.blueprint.cm",
                 "pax-web-extender-whiteboard",
+                "org.apache.felix.http.jetty",
                 "org.apache.aries.jax.rs.whiteboard",
                 "pax-web-runtime",
                 "org.apache.aries.cdi");
