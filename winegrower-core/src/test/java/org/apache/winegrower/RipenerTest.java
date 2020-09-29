@@ -86,13 +86,13 @@ class RipenerTest {
     @Test
     @WithRipener
     void ensureFrameworkBundle(@Service final Ripener ripener) {
-        assertEquals(10, ripener.getRegistry().getBundles().size());
+        assertEquals(5, ripener.getRegistry().getBundles().size(), () -> ripener.getRegistry().getBundles().toString());
     }
 
     @Test
     @WithRipener(includeResources = @Entry(path = "org.apache.winegrower.test.implicitactivator"))
     void implicitActivator(@Service final Ripener ripener) {
-        assertEquals(11, ripener.getRegistry().getBundles().size());
+        assertEquals(6, ripener.getRegistry().getBundles().size());
 
         final BundleActivatorHandler activatorHandler = ripener.getRegistry().getBundles().values().stream()
                 .filter(it -> it.getActivator() != null)
@@ -111,7 +111,7 @@ class RipenerTest {
     @WithRipener(includeResources = @Entry(path = "org.apache.winegrower.test.simpleactivator"))
     void simpleActivator(@Service final Ripener ripener) {
         final Map<Long, OSGiBundleLifecycle> bundles = ripener.getRegistry().getBundles();
-        assertEquals(11 /*includes junit5 with v >= 5.6*/, bundles.size());
+        assertEquals(6, bundles.size());
 
         final BundleActivatorHandler activatorHandler = ripener.getRegistry().getBundles().values().stream()
                 .filter(it -> it.getActivator() != null)
@@ -134,8 +134,8 @@ class RipenerTest {
     @Test
     @WithRipener(includeResources = @Entry(path = "org.apache.winegrower.test.simpleservice"))
     void simpleServiceRegistration(@Service final Ripener ripener) {
-        // config admin + event admin + myservice
-        assertEquals(3, ripener.getServices().getServices().size());
+        // config admin + event admin + loggerfactory + myservice
+        assertEquals(4, ripener.getServices().getServices().size());
     }
 
     @Test
@@ -153,7 +153,7 @@ class RipenerTest {
     }
 
     private void validateTracker(final Ripener ripener) {
-        assertEquals(3, ripener.getServices().getServices().size());
+        assertEquals(4, ripener.getServices().getServices().size());
 
         final Map<String, BundleActivatorHandler> activatorHandler = ripener.getRegistry().getBundles().values().stream()
                 .filter(it -> it.getActivator() != null)

@@ -65,5 +65,12 @@
       <artifactId>slf4j-simple</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>org.apache.aries.cdi</groupId>
+      <artifactId>org.apache.aries.cdi.extra</artifactId>
+      <version>${aries-cdi.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 </project>

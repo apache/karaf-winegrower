@@ -13,13 +13,25 @@
  */
 package org.apache.winegrower;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
-import static java.util.Locale.ROOT;
-import static java.util.Optional.ofNullable;
-import static java.util.function.Function.identity;
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
+import org.apache.winegrower.deployer.OSGiBundleLifecycle;
+import org.apache.winegrower.scanner.StandaloneScanner;
+import org.apache.winegrower.scanner.manifest.HeaderManifestContributor;
+import org.apache.winegrower.scanner.manifest.KarafCommandManifestContributor;
+import org.apache.winegrower.scanner.manifest.ManifestContributor;
+import org.apache.winegrower.scanner.manifest.OSGIInfContributor;
+import org.apache.winegrower.scanner.manifest.OSGiCDIManifestContributor;
+import org.apache.winegrower.scanner.manifest.RequirementManifestContributor;
+import org.apache.winegrower.service.BundleRegistry;
+import org.apache.winegrower.service.DefaultConfigurationAdmin;
+import org.apache.winegrower.service.DefaultEventAdmin;
+import org.apache.winegrower.service.OSGiServices;
+import org.apache.winegrower.service.Slf4jOSGiLoggerFactory;
+import org.osgi.framework.ServiceReference;
+import org.osgi.service.cm.ConfigurationAdmin;
+import org.osgi.service.cm.ConfigurationListener;
+import org.osgi.service.event.EventAdmin;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -52,22 +64,13 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import org.apache.winegrower.deployer.OSGiBundleLifecycle;
-import org.apache.winegrower.scanner.StandaloneScanner;
-import org.apache.winegrower.scanner.manifest.HeaderManifestContributor;
-import org.apache.winegrower.scanner.manifest.KarafCommandManifestContributor;
-import org.apache.winegrower.scanner.manifest.ManifestContributor;
-import org.apache.winegrower.scanner.manifest.OSGIInfContributor;
-import org.apache.winegrower.service.BundleRegistry;
-import org.apache.winegrower.service.DefaultConfigurationAdmin;
-import org.apache.winegrower.service.DefaultEventAdmin;
-import org.apache.winegrower.service.OSGiServices;
-import org.osgi.framework.ServiceReference;
-import org.osgi.service.cm.ConfigurationAdmin;
-import org.osgi.service.cm.ConfigurationListener;
-import org.osgi.service.event.EventAdmin;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
+import static java.util.Locale.ROOT;
+import static java.util.Optional.ofNullable;
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 
 public interface Ripener extends AutoCloseable {
     Configuration getConfiguration();
@@ -90,11 +93,15 @@ public interface Ripener extends AutoCloseable {
     void close();
 
     class Configuration {
-        private static final Collection<String> DEFAULT_EXCLUSIONS = asList( // todo: make it configurable
+        private static final Collection<String> DEFAULT_EXCLUSIONS = asList(
                 "slf4j-",
                 "xbean-",
                 "org.osgi.",
-                "opentest4j-"
+                "opentest4j-",
+                "junit-platform-",
+                "junit-jupiter-",
+                "debugger-agent",
+                "asm-"
         );
 
         private File workDir = new File(System.getProperty("java.io.tmpdir"), "karaf-boot_" + UUID.randomUUID().toString());
@@ -104,7 +111,11 @@ public interface Ripener extends AutoCloseable {
         private Collection<String> ignoredBundles = emptyList();
         private Collection<ManifestContributor> manifestContributors = Stream.concat(
                 // built-in
-                Stream.of(new KarafCommandManifestContributor(), new HeaderManifestContributor(), new OSGIInfContributor()),
+                Stream.of(
+                        new HeaderManifestContributor(), new RequirementManifestContributor(),
+                        new OSGIInfContributor(),
+                        new KarafCommandManifestContributor(),
+                        new OSGiCDIManifestContributor()),
                 // extensions
                 StreamSupport.stream(ServiceLoader.load(ManifestContributor.class).spliterator(), false)
         ).collect(toList());
@@ -114,7 +125,8 @@ public interface Ripener extends AutoCloseable {
                 "org.apache.aries.blueprint.cm",
                 "pax-web-extender-whiteboard",
                 "org.apache.aries.jax.rs.whiteboard",
-                "pax-web-runtime");
+                "pax-web-runtime",
+                "org.apache.aries.cdi");
 
         public Collection<String> getIgnoredBundles() {
             return ignoredBundles;
@@ -198,6 +210,7 @@ public interface Ripener extends AutoCloseable {
             this.eventAdmin = loadEventAdmin(eventListeners);
             registerBuiltInService(ConfigurationAdmin.class, this.configurationAdmin, new Hashtable<>());
             registerBuiltInService(EventAdmin.class, this.eventAdmin, new Hashtable<>());
+            registerBuiltInService(org.osgi.service.log.LoggerFactory.class, loadLoggerFactory(), new Hashtable<>());
 
             try (final InputStream stream = Thread.currentThread().getContextClassLoader().getResourceAsStream("winegrower.properties")) {
                 loadConfiguration(stream);
@@ -226,6 +239,14 @@ public interface Ripener extends AutoCloseable {
             };
         }
 
+        private org.osgi.service.log.LoggerFactory loadLoggerFactory() {
+            final Iterator<org.osgi.service.log.LoggerFactory> eventAdminIterator = ServiceLoader.load(org.osgi.service.log.LoggerFactory.class).iterator();
+            if (eventAdminIterator.hasNext()) {
+                return eventAdminIterator.next();
+            }
+            return new Slf4jOSGiLoggerFactory();
+        }
+
         private EventAdmin loadEventAdmin(final Collection<DefaultEventAdmin.EventHandlerInstance> listeners) {
             final Iterator<EventAdmin> eventAdminIterator = ServiceLoader.load(EventAdmin.class).iterator();
             if (eventAdminIterator.hasNext()) {
@@ -249,10 +270,10 @@ public interface Ripener extends AutoCloseable {
         // case insensitive
         public void loadConfiguration(final Properties embedConfig) {
             final Map<Object, Method> setters = Stream.of(this.configuration.getClass().getMethods())
-                .filter(it -> it.getName().startsWith("set") && it.getParameterCount() == 1)
-                .collect(toMap(it ->
-                        (Character.toLowerCase(it.getName().charAt(3)) + it.getName().substring(4)).toLowerCase(ROOT),
-                        identity()));
+                    .filter(it -> it.getName().startsWith("set") && it.getParameterCount() == 1)
+                    .collect(toMap(it ->
+                                    (Character.toLowerCase(it.getName().charAt(3)) + it.getName().substring(4)).toLowerCase(ROOT),
+                            identity()));
             final Collection<String> matched = new ArrayList<>();
             embedConfig.stringPropertyNames().stream().filter(it -> setters.containsKey(it.toLowerCase(ROOT))).forEach(key -> {
                 final String value = embedConfig.getProperty(key);
@@ -274,9 +295,9 @@ public interface Ripener extends AutoCloseable {
 
                     // from here all parameters are lists
                     final Collection<String> asList = Stream.of(value.split(","))
-                                                            .map(String::trim)
-                                                            .filter(it -> !it.isEmpty())
-                                                            .collect(toList());
+                            .map(String::trim)
+                            .filter(it -> !it.isEmpty())
+                            .collect(toList());
                     if (type == Predicate.class) { // Predicate<String> + startsWith logic
                         final Predicate<String> predicate =
                                 val -> val != null && asList.stream().anyMatch(val::startsWith);
@@ -285,18 +306,18 @@ public interface Ripener extends AutoCloseable {
                         setter.invoke(this.configuration, asList);
                     } else if (type == Collection.class
                             && ManifestContributor.class == ParameterizedType.class.cast(
-                                    setter.getParameters()[0].getParameterizedType()).getActualTypeArguments()[0]) {
+                            setter.getParameters()[0].getParameterizedType()).getActualTypeArguments()[0]) {
                         final ClassLoader loader = Thread.currentThread().getContextClassLoader();
                         setter.invoke(this.configuration, asList.stream()
-                            .map(it -> {
-                                try {
-                                    return loader.loadClass(it);
-                                } catch (final ClassNotFoundException e) {
-                                    throw new IllegalArgumentException(e);
-                                }
-                            })
-                            .collect(toList()));
-                    } else if (type == Collection.class ) { // Collection<String>
+                                .map(it -> {
+                                    try {
+                                        return loader.loadClass(it);
+                                    } catch (final ClassNotFoundException e) {
+                                        throw new IllegalArgumentException(e);
+                                    }
+                                })
+                                .collect(toList()));
+                    } else if (type == Collection.class) { // Collection<String>
                         setter.invoke(this.configuration, asList);
                     } else {
                         throw new IllegalArgumentException("Unsupported: " + setter);
@@ -311,14 +332,14 @@ public interface Ripener extends AutoCloseable {
             if (DefaultConfigurationAdmin.class.isInstance(configurationAdmin)) {
                 final DefaultConfigurationAdmin dca = DefaultConfigurationAdmin.class.cast(configurationAdmin);
                 embedConfig.stringPropertyNames()
-                           .stream()
-                           .filter(it -> it.startsWith("winegrower.service."))
-                           .peek(matched::add)
-                           .forEach(key -> dca.getProvidedConfiguration().put(key, embedConfig.getProperty(key)));
+                        .stream()
+                        .filter(it -> it.startsWith("winegrower.service."))
+                        .peek(matched::add)
+                        .forEach(key -> dca.getProvidedConfiguration().put(key, embedConfig.getProperty(key)));
             }
 
             embedConfig.stringPropertyNames().stream().filter(it -> !matched.contains(it.toLowerCase(ROOT)))
-                       .forEach(it -> LOGGER.warn("Didn't match configuration {}, did you mispell it?", it));
+                    .forEach(it -> LOGGER.warn("Didn't match configuration {}, did you mispell it?", it));
         }
 
         @Override
@@ -339,9 +360,9 @@ public interface Ripener extends AutoCloseable {
             final StandaloneScanner scanner = new StandaloneScanner(configuration, registry.getFramework());
             final AtomicLong bundleIdGenerator = new AtomicLong(1);
             Stream.concat(Stream.concat(
-                        scanner.findOSGiBundles().stream(),
-                        scanner.findPotentialOSGiBundles().stream()),
-                        scanner.findEmbeddedClasses().stream())
+                    scanner.findOSGiBundles().stream(),
+                    scanner.findPotentialOSGiBundles().stream()),
+                    scanner.findEmbeddedClasses().stream())
                     .sorted(this::compareBundles)
                     .map(it -> new OSGiBundleLifecycle(
                             it.getManifest(), it.getJar(),
@@ -359,8 +380,8 @@ public interface Ripener extends AutoCloseable {
             LOGGER.info("Stopping Apache Winegrower application on {}", LocalDateTime.now());
             final Map<Long, OSGiBundleLifecycle> bundles = registry.getBundles();
             bundles.values().stream()
-                   .sorted((o1, o2) -> (int) (o2.getBundle().getBundleId() - o1.getBundle().getBundleId()))
-                   .forEach(OSGiBundleLifecycle::stop);
+                    .sorted((o1, o2) -> (int) (o2.getBundle().getBundleId() - o1.getBundle().getBundleId()))
+                    .forEach(OSGiBundleLifecycle::stop);
             bundles.clear();
             if (configuration.getWorkDir().exists()) {
                 try {

@@ -43,13 +43,6 @@
       <groupId>org.apache.winegrower.cepages</groupId>
       <artifactId>winegrower-cepage-osgi-cdi</artifactId>
       <version>${project.version}</version>
-      <type>pom</type>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.winegrower.cepages</groupId>
-      <artifactId>winegrower-cepage-http</artifactId>
-      <version>${project.version}</version>
-      <type>pom</type>
     </dependency>
   </dependencies>
 
