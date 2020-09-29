@@ -61,6 +61,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
+import java.util.logging.Level;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -93,6 +94,14 @@ public interface Ripener extends AutoCloseable {
     void close();
 
     class Configuration {
+        static {
+            // not the most elegant way but logs are clearly misleading today
+            if ("ERROR".equals(System.setProperty("org.slf4j.simpleLogger.log.org.apache.aries.spifly",
+                    System.getProperty("org.slf4j.simpleLogger.log.org.apache.aries.spifly", "ERROR")))) {
+                java.util.logging.Logger.getLogger("org.apache.aries.spifly").setLevel(Level.SEVERE);
+            }
+        }
+
         private static final Collection<String> DEFAULT_EXCLUSIONS = asList(
                 "slf4j-",
                 "xbean-",

@@ -145,7 +145,7 @@ public class OSGiServices {
         serviceListeners.removeIf(d -> d.listener == listener);
     }
 
-    public synchronized ServiceRegistration<?> registerService(final String[] classes, final Object service,
+    public ServiceRegistration<?> registerService(final String[] classes, final Object service,
                                                                final Dictionary<String, ?> properties,
                                                                final Bundle from) {
         final Hashtable<String, Object> serviceProperties = new Hashtable<String, Object>() {
@@ -312,7 +312,11 @@ public class OSGiServices {
     }
 
     private List<ServiceListenerDefinition> getListeners(final ServiceRegistration<?> reg) {
-        return serviceListeners.stream()
+        final List<ServiceListenerDefinition> copy;
+        synchronized (serviceListeners) {
+            copy = new ArrayList<>(serviceListeners);
+        }
+        return copy.stream()
                 .filter(it -> it.filter == null || it.filter.match(reg.getReference()))
                 .collect(toList());
     }
