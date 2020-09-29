@@ -238,7 +238,7 @@ public class BundleContextImpl implements BundleContext {
         if (Constants.SCOPE_BUNDLE.equals(serviceReference.getProperty(Constants.SERVICE_SCOPE))) {
             return serviceInstances.remove(serviceReference) != null;
         }
-        return serviceReference.unget();
+        return serviceReference.unget(null);
     }
 
     @Override

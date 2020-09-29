@@ -35,7 +35,7 @@ public class ServiceObjectsImpl<S> implements ServiceObjects<S> {
         if (reference.hasFactory()) {
             ServiceFactory.class.cast(reference.getFactory()).ungetService(reference.getBundle(), reference.getRegistration(), service);
         } else if (reference.getReference() == service) {
-            reference.unget();
+            reference.unget(service);
         }
     }
 
