@@ -15,7 +15,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="             http://maven.apache.org/POM/4.0.0             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation=" http://maven.apache.org/POM/4.0.0             http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
 
@@ -27,7 +27,7 @@
 
   <groupId>org.apache.winegrower</groupId>
   <artifactId>winegrower</artifactId>
-  <version>1.0</version>
+  <version>1.1-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <name>Apache Winegrower</name>
@@ -208,6 +208,6 @@
     <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/karaf-winegrower</developerConnection>
     <connection>scm:git:https://gitbox.apache.org/repos/asf/karaf-winegrower</connection>
     <url>https://github.com/apache/karaf-winegrower</url>
-    <tag>winegrower-1.0</tag>
+    <tag>HEAD</tag>
   </scm>
 </project>
