@@ -33,7 +33,7 @@
   <dependencies>
     <dependency>
       <groupId>org.apache.winegrower.cepages</groupId>
-      <artifactId>cxf-rs</artifactId>
+      <artifactId>winegrower-cepage-cxf-rs</artifactId>
       <version>${project.version}</version>
       <type>pom</type>
     </dependency>
