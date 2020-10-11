@@ -23,7 +23,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
-  <artifactId>cxf-rs</artifactId>
+  <artifactId>winegrower-cepage-cxf-rs</artifactId>
   <name>Apache Winegrower :: Cepages :: CXF JAX-RS</name>
   <packaging>pom</packaging>
 
