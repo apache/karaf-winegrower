@@ -27,6 +27,7 @@ import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.Version;
 import org.osgi.framework.launch.Framework;
+import org.osgi.framework.launch.FrameworkFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collector;
 import java.util.stream.Stream;
 
 import static java.util.Optional.ofNullable;
@@ -333,5 +335,22 @@ public class WinegrowerFramework implements Framework {
     private void fireFrameworkEvent(final Throwable error) { // todo: shouldn't really be state
         final FrameworkEvent event = new FrameworkEvent(error != null ? FrameworkEvent.ERROR : state, getFrameworkBundle(), error);
         ofNullable(listeners).map(Stream::of).orElseGet(Stream::empty).forEach(l -> l.frameworkEvent(event));
+    }
+
+    public static class Factory implements FrameworkFactory {
+        @Override
+        public Framework newFramework(final Map<String, String> configuration) {
+            final WinegrowerFramework framework = new WinegrowerFramework();
+            ofNullable(configuration)
+                    .map(c -> c.entrySet().stream().collect(Collector.of(
+                            Properties::new,
+                            (p, i) -> p.setProperty(i.getKey(), i.getValue()),
+                            (p1, p2) -> {
+                                p1.putAll(p2);
+                                return p1;
+                            })))
+                    .ifPresent(framework.configuration::fromProperties);
+            return framework;
+        }
     }
 }

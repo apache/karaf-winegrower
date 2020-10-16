@@ -29,3 +29,18 @@ This is done providing a `winegrower.properties` in the agent classloader. It ta
 
 TIP: you can also pass `winegrower.service.*` properties in this file.
 
+=== Use as Karaf framework
+
+In some cloud oriented application it can makes sense to deploy Winegrower as a Karaf framework.
+To do so:
+
+1. Customize your `config.properties` setting/adding these properties:
++
+[source,properties]
+----
+karaf.framework=winegrower
+karaf.framework.factory=org.apache.winegrower.framework.WinegrowerFramework$Factory
+karaf.framework.winegrower=mvn\:org.apache.winegrower/winegrower-core/<version>/jar/fatjar
+----
+2. Ensure `winegrower-core` fatjar is in `system/` directly of Karaf
+3. Ensure `winegrower-core` OSGi API dependencies are in `karaf/lib` (typically config admin is required or `osgi.cmpn`)
