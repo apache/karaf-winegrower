@@ -136,6 +136,7 @@ public interface Ripener extends AutoCloseable {
                 "pax-web-extender-whiteboard",
                 "org.apache.felix.http.jetty",
                 "org.apache.aries.jax.rs.whiteboard",
+                "johnzon-osgi",
                 "pax-web-runtime",
                 "org.apache.aries.cdi");
 
