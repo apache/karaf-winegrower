@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.jar.Manifest;
 import java.util.stream.Stream;
@@ -63,12 +64,18 @@ public class BundleContextImpl implements BundleContext {
     private final Collection<FrameworkListener> frameworkListeners = new CopyOnWriteArrayList<>();
     private final Map<ServiceReference<?>, Object> serviceInstances = new ConcurrentHashMap<>();
 
+    private Function<String, Bundle> installer;
+
     BundleContextImpl(final Manifest manifest, final OSGiServices services, final Supplier<Bundle> bundleSupplier,
                       final BundleRegistry registry) {
         this.manifest = manifest;
         this.services = services;
         this.bundleSupplier = bundleSupplier;
         this.registry = registry;
+    }
+
+    public void setInstaller(final Function<String, Bundle> installer) {
+        this.installer = installer;
     }
 
     public BundleRegistry getRegistry() {
@@ -103,12 +110,15 @@ public class BundleContextImpl implements BundleContext {
 
     @Override
     public Bundle installBundle(final String location, final InputStream input) throws BundleException {
+        if (installer != null) {
+            return installer.apply(location);
+        }
         throw new BundleException("Unsupported operation");
     }
 
     @Override
     public Bundle installBundle(final String location) throws BundleException {
-        throw new BundleException("Unsupported operation");
+        return installBundle(location, null);
     }
 
     @Override

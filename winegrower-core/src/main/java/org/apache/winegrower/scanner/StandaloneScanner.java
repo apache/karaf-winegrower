@@ -62,6 +62,9 @@ public class StandaloneScanner {
     private final Map<String, Manifest> providedManifests;
     private final Map<String, List<String>> providedIndex;
 
+    private List<BundleDefinition> potentialBundles;
+    private List<BundleDefinition> bundles;
+
     public StandaloneScanner(final Ripener.Configuration configuration, final File frameworkJar) {
         this.configuration = configuration;
         this.frameworkJar = frameworkJar;
@@ -152,8 +155,11 @@ public class StandaloneScanner {
     }
 
     public Collection<BundleDefinition> findPotentialOSGiBundles() {
+        if (potentialBundles != null) {
+            return potentialBundles;
+        }
         final KnownJarsFilter filter = new KnownJarsFilter(configuration);
-        return urls.stream()
+        return potentialBundles = urls.stream()
               .map(it -> new FileAndUrl(Files.toFile(it), it))
               .filter(it -> !it.file.getAbsoluteFile().equals(frameworkJar))
               .filter(it -> filter.test(it.file.getName()))
@@ -179,7 +185,10 @@ public class StandaloneScanner {
     }
 
     public Collection<BundleDefinition> findOSGiBundles() {
-        return Stream.concat(
+        if (bundles != null) {
+            return bundles;
+        }
+        return bundles = Stream.concat(
                     urls.stream()
                         .map(Files::toFile)
                         .filter(this::isIncluded)
@@ -264,6 +273,13 @@ public class StandaloneScanner {
 
         public File getJar() {
             return jar;
+        }
+
+        @Override
+        public String toString() {
+            return "BundleDefinition{" +
+                    "jar=" + jar +
+                    '}';
         }
     }
 

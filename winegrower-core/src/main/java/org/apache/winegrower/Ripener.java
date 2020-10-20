@@ -115,6 +115,7 @@ public interface Ripener extends AutoCloseable {
 
         private File workDir = new File(System.getProperty("java.io.tmpdir"), "karaf-boot_" + UUID.randomUUID().toString());
         private Predicate<String> jarFilter = it -> DEFAULT_EXCLUSIONS.stream().anyMatch(it::startsWith);
+        private boolean lazyInstall;
         private Collection<String> scanningIncludes;
         private Collection<String> scanningExcludes;
         private Collection<String> ignoredBundles = emptyList();
@@ -137,6 +138,14 @@ public interface Ripener extends AutoCloseable {
                 "org.apache.aries.jax.rs.whiteboard",
                 "pax-web-runtime",
                 "org.apache.aries.cdi");
+
+        public boolean isLazyInstall() {
+            return lazyInstall;
+        }
+
+        public void setLazyInstall(boolean lazyInstall) {
+            this.lazyInstall = lazyInstall;
+        }
 
         public Collection<String> getIgnoredBundles() {
             return ignoredBundles;
@@ -193,8 +202,65 @@ public interface Ripener extends AutoCloseable {
         public Predicate<String> getJarFilter() {
             return jarFilter;
         }
-    }
 
+        public void fromProperties(final Properties properties) {
+            ofNullable(properties.getProperty("winegrower.ripener.configuration.workdir"))
+                    .map(String::valueOf)
+                    .map(File::new)
+                    .ifPresent(this::setWorkDir);
+            ofNullable(properties.getProperty("winegrower.ripener.configuration.lazyInstall"))
+                    .map(String::valueOf)
+                    .map(Boolean::parseBoolean)
+                    .ifPresent(this::setLazyInstall);
+            ofNullable(properties.getProperty("winegrower.ripener.configuration.prioritizedBundles"))
+                    .map(String::valueOf)
+                    .filter(it -> !it.isEmpty())
+                    .map(it -> asList(it.split(",")))
+                    .ifPresent(this::setPrioritizedBundles);
+            ofNullable(properties.getProperty("winegrower.ripener.configuration.ignoredBundles"))
+                    .map(String::valueOf)
+                    .filter(it -> !it.isEmpty())
+                    .map(it -> asList(it.split(",")))
+                    .ifPresent(this::setIgnoredBundles);
+            ofNullable(properties.getProperty("winegrower.ripener.configuration.scanningIncludes"))
+                    .map(String::valueOf)
+                    .filter(it -> !it.isEmpty())
+                    .map(it -> asList(it.split(",")))
+                    .ifPresent(this::setScanningIncludes);
+            ofNullable(properties.getProperty("winegrower.ripener.configuration.scanningExcludes"))
+                    .map(String::valueOf)
+                    .filter(it -> !it.isEmpty())
+                    .map(it -> asList(it.split(",")))
+                    .ifPresent(this::setScanningExcludes);
+            ofNullable(properties.getProperty("winegrower.ripener.configuration.manifestContributors"))
+                    .map(String::valueOf)
+                    .filter(it -> !it.isEmpty())
+                    .map(it -> asList(it.split(",")))
+                    .ifPresent(contributors -> setManifestContributors(contributors.stream().map(clazz -> {
+                        try {
+                            return Thread.currentThread().getContextClassLoader().loadClass(clazz).getConstructor().newInstance();
+                        } catch (final InstantiationException | NoSuchMethodException | IllegalAccessException
+                                | ClassNotFoundException e) {
+                            throw new IllegalArgumentException(e);
+                        } catch (final InvocationTargetException e) {
+                            throw new IllegalArgumentException(e.getTargetException());
+                        }
+                    }).map(ManifestContributor.class::cast).collect(toList())));
+            ofNullable(properties.getProperty("winegrower.ripener.configuration.jarFilter"))
+                    .map(String::valueOf)
+                    .filter(it -> !it.isEmpty())
+                    .ifPresent(filter -> {
+                        try {
+                            setJarFilter((Predicate<String>) Thread.currentThread().getContextClassLoader().loadClass(filter)
+                                    .getConstructor().newInstance());
+                        } catch (final InstantiationException | NoSuchMethodException | IllegalAccessException | ClassNotFoundException e) {
+                            throw new IllegalArgumentException(e);
+                        } catch (final InvocationTargetException e) {
+                            throw new IllegalArgumentException(e.getTargetException());
+                        }
+                    });
+        }
+    }
 
     class Impl implements Ripener {
         private static final Logger LOGGER = LoggerFactory.getLogger(Ripener.class);
@@ -207,6 +273,7 @@ public interface Ripener extends AutoCloseable {
         private final Configuration configuration;
 
         private long startTime = -1;
+        private StandaloneScanner scanner;
 
         public Impl(final Configuration configuration) {
             this.configuration = configuration;
@@ -222,7 +289,8 @@ public interface Ripener extends AutoCloseable {
             registerBuiltInService(EventAdmin.class, this.eventAdmin, new Hashtable<>());
             registerBuiltInService(org.osgi.service.log.LoggerFactory.class, loadLoggerFactory(), new Hashtable<>());
 
-            try (final InputStream stream = Thread.currentThread().getContextClassLoader().getResourceAsStream("winegrower.properties")) {
+            try (final InputStream stream = Thread.currentThread().getContextClassLoader()
+                    .getResourceAsStream("winegrower.properties")) {
                 loadConfiguration(stream);
             } catch (final IOException e) {
                 LOGGER.warn(e.getMessage());
@@ -367,7 +435,10 @@ public interface Ripener extends AutoCloseable {
             startTime = System.currentTimeMillis();
             LOGGER.info("Starting Apache Winegrower application on {}",
                     LocalDateTime.ofInstant(Instant.ofEpochMilli(startTime), ZoneId.systemDefault()));
-            final StandaloneScanner scanner = new StandaloneScanner(configuration, registry.getFramework());
+            if (configuration.isLazyInstall()) {
+                return this;
+            }
+            final StandaloneScanner scanner = getScanner();
             final AtomicLong bundleIdGenerator = new AtomicLong(1);
             Stream.concat(Stream.concat(
                     scanner.findOSGiBundles().stream(),
@@ -382,7 +453,12 @@ public interface Ripener extends AutoCloseable {
                     .peek(OSGiBundleLifecycle::start)
                     .peek(it -> registry.getBundles().put(it.getBundle().getBundleId(), it))
                     .forEach(bundle -> LOGGER.debug("Bundle {}", bundle));
+            this.scanner = null; // we don't need it anymore since we don't support runtime install so make it gc friendly
             return this;
+        }
+
+        public synchronized StandaloneScanner getScanner() {
+            return scanner == null ? scanner = new StandaloneScanner(configuration, registry.getFramework()) : scanner;
         }
 
         @Override
@@ -474,6 +550,7 @@ public interface Ripener extends AutoCloseable {
                     .map(it -> configuration.getPrioritizedBundles().indexOf(it))
                     .orElse(-1);
         }
+
     }
 
     static Ripener create(final Configuration configuration) {
@@ -484,59 +561,7 @@ public interface Ripener extends AutoCloseable {
     static void main(final String[] args) {
         final CountDownLatch latch = new CountDownLatch(1);
         final Configuration configuration = new Configuration();
-        ofNullable(System.getProperty("winegrower.ripener.configuration.workdir"))
-                .map(String::valueOf)
-                .map(File::new)
-                .ifPresent(configuration::setWorkDir);
-        ofNullable(System.getProperty("winegrower.ripener.configuration.prioritizedBundles"))
-                .map(String::valueOf)
-                .filter(it -> !it.isEmpty())
-                .map(it -> asList(it.split(",")))
-                .ifPresent(configuration::setPrioritizedBundles);
-        ofNullable(System.getProperty("winegrower.ripener.configuration.ignoredBundles"))
-                .map(String::valueOf)
-                .filter(it -> !it.isEmpty())
-                .map(it -> asList(it.split(",")))
-                .ifPresent(configuration::setIgnoredBundles);
-        ofNullable(System.getProperty("winegrower.ripener.configuration.scanningIncludes"))
-                .map(String::valueOf)
-                .filter(it -> !it.isEmpty())
-                .map(it -> asList(it.split(",")))
-                .ifPresent(configuration::setScanningIncludes);
-        ofNullable(System.getProperty("winegrower.ripener.configuration.scanningExcludes"))
-                .map(String::valueOf)
-                .filter(it -> !it.isEmpty())
-                .map(it -> asList(it.split(",")))
-                .ifPresent(configuration::setScanningExcludes);
-        ofNullable(System.getProperty("winegrower.ripener.configuration.manifestContributors"))
-                .map(String::valueOf)
-                .filter(it -> !it.isEmpty())
-                .map(it -> asList(it.split(",")))
-                .ifPresent(contributors -> {
-                    configuration.setManifestContributors(contributors.stream().map(clazz -> {
-                        try {
-                            return Thread.currentThread().getContextClassLoader().loadClass(clazz).getConstructor().newInstance();
-                        } catch (final InstantiationException | NoSuchMethodException | IllegalAccessException
-                                | ClassNotFoundException e) {
-                            throw new IllegalArgumentException(e);
-                        } catch (final InvocationTargetException e) {
-                            throw new IllegalArgumentException(e.getTargetException());
-                        }
-                    }).map(ManifestContributor.class::cast).collect(toList()));
-                });
-        ofNullable(System.getProperty("winegrower.ripener.configuration.jarFilter"))
-                .map(String::valueOf)
-                .filter(it -> !it.isEmpty())
-                .ifPresent(filter -> {
-                    try {
-                        configuration.setJarFilter((Predicate<String>) Thread.currentThread().getContextClassLoader().loadClass(filter)
-                                .getConstructor().newInstance());
-                    } catch (final InstantiationException | NoSuchMethodException | IllegalAccessException | ClassNotFoundException e) {
-                        throw new IllegalArgumentException(e);
-                    } catch (final InvocationTargetException e) {
-                        throw new IllegalArgumentException(e.getTargetException());
-                    }
-                });
+        configuration.fromProperties(System.getProperties());
         final Ripener main = new Impl(configuration).start();
         Runtime.getRuntime().addShutdownHook(new Thread() {
 
