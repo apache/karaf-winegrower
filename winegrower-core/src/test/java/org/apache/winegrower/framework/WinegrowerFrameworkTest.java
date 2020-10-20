@@ -38,7 +38,7 @@ public class WinegrowerFrameworkTest {
         assertEquals(Framework.ACTIVE, framework.getState());
         final Bundle[] bundles = framework.getBundleContext().getBundles();
         assertEquals(1, bundles.length);
-        framework.getBundleContext().installBundle("org.apache.aries.cdi.extra-1.1.0.jar");
+        framework.getBundleContext().installBundle("org.apache.aries.cdi.extra-1.1.1.jar");
         assertEquals(2, framework.getBundleContext().getBundles().length);
         framework.stop();
         assertEquals(Framework.STOP_TRANSIENT, framework.getState());
