@@ -16,12 +16,15 @@ package org.apache.winegrower.extension.testing.junit5.internal;
 import static java.util.Optional.ofNullable;
 
 import org.apache.winegrower.Ripener;
+import org.apache.winegrower.extension.testing.junit5.NotAnOSGiService;
 import org.apache.winegrower.service.OSGiServices;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 import org.junit.jupiter.api.extension.TestInstancePostProcessor;
+
+import java.lang.reflect.Parameter;
 
 public abstract class BaseInjection implements TestInstancePostProcessor, ParameterResolver {
     @Override
@@ -33,8 +36,10 @@ public abstract class BaseInjection implements TestInstancePostProcessor, Parame
     @Override
     public boolean supportsParameter(final ParameterContext parameterContext, final ExtensionContext context)
             throws ParameterResolutionException {
-        final Class<?> type = parameterContext.getParameter().getType();
-        return type == Ripener.class || type == OSGiServices.class || store(context).get(Ripener.class, Ripener.class).getServices().findService(type).isPresent();
+        final Parameter parameter = parameterContext.getParameter();
+        final Class<?> type = parameter.getType();
+        return !parameter.isAnnotationPresent(NotAnOSGiService.class) &&
+                (type == Ripener.class || type == OSGiServices.class || store(context).get(Ripener.class, Ripener.class).getServices().findService(type).isPresent());
     }
 
     @Override
