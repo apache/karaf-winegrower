@@ -59,7 +59,7 @@ public class WinegrowerFramework implements Framework {
     private BundleImpl frameworkBundle;
 
     public WinegrowerFramework() {
-        configuration.setLazyInstall(true);
+        configuration.setLazyInstall(!Boolean.getBoolean("winegrower.framework.lazyInstall.skip"));
     }
 
     public void setConfiguration(final Ripener.Configuration configuration) {
