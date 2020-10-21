@@ -298,18 +298,18 @@ public interface Ripener extends AutoCloseable {
             this.services = new OSGiServices(this, configurationListeners, eventListeners);
             this.registry = new BundleRegistry(services, configuration);
 
-            this.configurationAdmin = loadConfigurationAdmin(configurationListeners);
-            this.eventAdmin = loadEventAdmin(eventListeners);
-            registerBuiltInService(ConfigurationAdmin.class, this.configurationAdmin, new Hashtable<>());
-            registerBuiltInService(EventAdmin.class, this.eventAdmin, new Hashtable<>());
-            registerBuiltInService(org.osgi.service.log.LoggerFactory.class, loadLoggerFactory(), new Hashtable<>());
-
             try (final InputStream stream = Thread.currentThread().getContextClassLoader()
                     .getResourceAsStream("winegrower.properties")) {
                 loadConfiguration(stream);
             } catch (final IOException e) {
                 LOGGER.warn(e.getMessage());
             }
+
+            this.configurationAdmin = loadConfigurationAdmin(configurationListeners);
+            this.eventAdmin = loadEventAdmin(eventListeners);
+            registerBuiltInService(ConfigurationAdmin.class, this.configurationAdmin, new Hashtable<>());
+            registerBuiltInService(EventAdmin.class, this.eventAdmin, new Hashtable<>());
+            registerBuiltInService(org.osgi.service.log.LoggerFactory.class, loadLoggerFactory(), new Hashtable<>());
         }
 
         public <T> void registerBuiltInService(final Class<T> type, final T impl, final Dictionary<String, Object> props) {
