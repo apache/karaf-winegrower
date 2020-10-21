@@ -55,7 +55,7 @@ public class OSGiCDIManifestContributor implements ManifestContributor {
         final WinegrowerAnnotationFinder waf = WinegrowerAnnotationFinder.class.cast(finder);
         if (JarArchive.class.isInstance(archive)) {
             try (final JarFile jar = new JarFile(org.apache.xbean.finder.util.Files.toFile(JarArchive.class.cast(archive).getUrl()))) {
-                if (jar.getEntry("META-INF/beans/xml") == null) {
+                if (jar.getEntry("META-INF/beans.xml") == null) {
                     return;
                 }
                 appendOsgiCDIExtender(mf, waf);
