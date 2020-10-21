@@ -13,11 +13,15 @@
  */
 package org.apache.winegrower.service;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.list;
-import static java.util.Optional.ofNullable;
-import static java.util.function.Function.identity;
-import static java.util.stream.Collectors.toMap;
+import org.apache.winegrower.lang.Substitutor;
+import org.osgi.framework.Filter;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.InvalidSyntaxException;
+import org.osgi.framework.ServiceReference;
+import org.osgi.service.cm.Configuration;
+import org.osgi.service.cm.ConfigurationAdmin;
+import org.osgi.service.cm.ConfigurationEvent;
+import org.osgi.service.cm.ConfigurationListener;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,21 +35,18 @@ import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.winegrower.lang.Substitutor;
-import org.osgi.framework.Filter;
-import org.osgi.framework.FrameworkUtil;
-import org.osgi.framework.InvalidSyntaxException;
-import org.osgi.framework.ServiceReference;
-import org.osgi.service.cm.Configuration;
-import org.osgi.service.cm.ConfigurationAdmin;
-import org.osgi.service.cm.ConfigurationEvent;
-import org.osgi.service.cm.ConfigurationListener;
+import static java.util.Arrays.asList;
+import static java.util.Collections.list;
+import static java.util.Optional.ofNullable;
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toMap;
 
 public abstract class DefaultConfigurationAdmin implements ConfigurationAdmin {
 
@@ -63,6 +64,13 @@ public abstract class DefaultConfigurationAdmin implements ConfigurationAdmin {
             final Collection<ConfigurationListener> configurationListeners) {
         this.providedConfiguration = providedConfiguration;
         this.configurationListeners = configurationListeners;
+    }
+
+    public void preload(final List<String> names) {
+        if (names == null || names.isEmpty()) {
+            return;
+        }
+        names.forEach(it -> getConfiguration(it).setBundleLocation(null));
     }
 
     public Map<String, String> getProvidedConfiguration() {

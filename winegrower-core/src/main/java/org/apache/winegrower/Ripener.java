@@ -139,6 +139,15 @@ public interface Ripener extends AutoCloseable {
                 "johnzon-osgi",
                 "pax-web-runtime",
                 "org.apache.aries.cdi");
+        private List<String> defaultConfigurationAdminPids;
+
+        public List<String> getDefaultConfigurationAdminPids() {
+            return defaultConfigurationAdminPids;
+        }
+
+        public void setDefaultConfigurationAdminPids(final List<String> defaultConfigurationAdminPids) {
+            this.defaultConfigurationAdminPids = defaultConfigurationAdminPids;
+        }
 
         public boolean isLazyInstall() {
             return lazyInstall;
@@ -260,6 +269,11 @@ public interface Ripener extends AutoCloseable {
                             throw new IllegalArgumentException(e.getTargetException());
                         }
                     });
+            ofNullable(properties.getProperty("winegrower.ripener.configuration.defaultConfigurationAdminPids"))
+                    .ifPresent(it -> setDefaultConfigurationAdminPids(Stream.of(it.split(","))
+                            .map(String::trim)
+                            .filter(v -> !v.isEmpty())
+                            .collect(toList())));
         }
     }
 
@@ -284,17 +298,20 @@ public interface Ripener extends AutoCloseable {
             this.services = new OSGiServices(this, configurationListeners, eventListeners);
             this.registry = new BundleRegistry(services, configuration);
 
-            this.configurationAdmin = loadConfigurationAdmin(configurationListeners);
-            this.eventAdmin = loadEventAdmin(eventListeners);
-            registerBuiltInService(ConfigurationAdmin.class, this.configurationAdmin, new Hashtable<>());
-            registerBuiltInService(EventAdmin.class, this.eventAdmin, new Hashtable<>());
-            registerBuiltInService(org.osgi.service.log.LoggerFactory.class, loadLoggerFactory(), new Hashtable<>());
-
             try (final InputStream stream = Thread.currentThread().getContextClassLoader()
                     .getResourceAsStream("winegrower.properties")) {
                 loadConfiguration(stream);
             } catch (final IOException e) {
                 LOGGER.warn(e.getMessage());
+            }
+
+            this.configurationAdmin = loadConfigurationAdmin(configurationListeners);
+            this.eventAdmin = loadEventAdmin(eventListeners);
+            registerBuiltInService(ConfigurationAdmin.class, this.configurationAdmin, new Hashtable<>());
+            registerBuiltInService(EventAdmin.class, this.eventAdmin, new Hashtable<>());
+            registerBuiltInService(org.osgi.service.log.LoggerFactory.class, loadLoggerFactory(), new Hashtable<>());
+            if (DefaultConfigurationAdmin.class.isInstance(configurationAdmin)) {
+                DefaultConfigurationAdmin.class.cast(configurationAdmin).preload(configuration.getDefaultConfigurationAdminPids());
             }
         }
 
