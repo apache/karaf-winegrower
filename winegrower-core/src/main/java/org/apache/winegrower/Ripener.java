@@ -310,6 +310,9 @@ public interface Ripener extends AutoCloseable {
             registerBuiltInService(ConfigurationAdmin.class, this.configurationAdmin, new Hashtable<>());
             registerBuiltInService(EventAdmin.class, this.eventAdmin, new Hashtable<>());
             registerBuiltInService(org.osgi.service.log.LoggerFactory.class, loadLoggerFactory(), new Hashtable<>());
+            if (DefaultConfigurationAdmin.class.isInstance(configurationAdmin)) {
+                DefaultConfigurationAdmin.class.cast(configurationAdmin).preload(configuration.getDefaultConfigurationAdminPids());
+            }
         }
 
         public <T> void registerBuiltInService(final Class<T> type, final T impl, final Dictionary<String, Object> props) {
@@ -324,14 +327,12 @@ public interface Ripener extends AutoCloseable {
             if (configurationAdminIterator.hasNext()) {
                 return configurationAdminIterator.next();
             }
-            final DefaultConfigurationAdmin impl = new DefaultConfigurationAdmin(new HashMap<>(), configurationListeners) {
+            return new DefaultConfigurationAdmin(new HashMap<>(), configurationListeners) {
                 @Override
                 protected ServiceReference<ConfigurationAdmin> getSelfReference() {
                     return (ServiceReference<ConfigurationAdmin>) services.getServices().iterator().next().getReference();
                 }
             };
-            impl.preload(configuration.getDefaultConfigurationAdminPids());
-            return impl;
         }
 
         private org.osgi.service.log.LoggerFactory loadLoggerFactory() {
