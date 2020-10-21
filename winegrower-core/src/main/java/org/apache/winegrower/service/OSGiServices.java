@@ -156,6 +156,12 @@ public class OSGiServices {
             @Override
             public Object get(final Object key) {
                 final String property = System.getProperty(String.valueOf(key));
+                if ("*".equals(property)) { // http.port for ex
+                    final Object overridenValue = super.get(key);
+                    if (overridenValue != null) {
+                        return overridenValue;
+                    }
+                }
                 return property != null ? property : super.get(key);
             }
         };
