@@ -139,6 +139,15 @@ public interface Ripener extends AutoCloseable {
                 "johnzon-osgi",
                 "pax-web-runtime",
                 "org.apache.aries.cdi");
+        private List<String> defaultConfigurationAdminPids;
+
+        public List<String> getDefaultConfigurationAdminPids() {
+            return defaultConfigurationAdminPids;
+        }
+
+        public void setDefaultConfigurationAdminPids(final List<String> defaultConfigurationAdminPids) {
+            this.defaultConfigurationAdminPids = defaultConfigurationAdminPids;
+        }
 
         public boolean isLazyInstall() {
             return lazyInstall;
@@ -260,6 +269,11 @@ public interface Ripener extends AutoCloseable {
                             throw new IllegalArgumentException(e.getTargetException());
                         }
                     });
+            ofNullable(properties.getProperty("winegrower.ripener.configuration.defaultConfigurationAdminPids"))
+                    .ifPresent(it -> setDefaultConfigurationAdminPids(Stream.of(it.split(","))
+                            .map(String::trim)
+                            .filter(v -> !v.isEmpty())
+                            .collect(toList())));
         }
     }
 
@@ -310,12 +324,14 @@ public interface Ripener extends AutoCloseable {
             if (configurationAdminIterator.hasNext()) {
                 return configurationAdminIterator.next();
             }
-            return new DefaultConfigurationAdmin(new HashMap<>(), configurationListeners) {
+            final DefaultConfigurationAdmin impl = new DefaultConfigurationAdmin(new HashMap<>(), configurationListeners) {
                 @Override
                 protected ServiceReference<ConfigurationAdmin> getSelfReference() {
                     return (ServiceReference<ConfigurationAdmin>) services.getServices().iterator().next().getReference();
                 }
             };
+            impl.preload(configuration.getDefaultConfigurationAdminPids());
+            return impl;
         }
 
         private org.osgi.service.log.LoggerFactory loadLoggerFactory() {

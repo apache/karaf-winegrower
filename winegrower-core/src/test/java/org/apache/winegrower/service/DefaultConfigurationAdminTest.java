@@ -13,18 +13,26 @@
  */
 package org.apache.winegrower.service;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
-
-import java.io.File;
-import java.util.Hashtable;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
+import org.osgi.service.cm.ConfigurationEvent;
+import org.osgi.service.cm.ConfigurationListener;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonList;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DefaultConfigurationAdminTest {
 
@@ -34,6 +42,27 @@ class DefaultConfigurationAdminTest {
             return new ServiceReferenceImpl<>(new Hashtable<>(), null, null);
         }
     };
+
+    @Test
+    @DisplayName("Configuration creation can be forced - ConfigurationListener case")
+    void preload(final TestInfo info) {
+        final List<ConfigurationListener> listeners = new ArrayList<>();
+        final DefaultConfigurationAdmin configurationAdmin = new DefaultConfigurationAdmin(emptyMap(), listeners) {
+            @Override
+            protected ServiceReference<ConfigurationAdmin> getSelfReference() { // not needed for this tests
+                return new ServiceReferenceImpl<>(new Hashtable<>(), null, null);
+            }
+        };
+        final String pid = info.getTestClass().orElseThrow(IllegalStateException::new).getName() + "." +
+                info.getTestMethod().orElseThrow(IllegalStateException::new).getName() + ".pid";
+        final String key = "foo";
+        System.setProperty(pid + "." + key, "set");
+        final AtomicBoolean called = new AtomicBoolean();
+        listeners.add(event -> called.set(true));
+        configurationAdmin.preload(singletonList(pid));
+        System.clearProperty(pid + "." + key);
+        assertTrue(called.get());
+    }
 
     @Test
     @DisplayName("Should return value from system property")
