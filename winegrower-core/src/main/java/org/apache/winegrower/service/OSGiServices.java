@@ -13,22 +13,6 @@
  */
 package org.apache.winegrower.service;
 
-import static java.util.Collections.list;
-import static java.util.Optional.ofNullable;
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.toList;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Dictionary;
-import java.util.Hashtable;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
-
 import org.apache.winegrower.Ripener;
 import org.apache.winegrower.api.InjectedService;
 import org.apache.winegrower.deployer.BundleContextImpl;
@@ -55,6 +39,22 @@ import org.osgi.service.event.EventHandler;
 import org.osgi.util.tracker.ServiceTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Dictionary;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
+
+import static java.util.Collections.list;
+import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toList;
 
 // holder of all services
 public class OSGiServices {
@@ -242,29 +242,13 @@ public class OSGiServices {
         final Object pid = serviceProperties.get(Constants.SERVICE_PID);
         if (pid != null) {
             final ConfigurationAdmin configurationAdmin = framework.getConfigurationAdmin();
-            final String pidStr = String.valueOf(pid);
-            try {
-                final Configuration configuration = configurationAdmin.getConfiguration(pidStr);
-                ofNullable(configuration.getProperties())
-                        .ifPresent(prop -> list(prop.keys())
-                                .forEach(key -> serviceProperties.put(key, configuration.getProperties().get(key))));
-            } catch (final IOException e) {
-                LOGGER.warn(e.getMessage());
-            }
+            asStream(pid).forEach(it -> initConfiguration(serviceProperties, configurationAdmin, it));
         }
 
         final Object factoryPid = serviceProperties.get("service.factoryPid");
         if (factoryPid != null) {
             final ConfigurationAdmin configurationAdmin = framework.getConfigurationAdmin();
-            final String pidStr = String.valueOf(factoryPid);
-            try {
-                final Configuration configuration = configurationAdmin.createFactoryConfiguration(pidStr);
-                ofNullable(configuration.getProperties())
-                        .ifPresent(prop -> list(prop.keys())
-                                .forEach(key -> serviceProperties.put(key, configuration.getProperties().get(key))));
-            } catch (final IOException e) {
-                LOGGER.warn(e.getMessage());
-            }
+            asStream(factoryPid).forEach(it -> initFactoryConfiguration(serviceProperties, configurationAdmin, it));
         }
 
         services.add(registration);
@@ -290,6 +274,42 @@ public class OSGiServices {
         }
 
         return registration;
+    }
+
+    private Stream<String> asStream(final Object value) {
+        if (String[].class.isInstance(value)) {
+            return Stream.of(String[].class.cast(value));
+        }
+        if (Collection.class.isInstance(value)) {
+            return Collection.class.cast(value).stream().map(String::valueOf);
+        }
+        return Stream.of(String.valueOf(value));
+    }
+
+    public void initFactoryConfiguration(final Hashtable<String, Object> serviceProperties,
+                                         final ConfigurationAdmin configurationAdmin,
+                                         final String pidStr) {
+        try {
+            final Configuration configuration = configurationAdmin.createFactoryConfiguration(pidStr);
+            ofNullable(configuration.getProperties())
+                    .ifPresent(prop -> list(prop.keys())
+                            .forEach(key -> serviceProperties.put(key, configuration.getProperties().get(key))));
+        } catch (final IOException e) {
+            LOGGER.warn(e.getMessage());
+        }
+    }
+
+    public void initConfiguration(final Hashtable<String, Object> serviceProperties,
+                                  final ConfigurationAdmin configurationAdmin,
+                                  final String pid) {
+        try {
+            final Configuration configuration = configurationAdmin.getConfiguration(pid);
+            ofNullable(configuration.getProperties())
+                    .ifPresent(prop -> list(prop.keys())
+                            .forEach(key -> serviceProperties.put(key, configuration.getProperties().get(key))));
+        } catch (final IOException e) {
+            LOGGER.warn(e.getMessage());
+        }
     }
 
     private void fireEvent(final ServiceRegistration<?> reg, final ServiceEvent event) {
