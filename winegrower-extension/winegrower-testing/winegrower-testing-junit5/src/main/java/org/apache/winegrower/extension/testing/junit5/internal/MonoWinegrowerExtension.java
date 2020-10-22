@@ -54,6 +54,7 @@ public class MonoWinegrowerExtension extends BaseInjection implements BeforeAllC
                         }
                     });
                     instance.ripener.start();
+                    INSTANCE.set(instance);
                 }
             }
         }
