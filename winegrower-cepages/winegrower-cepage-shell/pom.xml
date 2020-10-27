@@ -43,8 +43,18 @@
     </dependency>
     <dependency>
       <groupId>org.osgi</groupId>
-      <artifactId>osgi.cmpn</artifactId>
-      <version>${osgi.version}</version>
+      <artifactId>org.osgi.service.log</artifactId>
+      <version>${osgi.service.log.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.service.event</artifactId>
+      <version>${osgi.service.event.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.service.cm</artifactId>
+      <version>${osgi.service.cm.version}</version>
     </dependency>
   </dependencies>
 

@@ -13,20 +13,6 @@
  */
 package org.apache.winegrower;
 
-import static java.util.Collections.singletonList;
-import static java.util.stream.Collectors.toMap;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Writer;
-import java.util.Map;
-import java.util.Properties;
-
 import org.apache.winegrower.deployer.BundleImpl;
 import org.apache.winegrower.deployer.OSGiBundleLifecycle;
 import org.apache.winegrower.service.BundleActivatorHandler;
@@ -38,6 +24,20 @@ import org.apache.winegrower.test.simpleactivator.MyActivator;
 import org.junit.jupiter.api.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
+import java.util.Map;
+import java.util.Properties;
+
+import static java.util.Collections.singletonList;
+import static java.util.stream.Collectors.toMap;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RipenerTest {
     @Test
@@ -86,13 +86,13 @@ class RipenerTest {
     @Test
     @WithRipener
     void ensureFrameworkBundle(@Service final Ripener ripener) {
-        assertEquals(5, ripener.getRegistry().getBundles().size(), () -> ripener.getRegistry().getBundles().toString());
+        assertEquals(4, ripener.getRegistry().getBundles().size(), () -> ripener.getRegistry().getBundles().toString());
     }
 
     @Test
     @WithRipener(includeResources = @Entry(path = "org.apache.winegrower.test.implicitactivator"))
     void implicitActivator(@Service final Ripener ripener) {
-        assertEquals(6, ripener.getRegistry().getBundles().size());
+        assertEquals(5, ripener.getRegistry().getBundles().size());
 
         final BundleActivatorHandler activatorHandler = ripener.getRegistry().getBundles().values().stream()
                 .filter(it -> it.getActivator() != null)
@@ -111,7 +111,7 @@ class RipenerTest {
     @WithRipener(includeResources = @Entry(path = "org.apache.winegrower.test.simpleactivator"))
     void simpleActivator(@Service final Ripener ripener) {
         final Map<Long, OSGiBundleLifecycle> bundles = ripener.getRegistry().getBundles();
-        assertEquals(6, bundles.size());
+        assertEquals(5, bundles.size());
 
         final BundleActivatorHandler activatorHandler = ripener.getRegistry().getBundles().values().stream()
                 .filter(it -> it.getActivator() != null)
