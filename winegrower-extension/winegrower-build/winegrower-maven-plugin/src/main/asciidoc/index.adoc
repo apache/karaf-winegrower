@@ -28,6 +28,7 @@ mvn winegrower:pour
 |===
 |Name|Type|Property|Default|Description
 |dependencyScopes|Collection<String>|winegrower.dependencyScopes|provided,compile,system,runtime|which scopes to includes to build the deployment classloader.
+|libs|Collection<String>|winegrower.libs|-|List of coordinates (`groupId:artifactId:version[:classifier[:type]]`) to add in the ripener deployment.
 |jarFilter|String|winegrower.jarFilter|-|custom `Predicate<String>` implementation to use as jar filter in the `Ripener.Configuration`.
 |manifestContributors|Collection<String>|winegrower.manifestContributors|-|All manifets contributors to use for the `Ripener.Configuration`.
 |scanningExcludes|Collection<String>|winegrower.scanningExcludes|-|All exclusions to use for the `Ripener.Configuration`.
