@@ -45,6 +45,10 @@
       <artifactId>winegrower-core</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi.service.http</artifactId>
+    </dependency>
 
     <!-- keep it simple and use an already junit5 friendly testing container -->
     <dependency> <!-- for java 11 -->
