@@ -14,7 +14,6 @@
 package org.apache.winegrower.extension.build.maven;
 
 import org.apache.maven.artifact.Artifact;
-import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
@@ -40,7 +39,7 @@ import static java.util.stream.Collectors.toList;
 import static org.apache.maven.plugins.annotations.ResolutionScope.RUNTIME_PLUS_SYSTEM;
 
 @Mojo(name = "pour", requiresDependencyResolution = RUNTIME_PLUS_SYSTEM)
-public class PourMojo extends AbstractMojo {
+public class PourMojo extends LibsMojo {
 
     @Parameter(property = "winegrower.workDir", defaultValue = "${project.build.directory}/winegrower/workdir")
     private File workDir;
@@ -113,12 +112,15 @@ public class PourMojo extends AbstractMojo {
     }
 
     private ClassLoader createClassLoader(final ClassLoader parent) {
-        final List<File> jars = Stream.concat(project.getArtifacts().stream()
-                .filter(a -> !((dependencyScopes == null && !(Artifact.SCOPE_COMPILE.equals(
-                        a.getScope()) || Artifact.SCOPE_RUNTIME.equals(
-                        a.getScope()))) || (dependencyScopes != null && !dependencyScopes.contains(
-                        a.getScope()))))
-                .map(Artifact::getFile), Stream.of(project.getBuild().getOutputDirectory()).map(File::new).filter(File::exists))
+        final List<File> jars = Stream.concat(
+                collectLibs(),
+                Stream.concat(project.getArtifacts().stream()
+                                .filter(a -> !((dependencyScopes == null && !(Artifact.SCOPE_COMPILE.equals(
+                                        a.getScope()) || Artifact.SCOPE_RUNTIME.equals(
+                                        a.getScope()))) || (dependencyScopes != null && !dependencyScopes.contains(
+                                        a.getScope()))))
+                                .map(Artifact::getFile),
+                        Stream.of(project.getBuild().getOutputDirectory()).map(File::new).filter(File::exists)))
                 .collect(toList());
         final List<URL> urls = jars.stream().map(file -> {
             try {
@@ -127,6 +129,9 @@ public class PourMojo extends AbstractMojo {
                 throw new IllegalArgumentException(e);
             }
         }).collect(toList());
+        if (getLog().isDebugEnabled()) {
+            getLog().debug("Startup classpath: " + jars);
+        }
         final boolean excludeOsgi = jars.stream()
                 .anyMatch(it -> it.getName().startsWith("org.osgi.") || it.getName().startsWith("osgi."));
         final boolean hasWinegrower = jars.stream()
