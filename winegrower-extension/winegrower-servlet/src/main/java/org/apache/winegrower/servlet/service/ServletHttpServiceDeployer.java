@@ -13,22 +13,13 @@
  */
 package org.apache.winegrower.servlet.service;
 
-import static java.util.Arrays.asList;
-import static java.util.Optional.of;
-import static java.util.Optional.ofNullable;
-import static java.util.stream.Collectors.toList;
-
-import java.io.File;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.InvocationTargetException;
-import java.util.EventListener;
-import java.util.Hashtable;
-import java.util.Set;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Collector;
-import java.util.stream.Stream;
+import org.apache.winegrower.Ripener;
+import org.apache.winegrower.scanner.manifest.ManifestContributor;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
+import org.osgi.service.http.HttpService;
+import org.osgi.util.tracker.ServiceTracker;
+import org.osgi.util.tracker.ServiceTrackerCustomizer;
 
 import javax.servlet.Filter;
 import javax.servlet.Servlet;
@@ -48,24 +39,34 @@ import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionBindingListener;
 import javax.servlet.http.HttpSessionIdListener;
 import javax.servlet.http.HttpSessionListener;
+import java.io.File;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
+import java.util.EventListener;
+import java.util.Hashtable;
+import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collector;
+import java.util.stream.Stream;
 
-import org.apache.winegrower.Ripener;
-import org.apache.winegrower.scanner.manifest.ManifestContributor;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
-import org.osgi.service.http.HttpService;
-import org.osgi.util.tracker.ServiceTracker;
-import org.osgi.util.tracker.ServiceTrackerCustomizer;
+import static java.util.Arrays.asList;
+import static java.util.Optional.of;
+import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.toList;
 
 public class ServletHttpServiceDeployer implements ServletContainerInitializer {
 
     @Override
     public void onStartup(final Set<Class<?>> c, final ServletContext servletContext) {
-        if (is(servletContext, "winegrower.servlet.ripener.skip", false)) {
+        if (getClass() == ServletHttpServiceDeployer.class &&
+                is(servletContext, "winegrower.servlet.ripener.skip", false)) {
             return;
         }
         final Ripener.Configuration configuration = createConfiguration(servletContext);
         final Ripener.Impl ripener = new Ripener.Impl(configuration);
+        onRipenerCreated(ripener);
         if (is(servletContext, "winegrower.servlet.services.http.register", true)) {
             final ServletHttpService service = new ServletHttpService(servletContext);
             ripener.registerBuiltInService(HttpService.class, service, new Hashtable<>());
@@ -78,17 +79,37 @@ public class ServletHttpServiceDeployer implements ServletContainerInitializer {
                     HttpSessionActivationListener.class, HttpSessionBindingListener.class,
                     HttpSessionIdListener.class,
                     ServletRequestListener.class, ServletRequestAttributeListener.class)
-                  .forEach(base -> registerListenerTracker(service, rootBundle, base));
+                    .forEach(base -> registerListenerTracker(service, rootBundle, base));
         }
         servletContext.setAttribute(Ripener.class.getName(), ripener.start());
+        onRipenerStarted(ripener);
         servletContext.addListener(new ServletContextListener() {
 
             @Override
             public void contextDestroyed(final ServletContextEvent sce) {
-                ofNullable(sce.getServletContext().getAttribute(Ripener.class.getName())).map(Ripener.class::cast)
+                ofNullable(sce.getServletContext().getAttribute(Ripener.class.getName()))
+                        .map(Ripener.class::cast)
+                        .map(it -> {
+                            onRipenerWillStop(it);
+                            return it;
+                        })
                         .ifPresent(Ripener::stop);
             }
         });
+    }
+
+    // enables subclasses to register built in services
+    protected void onRipenerCreated(final Ripener ripener) {
+        // no-op
+    }
+
+    protected void onRipenerWillStop(final Ripener ripener) {
+        // no-op
+    }
+
+    // enables subclasses to wait for some start (OSGi-CDI typically)
+    protected void onRipenerStarted(final Ripener ripener) {
+        // no-op
     }
 
     private Boolean is(final ServletContext servletContext, final String name, final boolean def) {
@@ -128,7 +149,7 @@ public class ServletHttpServiceDeployer implements ServletContainerInitializer {
     }
 
     private <T extends Servlet> void registerServletTracker(final ServletHttpService service, final BundleContext bundleContext,
-            final Class<T> base) {
+                                                            final Class<T> base) {
         new StartupOnlyTracker<>(bundleContext, base, (reference, servlet) -> {
             final Hashtable<String, Object> props = toProps(reference);
             ofNullable(servlet.getClass().getAnnotation(WebServlet.class)).ifPresent(annotConfig -> {
@@ -144,7 +165,7 @@ public class ServletHttpServiceDeployer implements ServletContainerInitializer {
     }
 
     private <T, A extends Annotation> Stream<String> findMapping(final ServiceReference<T> reference, final T servlet,
-            final Class<A> holder, final Function<A, String[]> mappingExtractor) {
+                                                                 final Class<A> holder, final Function<A, String[]> mappingExtractor) {
         return ofNullable(servlet.getClass().getAnnotation(holder)).map(mappingExtractor).filter(it -> it.length > 0)
                 .map(Stream::of).orElseGet(() -> ofNullable(reference.getProperty("alias")).map(String::valueOf).map(Stream::of)
                         .orElseGet(Stream::empty));
@@ -176,29 +197,29 @@ public class ServletHttpServiceDeployer implements ServletContainerInitializer {
                 .ifPresent(configuration::setScanningExcludes);
         ofNullable(servletContext.getInitParameter("winegrower.servlet.ripener.configuration.manifestContributors"))
                 .map(String::valueOf).filter(it -> !it.isEmpty()).map(it -> asList(it.split(","))).ifPresent(contributors -> {
-                    configuration.setManifestContributors(contributors.stream().map(clazz -> {
-                        try {
-                            return Thread.currentThread().getContextClassLoader().loadClass(clazz).getConstructor().newInstance();
-                        } catch (final InstantiationException | NoSuchMethodException | IllegalAccessException
-                                | ClassNotFoundException e) {
-                            throw new IllegalArgumentException(e);
-                        } catch (final InvocationTargetException e) {
-                            throw new IllegalArgumentException(e.getTargetException());
-                        }
-                    }).map(ManifestContributor.class::cast).collect(toList()));
-                });
+            configuration.setManifestContributors(contributors.stream().map(clazz -> {
+                try {
+                    return Thread.currentThread().getContextClassLoader().loadClass(clazz).getConstructor().newInstance();
+                } catch (final InstantiationException | NoSuchMethodException | IllegalAccessException
+                        | ClassNotFoundException e) {
+                    throw new IllegalArgumentException(e);
+                } catch (final InvocationTargetException e) {
+                    throw new IllegalArgumentException(e.getTargetException());
+                }
+            }).map(ManifestContributor.class::cast).collect(toList()));
+        });
         ofNullable(servletContext.getInitParameter("winegrower.servlet.ripener.configuration.jarFilter")).map(String::valueOf)
                 .filter(it -> !it.isEmpty()).ifPresent(filter -> {
-                    try {
-                        configuration.setJarFilter((Predicate<String>) Thread.currentThread().getContextClassLoader()
-                                .loadClass(filter).getConstructor().newInstance());
-                    } catch (final InstantiationException | NoSuchMethodException | IllegalAccessException
-                            | ClassNotFoundException e) {
-                        throw new IllegalArgumentException(e);
-                    } catch (final InvocationTargetException e) {
-                        throw new IllegalArgumentException(e.getTargetException());
-                    }
-                });
+            try {
+                configuration.setJarFilter((Predicate<String>) Thread.currentThread().getContextClassLoader()
+                        .loadClass(filter).getConstructor().newInstance());
+            } catch (final InstantiationException | NoSuchMethodException | IllegalAccessException
+                    | ClassNotFoundException e) {
+                throw new IllegalArgumentException(e);
+            } catch (final InvocationTargetException e) {
+                throw new IllegalArgumentException(e.getTargetException());
+            }
+        });
         return configuration;
     }
 
