@@ -37,7 +37,7 @@ import org.osgi.service.http.HttpService;
 public class ServletHttpService implements HttpService {
     private final ServletContext context;
 
-    ServletHttpService(final ServletContext context) {
+    public /*let's reuse it*/ ServletHttpService(final ServletContext context) {
         this.context = context;
     }
 
@@ -46,10 +46,14 @@ public class ServletHttpService implements HttpService {
     }
 
     public void registerFilter(final String alias, final Filter filter, final Dictionary initParams) {
-        final FilterRegistration.Dynamic dynamic = getContext(null).addFilter(alias, filter);
+        final Object filterName = initParams.get("filterName");
+        final FilterRegistration.Dynamic dynamic = getContext(null).addFilter(filterName == null ? alias : String.valueOf(filterName), filter);
+        final Object asyncSupported = initParams.get("asyncSupported");
+        dynamic.setAsyncSupported(asyncSupported == null || Boolean.parseBoolean(String.valueOf(asyncSupported)));
         if (initParams != null) {
-            list(initParams.keys())
-                .forEach(key -> dynamic.setInitParameter(String.valueOf(key), String.valueOf(initParams.get(key))));
+            list(initParams.keys()).stream()
+                    .filter(it -> !"filterName".equals(it) && !"asyncSupported".equals(it))
+                    .forEach(key -> dynamic.setInitParameter(String.valueOf(key), String.valueOf(initParams.get(key))));
         }
         dynamic.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), Boolean.parseBoolean(String.valueOf(initParams.get("is-match-after"))), alias);
     }
@@ -57,10 +61,14 @@ public class ServletHttpService implements HttpService {
     @Override
     public void registerServlet(final String alias, final Servlet servlet,
                                 final Dictionary initParams, final HttpContext context) {
-        final ServletRegistration.Dynamic dynamic = getContext(context).addServlet(alias, servlet);
+        final Object servletName = initParams.get("servletName");
+        final ServletRegistration.Dynamic dynamic = getContext(context).addServlet(servletName == null ? alias : String.valueOf(servletName), servlet);
+        final Object asyncSupported = initParams.get("asyncSupported");
+        dynamic.setAsyncSupported(asyncSupported == null || Boolean.parseBoolean(String.valueOf(asyncSupported)));
         if (initParams != null) {
-            list(initParams.keys())
-                .forEach(key -> dynamic.setInitParameter(String.valueOf(key), String.valueOf(initParams.get(key))));
+            list(initParams.keys()).stream()
+                    .filter(it -> !"servletName".equals(it) && !"asyncSupported".equals(it))
+                    .forEach(key -> dynamic.setInitParameter(String.valueOf(key), String.valueOf(initParams.get(key))));
         }
         dynamic.addMapping(alias);
     }
