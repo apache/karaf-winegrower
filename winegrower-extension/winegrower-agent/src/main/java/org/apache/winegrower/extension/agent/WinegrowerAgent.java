@@ -170,10 +170,43 @@ public class WinegrowerAgent {
 
     private static Object createConfiguration(final Class<?> configType, final String agentArgs) throws Throwable {
         final Object configuration = configType.getConstructor().newInstance();
+        final ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
         ofNullable(extractConfig(agentArgs,"workDir="))
                 .map(String::valueOf)
                 .map(File::new)
                 .ifPresent(value -> doCall(configuration, "setWorkDir", new Class<?>[]{File.class}, new Object[]{value}));
+        ofNullable(extractConfig(agentArgs,"useLifecycleCallbacks="))
+                .map(String::valueOf)
+                .map(Boolean::parseBoolean)
+                .ifPresent(value -> doCall(configuration, "setUseLifecycleCallbacks", new Class<?>[]{boolean.class}, new Object[]{value}));
+        ofNullable(extractConfig(agentArgs,"lifecycleCallbacks="))
+                .map(String::valueOf)
+                .filter(it -> !it.isEmpty())
+                .map(it -> asList(it.split(",")))
+                .map(callbacks -> {
+                    try {
+                        final Class<?> type = contextClassLoader.loadClass("org.apache.winegrower.api.LifecycleCallbacks");
+                        return callbacks.stream()
+                                .map(clazz -> {
+                                    try {
+                                        return contextClassLoader
+                                                .loadClass(clazz)
+                                                .getConstructor()
+                                                .newInstance();
+                                    } catch (final InstantiationException | NoSuchMethodException | IllegalAccessException | ClassNotFoundException e) {
+                                        throw new IllegalArgumentException(e);
+                                    } catch (final InvocationTargetException e) {
+                                        throw new IllegalArgumentException(
+                                                e.getTargetException());
+                                    }
+                                })
+                                .map(type::cast)
+                                .collect(toList());
+                    } catch (final ClassNotFoundException e) {
+                        throw new IllegalArgumentException(e);
+                    }
+                })
+                .ifPresent(value -> doCall(configuration, "setLifecycleCallbacks", new Class<?>[]{List.class}, new Object[]{value}));
         ofNullable(extractConfig(agentArgs,"prioritizedBundles="))
                 .map(String::valueOf)
                 .filter(it -> !it.isEmpty())
@@ -200,13 +233,12 @@ public class WinegrowerAgent {
                 .map(it -> asList(it.split(",")))
                 .ifPresent(contributors -> {
                     try {
-                        final Class<?> type = Thread.currentThread().getContextClassLoader().loadClass(
+                        final Class<?> type = contextClassLoader.loadClass(
                                     "org.apache.winegrower.scanner.manifest.ManifestContributor");
                         final Collection<?> value = contributors.stream()
                                                       .map(clazz -> {
                                                           try {
-                                                              return Thread.currentThread()
-                                                                           .getContextClassLoader()
+                                                              return contextClassLoader
                                                                            .loadClass(clazz)
                                                                            .getConstructor()
                                                                            .newInstance();
@@ -229,8 +261,7 @@ public class WinegrowerAgent {
                 .filter(it -> !it.isEmpty())
                 .ifPresent(filter -> {
                     try {
-                        final Predicate<String> predicate = (Predicate<String>) Thread.currentThread()
-                              .getContextClassLoader().loadClass(filter).getConstructor().newInstance();
+                        final Predicate<String> predicate = (Predicate<String>) contextClassLoader.loadClass(filter).getConstructor().newInstance();
                         doCall(configuration, "setJarFilter", new Class<?>[]{Predicate.class}, new Object[]{predicate});
                     } catch (final InstantiationException | NoSuchMethodException | IllegalAccessException | ClassNotFoundException e) {
                         throw new IllegalArgumentException(e);

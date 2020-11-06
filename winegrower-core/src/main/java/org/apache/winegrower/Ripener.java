@@ -13,6 +13,7 @@
  */
 package org.apache.winegrower;
 
+import org.apache.winegrower.api.LifecycleCallbacks;
 import org.apache.winegrower.deployer.OSGiBundleLifecycle;
 import org.apache.winegrower.scanner.StandaloneScanner;
 import org.apache.winegrower.scanner.manifest.HeaderManifestContributor;
@@ -60,6 +61,8 @@ import java.util.ServiceLoader;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.stream.Stream;
@@ -67,6 +70,7 @@ import java.util.stream.StreamSupport;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static java.util.Comparator.comparing;
 import static java.util.Locale.ROOT;
 import static java.util.Optional.ofNullable;
 import static java.util.function.Function.identity;
@@ -140,6 +144,29 @@ public interface Ripener extends AutoCloseable {
                 "pax-web-runtime",
                 "org.apache.aries.cdi");
         private List<String> defaultConfigurationAdminPids;
+
+        private List<LifecycleCallbacks> lifecycleCallbacks;
+
+        /**
+         * Only for SPI ones, the epxlicit ones in {@link #lifecycleCallbacks} are always used.
+         */
+        private boolean useLifecycleCallbacks = true;
+
+        public boolean isUseLifecycleCallbacks() {
+            return useLifecycleCallbacks;
+        }
+
+        public void setUseLifecycleCallbacks(final boolean useLifecycleCallbacks) {
+            this.useLifecycleCallbacks = useLifecycleCallbacks;
+        }
+
+        public List<LifecycleCallbacks> getLifecycleCallbacks() {
+            return lifecycleCallbacks;
+        }
+
+        public void setLifecycleCallbacks(final List<LifecycleCallbacks> lifecycleCallbacks) {
+            this.lifecycleCallbacks = lifecycleCallbacks;
+        }
 
         public List<String> getDefaultConfigurationAdminPids() {
             return defaultConfigurationAdminPids;
@@ -293,13 +320,31 @@ public interface Ripener extends AutoCloseable {
         public Impl(final Configuration configuration) {
             this.configuration = configuration;
 
+            final ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+            if (configuration.isUseLifecycleCallbacks()) {
+                final List<LifecycleCallbacks> callbacks = StreamSupport.stream(
+                        ServiceLoader.load(LifecycleCallbacks.class, contextClassLoader).spliterator(), false)
+                        .sorted(comparing(LifecycleCallbacks::order))
+                        .collect(toList());
+                if (configuration.getLifecycleCallbacks() == null) {
+                    configuration.setLifecycleCallbacks(callbacks);
+                } else {
+                    configuration.setLifecycleCallbacks(Stream.concat(
+                            configuration.getLifecycleCallbacks().stream(),
+                            callbacks.stream()).sorted(comparing(LifecycleCallbacks::order))
+                            .collect(toList()));
+                }
+            } else if (configuration.getLifecycleCallbacks() == null) {
+                configuration.setLifecycleCallbacks(emptyList());
+            }
+            runCallbacks(LifecycleCallbacks::processConfiguration, configuration);
+
             final Collection<ConfigurationListener> configurationListeners = new ArrayList<>();
             final Collection<DefaultEventAdmin.EventHandlerInstance> eventListeners = new ArrayList<>();
             this.services = new OSGiServices(this, configurationListeners, eventListeners);
             this.registry = new BundleRegistry(services, configuration);
 
-            try (final InputStream stream = Thread.currentThread().getContextClassLoader()
-                    .getResourceAsStream("winegrower.properties")) {
+            try (final InputStream stream = contextClassLoader.getResourceAsStream("winegrower.properties")) {
                 loadConfiguration(stream);
             } catch (final IOException e) {
                 LOGGER.warn(e.getMessage());
@@ -320,6 +365,10 @@ public interface Ripener extends AutoCloseable {
                 return;
             }
             this.services.registerService(new String[]{type.getName()}, impl, props, this.registry.getBundles().get(0L).getBundle());
+        }
+
+        private <A> void runCallbacks(final BiConsumer<LifecycleCallbacks, A> action, final A arg) {
+            configuration.getLifecycleCallbacks().forEach(c -> action.accept(c, arg));
         }
 
         private ConfigurationAdmin loadConfigurationAdmin(final Collection<ConfigurationListener> configurationListeners) {
@@ -450,28 +499,33 @@ public interface Ripener extends AutoCloseable {
 
         @Override
         public synchronized Ripener start() {
-            startTime = System.currentTimeMillis();
-            LOGGER.info("Starting Apache Winegrower application on {}",
-                    LocalDateTime.ofInstant(Instant.ofEpochMilli(startTime), ZoneId.systemDefault()));
-            if (configuration.isLazyInstall()) {
-                return this;
+            runCallbacks(LifecycleCallbacks::beforeStart, this);
+            try {
+                startTime = System.currentTimeMillis();
+                LOGGER.info("Starting Apache Winegrower application on {}",
+                        LocalDateTime.ofInstant(Instant.ofEpochMilli(startTime), ZoneId.systemDefault()));
+                if (configuration.isLazyInstall()) {
+                    return this;
+                }
+                final StandaloneScanner scanner = getScanner();
+                final AtomicLong bundleIdGenerator = new AtomicLong(1);
+                Stream.concat(Stream.concat(
+                        scanner.findOSGiBundles().stream(),
+                        scanner.findPotentialOSGiBundles().stream()),
+                        scanner.findEmbeddedClasses().stream())
+                        .sorted(this::compareBundles)
+                        .map(it -> new OSGiBundleLifecycle(
+                                it.getManifest(), it.getJar(),
+                                services, registry, configuration,
+                                bundleIdGenerator.getAndIncrement(),
+                                it.getFiles()))
+                        .peek(OSGiBundleLifecycle::start)
+                        .peek(it -> registry.getBundles().put(it.getBundle().getBundleId(), it))
+                        .forEach(bundle -> LOGGER.debug("Bundle {}", bundle));
+                this.scanner = null; // we don't need it anymore since we don't support runtime install so make it gc friendly
+            } finally {
+                runCallbacks(LifecycleCallbacks::afterStart, this);
             }
-            final StandaloneScanner scanner = getScanner();
-            final AtomicLong bundleIdGenerator = new AtomicLong(1);
-            Stream.concat(Stream.concat(
-                    scanner.findOSGiBundles().stream(),
-                    scanner.findPotentialOSGiBundles().stream()),
-                    scanner.findEmbeddedClasses().stream())
-                    .sorted(this::compareBundles)
-                    .map(it -> new OSGiBundleLifecycle(
-                            it.getManifest(), it.getJar(),
-                            services, registry, configuration,
-                            bundleIdGenerator.getAndIncrement(),
-                            it.getFiles()))
-                    .peek(OSGiBundleLifecycle::start)
-                    .peek(it -> registry.getBundles().put(it.getBundle().getBundleId(), it))
-                    .forEach(bundle -> LOGGER.debug("Bundle {}", bundle));
-            this.scanner = null; // we don't need it anymore since we don't support runtime install so make it gc friendly
             return this;
         }
 
@@ -481,33 +535,38 @@ public interface Ripener extends AutoCloseable {
 
         @Override
         public synchronized void stop() {
-            LOGGER.info("Stopping Apache Winegrower application on {}", LocalDateTime.now());
-            final Map<Long, OSGiBundleLifecycle> bundles = registry.getBundles();
-            bundles.values().stream()
-                    .sorted((o1, o2) -> (int) (o2.getBundle().getBundleId() - o1.getBundle().getBundleId()))
-                    .forEach(OSGiBundleLifecycle::stop);
-            bundles.clear();
-            if (configuration.getWorkDir().exists()) {
-                try {
-                    Files.walkFileTree(configuration.getWorkDir().toPath(), new SimpleFileVisitor<Path>() {
-                        @Override
-                        public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException {
-                            Files.delete(file);
-                            return super.visitFile(file, attrs);
-                        }
+            runCallbacks(LifecycleCallbacks::beforeStop, this);
+            try {
+                LOGGER.info("Stopping Apache Winegrower application on {}", LocalDateTime.now());
+                final Map<Long, OSGiBundleLifecycle> bundles = registry.getBundles();
+                bundles.values().stream()
+                        .sorted((o1, o2) -> (int) (o2.getBundle().getBundleId() - o1.getBundle().getBundleId()))
+                        .forEach(OSGiBundleLifecycle::stop);
+                bundles.clear();
+                if (configuration.getWorkDir().exists()) {
+                    try {
+                        Files.walkFileTree(configuration.getWorkDir().toPath(), new SimpleFileVisitor<Path>() {
+                            @Override
+                            public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException {
+                                Files.delete(file);
+                                return super.visitFile(file, attrs);
+                            }
 
-                        @Override
-                        public FileVisitResult postVisitDirectory(final Path dir, final IOException exc) throws IOException {
-                            Files.delete(dir);
-                            return super.postVisitDirectory(dir, exc);
-                        }
-                    });
-                } catch (final IOException e) {
-                    LOGGER.warn("Can't delete work directory", e);
+                            @Override
+                            public FileVisitResult postVisitDirectory(final Path dir, final IOException exc) throws IOException {
+                                Files.delete(dir);
+                                return super.postVisitDirectory(dir, exc);
+                            }
+                        });
+                    } catch (final IOException e) {
+                        LOGGER.warn("Can't delete work directory", e);
+                    }
                 }
-            }
-            if (DefaultEventAdmin.class.isInstance(eventAdmin)) {
-                DefaultEventAdmin.class.cast(eventAdmin).close();
+                if (DefaultEventAdmin.class.isInstance(eventAdmin)) {
+                    DefaultEventAdmin.class.cast(eventAdmin).close();
+                }
+            } finally {
+                runCallbacks(LifecycleCallbacks::afterStop, this);
             }
         }
 

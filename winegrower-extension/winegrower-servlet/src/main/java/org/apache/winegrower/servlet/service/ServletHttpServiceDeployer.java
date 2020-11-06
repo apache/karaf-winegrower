@@ -14,6 +14,7 @@
 package org.apache.winegrower.servlet.service;
 
 import org.apache.winegrower.Ripener;
+import org.apache.winegrower.api.LifecycleCallbacks;
 import org.apache.winegrower.scanner.manifest.ManifestContributor;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
@@ -181,6 +182,10 @@ public class ServletHttpServiceDeployer implements ServletContainerInitializer {
 
     private Ripener.Configuration createConfiguration(final ServletContext servletContext) {
         final Ripener.Configuration configuration = new Ripener.Configuration();
+        ofNullable(servletContext.getInitParameter("winegrower.servlet.ripener.configuration.useLifecycleCallbacks"))
+                .map(String::valueOf)
+                .map(Boolean::parseBoolean)
+                .ifPresent(configuration::setUseLifecycleCallbacks);
         ofNullable(servletContext.getInitParameter("winegrower.servlet.ripener.configuration.workdir")).map(String::valueOf)
                 .map(File::new).ifPresent(configuration::setWorkDir);
         ofNullable(servletContext.getInitParameter("winegrower.servlet.ripener.configuration.prioritizedBundles"))
@@ -207,6 +212,19 @@ public class ServletHttpServiceDeployer implements ServletContainerInitializer {
                     throw new IllegalArgumentException(e.getTargetException());
                 }
             }).map(ManifestContributor.class::cast).collect(toList()));
+        });
+        ofNullable(servletContext.getInitParameter("winegrower.servlet.ripener.configuration.lifecycleCallbacks"))
+                .map(String::valueOf).filter(it -> !it.isEmpty()).map(it -> asList(it.split(","))).ifPresent(lifecycleCallbacks -> {
+            configuration.setLifecycleCallbacks(lifecycleCallbacks.stream().map(clazz -> {
+                try {
+                    return Thread.currentThread().getContextClassLoader().loadClass(clazz).getConstructor().newInstance();
+                } catch (final InstantiationException | NoSuchMethodException | IllegalAccessException
+                        | ClassNotFoundException e) {
+                    throw new IllegalArgumentException(e);
+                } catch (final InvocationTargetException e) {
+                    throw new IllegalArgumentException(e.getTargetException());
+                }
+            }).map(LifecycleCallbacks.class::cast).collect(toList()));
         });
         ofNullable(servletContext.getInitParameter("winegrower.servlet.ripener.configuration.jarFilter")).map(String::valueOf)
                 .filter(it -> !it.isEmpty()).ifPresent(filter -> {

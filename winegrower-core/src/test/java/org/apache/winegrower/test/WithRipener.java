@@ -20,12 +20,14 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
+import static java.util.stream.Collectors.toList;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
+import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -45,6 +47,7 @@ import java.util.jar.JarOutputStream;
 import java.util.stream.Stream;
 
 import org.apache.winegrower.Ripener;
+import org.apache.winegrower.api.LifecycleCallbacks;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -81,6 +84,8 @@ public @interface WithRipener {
 
     Entry[] includeResources() default {};
 
+    boolean addLifecycleCallbackSpy() default false;
+
     class Extension implements BeforeEachCallback, AfterEachCallback, ParameterResolver {
 
         private static final String CLASSES_BASE = System.getProperty(Extension.class.getName() + ".classesBase",
@@ -103,7 +108,7 @@ public @interface WithRipener {
 
             final Ripener.Configuration configuration = new Ripener.Configuration();
             configuration.setScanningExcludes(asList("common-java5-" /* surefire, yes... */, "test-classes"));
-            setConfiguration(configuration, config);
+            setConfiguration(configuration, config, extensionContext.getTestClass().orElseThrow(IllegalStateException::new));
 
             final Ripener ripener = new Ripener.Impl(configuration).start();
             store.put(Ripener.class, ripener);
@@ -126,7 +131,8 @@ public @interface WithRipener {
             ofNullable(store.get(Ripener.class, Ripener.class)).ifPresent(Ripener::stop);
         }
 
-        private void setConfiguration(final Ripener.Configuration configuration, final WithRipener config) {
+        private void setConfiguration(final Ripener.Configuration configuration, final WithRipener config,
+                                      final Class<?> test) {
             final Collection<String> includes = asList(config.includes());
             if (!includes.isEmpty()) {
                 configuration.setJarFilter(it -> includes.stream().anyMatch(e -> e.startsWith(it)));
@@ -135,6 +141,19 @@ public @interface WithRipener {
             final String workDir = config.workDir();
             if (!workDir.isEmpty()) {
                 configuration.setWorkDir(new File(workDir));
+            }
+
+            if (config.addLifecycleCallbackSpy()) {
+                configuration.setLifecycleCallbacks(Stream.of(test.getClasses())
+                        .filter(LifecycleCallbacks.class::isAssignableFrom)
+                        .map(it -> {
+                            try {
+                                return it.asSubclass(LifecycleCallbacks.class).getConstructor().newInstance();
+                            } catch (final InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+                                throw new IllegalStateException(e);
+                            }
+                        })
+                        .collect(toList()));
             }
         }
 

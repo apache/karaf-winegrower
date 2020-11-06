@@ -18,6 +18,7 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
+import org.apache.winegrower.api.LifecycleCallbacks;
 import org.apache.xbean.finder.util.Files;
 
 import java.io.File;
@@ -64,6 +65,12 @@ public class PourMojo extends LibsMojo {
 
     @Parameter(property = "winegrower.prioritizedBundles")
     private List<String> prioritizedBundles;
+
+    @Parameter(property = "winegrower.lifecycleCallbacks")
+    private List<Class<?>> lifecycleCallbacks;
+
+    @Parameter(property = "winegrower.useLifecycleCallbacks", defaultValue = "true")
+    private boolean useLifecycleCallbacks;
 
     @Parameter(property = "winegrower.systemVariables")
     private Map<String, String> systemVariables;
@@ -158,6 +165,22 @@ public class PourMojo extends LibsMojo {
     private Object createConfiguration(final Class<?> configClass)
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         final Object configuration = configClass.getConstructor().newInstance();
+        doCall(configuration, "setUseLifecycleCallbacks", new Class<?>[]{boolean.class}, new Object[]{useLifecycleCallbacks});
+        ofNullable(lifecycleCallbacks).map(it -> it.stream()
+                .map(clazz -> {
+                    try {
+                        return clazz
+                                .getConstructor()
+                                .newInstance();
+                    } catch (final InstantiationException | NoSuchMethodException | IllegalAccessException e) {
+                        throw new IllegalArgumentException(e);
+                    } catch (final InvocationTargetException e) {
+                        throw new IllegalArgumentException(
+                                e.getTargetException());
+                    }
+                })
+                .collect(toList()))
+                .ifPresent(value -> doCall(configuration, "setLifecycleCallbacks", new Class<?>[]{List.class}, new Object[]{value}));
         ofNullable(workDir)
                 .ifPresent(value -> doCall(configuration, "setWorkDir", new Class<?>[]{File.class}, new Object[]{value}));
         ofNullable(prioritizedBundles)

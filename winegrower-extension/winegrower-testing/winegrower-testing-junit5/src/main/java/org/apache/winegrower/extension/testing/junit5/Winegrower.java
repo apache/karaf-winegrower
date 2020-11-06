@@ -20,6 +20,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.util.function.Predicate;
 
+import org.apache.winegrower.api.LifecycleCallbacks;
 import org.apache.winegrower.extension.testing.junit5.internal.WinegrowerExtension;
 import org.apache.winegrower.scanner.manifest.ManifestContributor;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,6 +39,8 @@ public @interface Winegrower {
     String[] ignoredBundles() default {};
     String[] scanningExcludes() default {};
     String[] scanningIncludes() default {};
+    Class<? extends LifecycleCallbacks>[] lifecycleCallbacks() default {};
+    boolean useLifecycleCallbacks() default true;
 
     interface JarFilter extends Predicate<String> {
     }
