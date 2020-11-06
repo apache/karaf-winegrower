@@ -13,16 +13,22 @@
  */
 package org.apache.winegrower.extension.testing.junit5.internal;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import org.apache.winegrower.Ripener;
 import org.apache.winegrower.api.InjectedService;
 import org.apache.winegrower.extension.testing.junit5.Winegrower;
 import org.apache.winegrower.service.OSGiServices;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.ParameterContext;
+import org.junit.jupiter.api.extension.ParameterResolutionException;
+import org.junit.jupiter.api.extension.ParameterResolver;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @Winegrower
+@ExtendWith(WinegrowerExtensionTest.CustomInjector.class)
 class WinegrowerExtensionTest {
     @InjectedService
     private Ripener ripener;
@@ -34,5 +40,22 @@ class WinegrowerExtensionTest {
     void checkInjections(final Ripener ripener) {
         assertEquals(ripener, this.ripener);
         assertNotNull(services);
+    }
+
+    @Test
+    void notOSGiInjectionWithoutQualifier(final CustomInjector extension) {
+        assertNotNull(extension);
+    }
+
+    public static class CustomInjector implements ParameterResolver {
+        @Override
+        public boolean supportsParameter(final ParameterContext parameterContext, final ExtensionContext extensionContext) throws ParameterResolutionException {
+            return CustomInjector.class == parameterContext.getParameter().getType();
+        }
+
+        @Override
+        public Object resolveParameter(final ParameterContext parameterContext, final ExtensionContext extensionContext) throws ParameterResolutionException {
+            return this;
+        }
     }
 }

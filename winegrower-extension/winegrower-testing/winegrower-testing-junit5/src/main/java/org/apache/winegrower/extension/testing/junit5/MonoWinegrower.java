@@ -21,6 +21,7 @@ import java.lang.annotation.Target;
 
 import org.apache.winegrower.Ripener;
 import org.apache.winegrower.extension.testing.junit5.internal.MonoWinegrowerExtension;
+import org.apache.winegrower.extension.testing.junit5.internal.engine.CaptureExtensionRegistry;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
@@ -32,6 +33,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
  */
 @Target(TYPE)
 @Retention(RUNTIME)
+@ExtendWith(CaptureExtensionRegistry.class)
 @ExtendWith(MonoWinegrowerExtension.class)
 public @interface MonoWinegrower {
 }
