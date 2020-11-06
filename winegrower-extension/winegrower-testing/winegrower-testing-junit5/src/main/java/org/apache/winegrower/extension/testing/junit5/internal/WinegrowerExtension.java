@@ -48,6 +48,8 @@ public class WinegrowerExtension extends BaseInjection implements BeforeAllCallb
 
     private Ripener.Configuration createConfiguration(final Winegrower winegrower) {
         final Ripener.Configuration configuration = new Ripener.Configuration();
+        of(winegrower.useLifecycleCallbacks())
+                .ifPresent(configuration::setUseLifecycleCallbacks);
         of(winegrower.workDir())
                 .filter(it -> !it.isEmpty())
                 .ifPresent(wd -> configuration.setWorkDir(new File(wd)));
@@ -77,6 +79,17 @@ public class WinegrowerExtension extends BaseInjection implements BeforeAllCallb
         of(winegrower.manifestContributor())
                 .filter(it -> it.length > 0)
                 .ifPresent(contributors -> configuration.setManifestContributors(Stream.of(contributors).map(it -> {
+                    try {
+                        return it.getConstructor().newInstance();
+                    } catch (final InstantiationException | IllegalAccessException | NoSuchMethodException e) {
+                        throw new IllegalArgumentException(e);
+                    } catch (final InvocationTargetException e) {
+                        throw new IllegalArgumentException(e.getTargetException());
+                    }
+                }).collect(toList())));
+        of(winegrower.lifecycleCallbacks())
+                .filter(it -> it.length > 0)
+                .ifPresent(value -> configuration.setLifecycleCallbacks(Stream.of(value).map(it -> {
                     try {
                         return it.getConstructor().newInstance();
                     } catch (final InstantiationException | IllegalAccessException | NoSuchMethodException e) {
