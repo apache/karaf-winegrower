@@ -13,8 +13,6 @@
  */
 package org.apache.winegrower.extension.testing.junit5.internal;
 
-import static java.util.Optional.ofNullable;
-
 import org.apache.winegrower.Ripener;
 import org.apache.winegrower.extension.testing.junit5.NotAnOSGiService;
 import org.apache.winegrower.service.OSGiServices;
@@ -26,6 +24,8 @@ import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 
 import java.lang.reflect.Parameter;
 
+import static java.util.Optional.ofNullable;
+
 public abstract class BaseInjection implements TestInstancePostProcessor, ParameterResolver {
     @Override
     public void postProcessTestInstance(final Object o, final ExtensionContext context) {
@@ -36,6 +36,17 @@ public abstract class BaseInjection implements TestInstancePostProcessor, Parame
     @Override
     public boolean supportsParameter(final ParameterContext parameterContext, final ExtensionContext context)
             throws ParameterResolutionException {
+        try { // first check if the parameter is handled by another extension
+            if (org.apache.winegrower.extension.testing.junit5.internal.engine.CaptureExtensionRegistry
+                    .get(ParameterResolver.class, context)
+                    .anyMatch(it -> it != BaseInjection.this && it.supportsParameter(parameterContext, context))) {
+                return false;
+            }
+        } catch (final Exception | Error e) {
+            // ignore, the engine is not the expected one, fallback on default behavior
+        }
+
+        // if not handled assume it is a service we know
         final Parameter parameter = parameterContext.getParameter();
         final Class<?> type = parameter.getType();
         return !parameter.isAnnotationPresent(NotAnOSGiService.class) &&

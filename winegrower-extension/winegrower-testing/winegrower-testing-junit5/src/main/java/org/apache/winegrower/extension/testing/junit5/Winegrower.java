@@ -22,6 +22,7 @@ import java.util.function.Predicate;
 
 import org.apache.winegrower.api.LifecycleCallbacks;
 import org.apache.winegrower.extension.testing.junit5.internal.WinegrowerExtension;
+import org.apache.winegrower.extension.testing.junit5.internal.engine.CaptureExtensionRegistry;
 import org.apache.winegrower.scanner.manifest.ManifestContributor;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -30,6 +31,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
  */
 @Target(TYPE)
 @Retention(RUNTIME)
+@ExtendWith(CaptureExtensionRegistry.class)
 @ExtendWith(WinegrowerExtension.class)
 public @interface Winegrower {
     String workDir() default "";
