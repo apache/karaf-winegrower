@@ -162,6 +162,11 @@
         <version>3.0.0-M5</version>
         <configuration>
           <trimStackTrace>false</trimStackTrace>
+          <environmentVariables>
+            <WINEGROWER_SERVICE_A_B_C_FOOBAR_NAME>fooBar</WINEGROWER_SERVICE_A_B_C_FOOBAR_NAME>
+            <WINEGROWER_SERVICE_A_B_C_FOOBAR>dummy</WINEGROWER_SERVICE_A_B_C_FOOBAR>
+            <WINEGROWER_SERVICE_A_B_C_SIMPLE>set</WINEGROWER_SERVICE_A_B_C_SIMPLE>
+          </environmentVariables>
           <systemPropertyVariables>
             <org.slf4j.simpleLogger.defaultLogLevel>${surefire.log.level}</org.slf4j.simpleLogger.defaultLogLevel>
             <org.slf4j.simpleLogger.logFile>System.out</org.slf4j.simpleLogger.logFile>

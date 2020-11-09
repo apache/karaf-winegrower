@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DefaultConfigurationAdminTest {
@@ -42,6 +43,21 @@ class DefaultConfigurationAdminTest {
             return new ServiceReferenceImpl<>(new Hashtable<>(), null, null);
         }
     };
+
+    @Test
+    @DisplayName("ConfigurationAdmin should be able to use implicitly the environment")
+    void envVarOverride(final TestInfo info) {
+        final List<ConfigurationListener> listeners = new ArrayList<>();
+        final DefaultConfigurationAdmin configurationAdmin = new DefaultConfigurationAdmin(emptyMap(), listeners) {
+            @Override
+            protected ServiceReference<ConfigurationAdmin> getSelfReference() { // not needed for this tests
+                return new ServiceReferenceImpl<>(new Hashtable<>(), null, null);
+            }
+        };
+        final Configuration java = configurationAdmin.getConfiguration("a.b.c");
+        assertEquals("dummy", java.getProperties().get("fooBar"));
+        assertEquals("set", java.getProperties().get("simple"));
+    }
 
     @Test
     @DisplayName("Configuration creation can be forced - ConfigurationListener case")
