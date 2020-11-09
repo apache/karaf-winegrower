@@ -62,7 +62,7 @@ public abstract class DefaultConfigurationAdmin implements ConfigurationAdmin {
     private final Collection<ConfigurationListener> configurationListeners;
 
     public DefaultConfigurationAdmin(final Map<String, String> providedConfiguration,
-            final Collection<ConfigurationListener> configurationListeners) {
+                                     final Collection<ConfigurationListener> configurationListeners) {
         this.providedConfiguration = providedConfiguration;
         this.configurationListeners = configurationListeners;
     }
@@ -181,7 +181,7 @@ public abstract class DefaultConfigurationAdmin implements ConfigurationAdmin {
         private final Set<ConfigurationAttribute> attributes = new HashSet<>();
 
         private DefaultConfiguration(final Map<String, String> configRegistry, final String factoryPid, final String pid,
-                final String location, final String name) {
+                                     final String location, final String name) {
             this.configRegistry = configRegistry;
             this.factoryPid = factoryPid;
             this.pid = pid;
@@ -226,6 +226,11 @@ public abstract class DefaultConfigurationAdmin implements ConfigurationAdmin {
                 }
             }
 
+            final Map<String, String> placeholders = new HashMap<>(Map.class.cast(properties));
+            placeholders.putAll(Map.class.cast(System.getProperties()));
+            placeholders.putAll(System.getenv());
+            final Substitutor substitutor = new Substitutor(placeholders);
+
             // and finally from system properties and env variables
             // (env is for the machine so less precise than system props so set first)
             final String envPrefix = prefix.toUpperCase(ROOT).replace('.', '_');
@@ -242,15 +247,20 @@ public abstract class DefaultConfigurationAdmin implements ConfigurationAdmin {
                         //     A_B_C_1=dummy
                         // but when there key is not ambiguous (all lowercase) it is simpler to set (key=foobar):
                         //     A_B_C_FOOBAR=dummy
+                        final String value = System.getenv(key);
                         properties.put(
                                 ofNullable(System.getenv(key + "_NAME")).orElseGet(() -> k.toLowerCase(ROOT)),
-                                System.getenv(key));
+                                value.contains("${") && value.contains("}") ? substitutor.replace(value) : value);
                     });
 
             System.getProperties().stringPropertyNames().stream()
                     .filter(it -> it.startsWith(prefix))
-                    .forEach(key -> properties.put(key.substring(prefix.length()), System.getProperty(key)));
-
+                    .forEach(key -> {
+                        final String value = System.getProperty(key);
+                        properties.put(
+                                key.substring(prefix.length()),
+                                value.contains("${") && value.contains("}") ? substitutor.replace(value) : value);
+                    });
 
             // ensure the factoryPid/pid is there if exists
             ofNullable(pid).ifPresent(v -> properties.putIfAbsent("service.pid", v));
@@ -359,9 +369,13 @@ public abstract class DefaultConfigurationAdmin implements ConfigurationAdmin {
             }
             final Map<String, String> placeholders = new HashMap<>(Map.class.cast(properties));
             placeholders.putAll(Map.class.cast(System.getProperties()));
+            placeholders.putAll(System.getenv());
             final Substitutor substitutor = new Substitutor(placeholders);
             return properties.stringPropertyNames().stream().collect(toMap(identity(),
-                    it -> it.contains("${") && it.contains("}") ? substitutor.replace(it) : properties.getProperty(it)));
+                    it -> {
+                        final String value = properties.getProperty(it);
+                        return value.contains("${") && value.contains("}") ? substitutor.replace(value) : value;
+                    }));
         }
     }
 

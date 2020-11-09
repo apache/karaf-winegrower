@@ -45,6 +45,17 @@ class DefaultConfigurationAdminTest {
     };
 
     @Test
+    @DisplayName("Placeholders are substituted")
+    void interpolation(final TestInfo info) {
+        final String pid = info.getTestClass().orElseThrow(IllegalStateException::new).getName() + "." +
+                info.getTestMethod().orElseThrow(IllegalStateException::new).getName() + ".pid";
+        System.setProperty("winegrower.service." + pid + ".value", ">${java.version:-no}<");
+        final Configuration configuration = configurationAdmin.getConfiguration(pid);
+        assertEquals('>' + System.getProperty("java.version", "no") + '<',
+                configuration.getProperties().get("value"));
+    }
+
+    @Test
     @DisplayName("ConfigurationAdmin should be able to use implicitly the environment")
     void envVarOverride(final TestInfo info) {
         final List<ConfigurationListener> listeners = new ArrayList<>();
