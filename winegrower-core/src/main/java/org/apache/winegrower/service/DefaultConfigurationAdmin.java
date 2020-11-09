@@ -44,6 +44,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.list;
+import static java.util.Locale.ROOT;
 import static java.util.Optional.ofNullable;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
@@ -225,9 +226,31 @@ public abstract class DefaultConfigurationAdmin implements ConfigurationAdmin {
                 }
             }
 
-            // and finally from system properties
-            System.getProperties().stringPropertyNames().stream().filter(it -> it.startsWith(prefix))
+            // and finally from system properties and env variables
+            // (env is for the machine so less precise than system props so set first)
+            final String envPrefix = prefix.toUpperCase(ROOT).replace('.', '_');
+            System.getenv().keySet().stream()
+                    .filter(it -> it.length() > prefix.length() && envPrefix.equalsIgnoreCase(it.substring(0, envPrefix.length())))
+                    .forEach(key -> {
+                        final String k = key.substring(envPrefix.length());
+                        // env keys loose the case so in case it is important, enable to force the key name
+                        // ex: to set configuration{pid=a.b.c, key=fooBar, value=dummy} you would set:
+                        //     A_B_C_FOOBAR_NAME=fooBar
+                        //     A_B_C_FOOBAR=dummy
+                        // note that the FOOBAR in the key is not important, previous config is the same than:
+                        //     A_B_C_1_NAME=fooBar
+                        //     A_B_C_1=dummy
+                        // but when there key is not ambiguous (all lowercase) it is simpler to set (key=foobar):
+                        //     A_B_C_FOOBAR=dummy
+                        properties.put(
+                                ofNullable(System.getenv(key + "_NAME")).orElseGet(() -> k.toLowerCase(ROOT)),
+                                System.getenv(key));
+                    });
+
+            System.getProperties().stringPropertyNames().stream()
+                    .filter(it -> it.startsWith(prefix))
                     .forEach(key -> properties.put(key.substring(prefix.length()), System.getProperty(key)));
+
 
             // ensure the factoryPid/pid is there if exists
             ofNullable(pid).ifPresent(v -> properties.putIfAbsent("service.pid", v));
