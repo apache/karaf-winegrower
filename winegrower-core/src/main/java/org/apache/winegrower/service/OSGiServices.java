@@ -48,6 +48,7 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
@@ -55,6 +56,7 @@ import static java.util.Collections.list;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 // holder of all services
 public class OSGiServices {
@@ -68,6 +70,7 @@ public class OSGiServices {
     private final Collection<ConfigurationListener> configurationListeners;
     private final Collection<DefaultEventAdmin.EventHandlerInstance> eventListeners;
     private final Ripener framework;
+    private final Set<String> forcedDeepPropertyRead;
 
     public OSGiServices(final Ripener framework,
                         final Collection<ConfigurationListener> configurationListeners,
@@ -75,6 +78,9 @@ public class OSGiServices {
         this.framework = framework;
         this.configurationListeners = configurationListeners;
         this.eventListeners = eventListeners;
+        this.forcedDeepPropertyRead = Stream.of(System.getProperty(
+                "winegrower.registry.forcedDeepReadProperties", "org.osgi.service.http.port").split(","))
+                .collect(toSet());
     }
 
     public Hooks getHooks() {
@@ -156,7 +162,7 @@ public class OSGiServices {
             @Override
             public Object get(final Object key) {
                 final String property = System.getProperty(String.valueOf(key));
-                if ("*".equals(property)) { // http.port for ex
+                if (forcedDeepPropertyRead.contains(key)) { // http.port for ex
                     final Object overridenValue = super.get(key);
                     if (overridenValue != null) {
                         return overridenValue;
