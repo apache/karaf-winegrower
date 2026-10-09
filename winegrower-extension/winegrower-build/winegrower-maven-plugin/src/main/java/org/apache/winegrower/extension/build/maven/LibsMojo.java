@@ -22,7 +22,6 @@ import org.apache.maven.project.DependencyResolutionException;
 import org.apache.maven.project.DependencyResolutionRequest;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.ProjectDependenciesResolver;
-import org.apache.maven.shared.dependency.graph.DependencyGraphBuilder;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.DefaultArtifact;
@@ -58,9 +57,6 @@ public abstract class LibsMojo extends AbstractMojo {
 
     @Component
     private ProjectDependenciesResolver dependenciesResolver;
-
-    @Component
-    private DependencyGraphBuilder graphBuilder;
 
     @Parameter(property = "winegrower.libs")
     private Collection<String> libs;
